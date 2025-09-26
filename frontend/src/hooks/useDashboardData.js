@@ -1,54 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export function useDashboardData() {
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [keywords, setKeywords] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({
+    feedbacks: [],
+    keywords: [],
+    isLoading: true,
+    error: null
+  });
+  
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    console.log('useDashboardData: Executando ÚNICA vez');
 
     const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
       try {
-        const [feedbacksRes, keywordsRes] = await Promise.all([
-          fetch('http://127.0.0.1:5000/feedbacks', { signal }),
-          fetch('http://127.0.0.1:5000/keywords', { signal }),
-        ]);
-
-        if (!feedbacksRes.ok || !keywordsRes.ok) {
-          throw new Error('A resposta da rede não foi OK');
-        }
-
-        const feedbacksData = await feedbacksRes.json();
-        const keywordsData = await keywordsRes.json();
+        console.log('Fazendo fetch...');
         
-        // Adicionamos inteligência aqui para extrair o array da resposta
-        const finalFeedbacks = Array.isArray(feedbacksData) ? feedbacksData : feedbacksData.feedbacks || [];
-        const finalKeywords = Array.isArray(keywordsData) ? keywordsData : keywordsData.keywords || [];
+        const feedbacksRes = await fetch('http://127.0.0.1:5000/feedbacks');
+        const keywordsRes = await fetch('http://127.0.0.1:5000/keywords');
 
-        setFeedbacks(finalFeedbacks);
-        setKeywords(finalKeywords);
+        const feedbacksData = feedbacksRes.ok ? await feedbacksRes.json() : [];
+        const keywordsData = keywordsRes.ok ? await keywordsRes.json() : [];
 
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error("Erro ao buscar dados:", err);
-          setError(err.message);
-        }
-      } finally {
-        setIsLoading(false);
+        console.log('Dados recebidos - Feedbacks:', feedbacksData.length, 'Keywords:', keywordsData.length);
+
+        setState({
+          feedbacks: Array.isArray(feedbacksData) ? feedbacksData : [],
+          keywords: Array.isArray(keywordsData) ? keywordsData : [],
+          isLoading: false,
+          error: null
+        });
+
+        console.log('Estado atualizado com sucesso');
+
+      } catch (error) {
+        console.error('Erro:', error);
+        setState({
+          feedbacks: [],
+          keywords: [],
+          isLoading: false,
+          error: error.message
+        });
       }
     };
 
     fetchData();
+  }, []); 
 
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  return { feedbacks, keywords, isLoading, error };
+  return state;
 }
