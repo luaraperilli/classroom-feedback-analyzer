@@ -1,14 +1,8 @@
-# Core Web Framework
 Flask
 flask-cors
-
-# Data Handling & Machine Learning
 pandas
 scikit-learn
 nltk
-
-# Sentiment Analysis
 pysentimiento
-
-# Development & Interactive Testing
 jupyter
+wordcloud
