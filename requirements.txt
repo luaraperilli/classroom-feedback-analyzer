@@ -1,0 +1,17 @@
+# Para manipulação e leitura de dados
+pandas
+
+# Para a aplicação web (backend)
+Flask
+
+# Kit de ferramentas para Processamento de Linguagem Natural (NLP)
+nltk
+
+# Para criar modelos de Machine Learning
+scikit-learn
+
+# Biblioteca de análise de sentimentos otimizada para português
+leia
+
+# Para rodar notebooks de teste e exploração
+jupyter
