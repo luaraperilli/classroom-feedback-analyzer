@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './App.css'; 
+import './App.css';
 
 function FeedbackForm() {
   const [feedbackText, setFeedbackText] = useState('');
@@ -63,10 +63,16 @@ function FeedbackForm() {
           {sentimentResult.error ? (
             <p style={{ color: '#dc3545' }}>{sentimentResult.error}</p>
           ) : (
-            <div className="sentiment-display" style={{ color: sentimentDisplay.color }}>
-              <span>{sentimentDisplay.text}</span>
-              <span className="emoji">{sentimentDisplay.emoji}</span>
-            </div>
+            <>
+              <div className="sentiment-display" style={{ color: sentimentDisplay.color }}>
+                <span>{sentimentDisplay.text}</span>
+                <span className="emoji">{sentimentDisplay.emoji}</span>
+              </div>
+              <p className="compound-explanation">
+                A nota "Compound" varia de -1 (muito negativo) a +1 (muito positivo).
+                Sua nota foi: <strong>{sentimentResult.compound.toFixed(4)}</strong>
+              </p>
+            </>
           )}
         </div>
       )}
