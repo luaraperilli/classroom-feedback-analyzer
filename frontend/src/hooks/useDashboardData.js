@@ -1,55 +1,42 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export function useDashboardData() {
-  const [state, setState] = useState({
-    feedbacks: [],
-    keywords: [],
-    isLoading: true,
-    error: null
-  });
-  
-  const hasRun = useRef(false);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
-    console.log('useDashboardData: Executando ÚNICA vez');
+    const controller = new AbortController();
+    const signal = controller.signal;
 
     const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        console.log('Fazendo fetch...');
-        
-        const feedbacksRes = await fetch('http://127.0.0.1:5000/feedbacks');
-        const keywordsRes = await fetch('http://127.0.0.1:5000/keywords');
+        const res = await fetch('http://127.0.0.1:5000/feedbacks', { signal });
 
-        const feedbacksData = feedbacksRes.ok ? await feedbacksRes.json() : [];
-        const keywordsData = keywordsRes.ok ? await keywordsRes.json() : [];
+        if (!res.ok) {
+          throw new Error('A resposta da rede não foi OK');
+        }
 
-        console.log('Dados recebidos - Feedbacks:', feedbacksData.length, 'Keywords:', keywordsData.length);
+        const data = await res.json();
+        setFeedbacks(Array.isArray(data) ? data : []);
 
-        setState({
-          feedbacks: Array.isArray(feedbacksData) ? feedbacksData : [],
-          keywords: Array.isArray(keywordsData) ? keywordsData : [],
-          isLoading: false,
-          error: null
-        });
-
-        console.log('Estado atualizado com sucesso');
-
-      } catch (error) {
-        console.error('Erro:', error);
-        setState({
-          feedbacks: [],
-          keywords: [],
-          isLoading: false,
-          error: error.message
-        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []); 
 
-  return state;
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  return { feedbacks, isLoading, error };
 }
