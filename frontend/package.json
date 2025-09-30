@@ -14,7 +14,6 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.2",
     "react-scripts": "5.0.1",
-    "react-wordcloud": "^1.2.7",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -22,8 +21,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start-backend": "cd .. && .\\venv\\Scripts\\activate && python run.py",
-    "dev": "concurrently \"npm start\" \"npm run start-backend\""
+    "start-backend:win": "cd .. && .\\venv\\Scripts\\activate && python run.py",
+    "start-backend:unix": "cd .. && source venv/bin/activate && python run.py",
+    "dev": "concurrently \"npm start\" \"npm run start-backend:win\""
   },
   "eslintConfig": {
     "extends": [
