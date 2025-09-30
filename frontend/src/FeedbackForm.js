@@ -5,6 +5,7 @@ function FeedbackForm() {
   const [feedbackText, setFeedbackText] = useState('');
   const [sentimentResult, setSentimentResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const interpretSentiment = (compound) => {
     if (compound >= 0.05) return { text: 'Positivo', emoji: '😊', color: '#28a745' };
@@ -16,6 +17,7 @@ function FeedbackForm() {
     event.preventDefault();
     setIsLoading(true);
     setSentimentResult(null);
+    setSubmitted(false);
 
     try {
       const response = await fetch('http://127.0.0.1:5000/analyze', {
@@ -24,13 +26,15 @@ function FeedbackForm() {
         body: JSON.stringify({ text: feedbackText }),
       });
 
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) throw new Error('A resposta da rede não foi bem-sucedida');
       
       const data = await response.json();
       setSentimentResult(data);
+      setSubmitted(true);
+      setFeedbackText('');
     } catch (error) {
-      console.error('Error sending feedback:', error);
-      setSentimentResult({ error: 'Failed to analyze sentiment.' });
+      console.error('Erro ao enviar feedback:', error);
+      setSentimentResult({ error: 'Falha ao analisar o sentimento.' });
     } finally {
       setIsLoading(false);
     }
@@ -41,23 +45,30 @@ function FeedbackForm() {
   return (
     <header className="App-header">
       <h1>Análise de Sentimentos da Aula</h1>
-      <p>Como você se sentiu sobre a aula de hoje?</p>
+      <p>Como você se sentiu sobre a aula de hoje? A sua opinião é anônima.</p>
       
+      {submitted && sentimentResult && !sentimentResult.error && (
+        <div className="success-message">
+          <p>Obrigado pelo seu feedback!</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="feedback-form">
         <textarea
           value={feedbackText}
           onChange={(e) => setFeedbackText(e.target.value)}
-          placeholder="Escreva seu feedback anônimo aqui..."
+          placeholder="Seja específico. O que foi bom? O que pode melhorar?"
           rows="5"
           required
+          disabled={isLoading}
         />
         <br />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Analisando...' : 'Enviar Feedback'}
+        <button type="submit" disabled={isLoading || !feedbackText.trim()}>
+          {isLoading ? 'Analisando...' : 'Enviar'}
         </button>
       </form>
 
-      {sentimentResult && (
+      {sentimentResult && !isLoading && !submitted && (
         <div className="result-container">
           <h2>Resultado da Análise:</h2>
           {sentimentResult.error ? (
@@ -69,8 +80,9 @@ function FeedbackForm() {
                 <span className="emoji">{sentimentDisplay.emoji}</span>
               </div>
               <p className="compound-explanation">
-                A nota "Compound" varia de -1 (muito negativo) a +1 (muito positivo).
-                Sua nota foi: <strong>{sentimentResult.compound.toFixed(4)}</strong>
+                A sua nota de sentimento foi: <strong>{sentimentResult.compound.toFixed(2)}</strong>
+                <br />
+                <small>(Varia de -1, muito negativo, a +1, muito positivo)</small>
               </p>
             </>
           )}

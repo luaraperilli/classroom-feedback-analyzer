@@ -1,3 +1,24 @@
+/* ==========================================================================
+   1. Estilos Globais e Variáveis de Cor
+   ========================================================================== */
+
+:root {
+  --background-color: #f8f9fa; /* Um cinza muito claro para o fundo */
+  --surface-color: #ffffff; /* Cor dos cards e superfícies principais */
+  --primary-color: #4a90e2; /* Um azul mais suave para interações */
+  --primary-hover-color: #357ABD;
+  --text-primary-color: #2c3e50; /* Um azul escuro para texto principal */
+  --text-secondary-color: #6c757d; /* Cinza para texto de apoio */
+  --border-color: #e9ecef; /* Cor suave para bordas */
+  
+  /* Cores de Sentimento */
+  --positive-color: #28a745; /* Verde para positivo */
+  --neutral-color: #6c757d;  /* Cinza para neutro */
+  --negative-color: #dc3545; /* Vermelho para negativo */
+
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,26 +26,31 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f7f9;
+  background-color: var(--background-color);
+  color: var(--text-primary-color);
 }
 
 .App {
   text-align: center;
-  color: #333;
 }
 
+
+/* ==========================================================================
+   2. Navegação Principal
+   ========================================================================== */
+
 .main-nav {
-  background-color: #ffffff;
+  background-color: var(--surface-color);
   padding: 1rem;
   display: flex;
   justify-content: center;
   gap: 2rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-color);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .main-nav a {
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
   font-size: 1.2rem;
   font-weight: 500;
@@ -32,21 +58,22 @@ body {
 }
 
 .main-nav a:hover {
-  color: #0056b3;
+  color: var(--primary-hover-color);
 }
 
-.App-header {
-  background-color: #ffffff;
+
+/* ==========================================================================
+   3. Página do Aluno (FeedbackForm)
+   ========================================================================== */
+
+.App-header { /* Container principal da página do aluno */
+  background-color: var(--surface-color);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
   font-size: calc(12px + 1.5vmin);
-}
-
-.App-header h1 {
-  color: #2c3e50;
 }
 
 .feedback-form textarea {
@@ -62,9 +89,9 @@ body {
 }
 
 .feedback-form textarea:focus {
-  border-color: #80bdff;
+  border-color: var(--primary-color);
   outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
 }
 
 .feedback-form button {
@@ -74,14 +101,14 @@ body {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  background-color: #007bff;
+  background-color: var(--primary-color);
   color: white;
   font-weight: bold;
   transition: background-color 0.2s ease-in-out;
 }
 
 .feedback-form button:hover {
-  background-color: #0056b3;
+  background-color: var(--primary-hover-color);
 }
 
 .feedback-form button:disabled {
@@ -89,11 +116,20 @@ body {
   cursor: not-allowed;
 }
 
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6cb;
+}
+
 .result-container {
   margin-top: 30px;
   padding: 20px;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   width: 90%;
   max-width: 600px;
@@ -112,101 +148,58 @@ body {
   font-size: 2.5rem;
 }
 
-.dashboard {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.dashboard h1 {
-  color: #2c3e50;
-  margin-bottom: 2rem;
-}
-
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
-}
-
-.chart {
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  color: #333;
-}
-
-.chart h3 {
-  margin-top: 0;
-  text-align: center;
-  color: #495057;
-}
-
-.feedback-list {
-  margin-top: 2rem;
-}
-
-.feedback-list h2 {
-    color: #2c3e50;
-    text-align: left;
-}
-
-.feedback-item {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 15px 20px;
-  margin: 15px 0;
-  text-align: left;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.feedback-item p {
-  margin: 0 0 10px 0;
-  font-style: italic;
-  font-size: 1rem;
-  color: #495057;
-}
-
-.feedback-item small {
-  color: #6c757d;
-}
-
-.loading-message, .error-message {
-  font-size: 1.2rem;
-  padding: 2rem;
-  color: #6c757d;
-}
-
 .compound-explanation {
   font-size: 0.9rem;
-  color: #6c757d;
+  color: var(--text-secondary-color);
   margin-top: 15px;
   max-width: 80%;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* ... cole isso no final do seu App.css ... */
 
+/* ==========================================================================
+   4. Página do Professor (Dashboard)
+   ========================================================================== */
+
+.dashboard {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard h1,
+.feedback-list h2 {
+  color: var(--text-primary-color);
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+/* --- Cartões de Resumo --- */
 .summary-container {
-  grid-column: 1 / -1; /* Faz o container ocupar a largura total do grid */
+  grid-column: 1 / -1;
   display: flex;
   gap: 1.5rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 2rem;
 }
 
 .summary-card {
-  background-color: #ffffff;
+  background-color: var(--surface-color);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  flex-grow: 1;
+  box-shadow: var(--shadow);
+  flex: 1;
+  min-width: 200px;
   text-align: center;
-  border-left: 5px solid;
+  border-top: 5px solid;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card h2 {
@@ -218,7 +211,7 @@ body {
   margin: 0.25rem 0 0.5rem 0;
   font-size: 1rem;
   font-weight: 500;
-  color: #6c757d;
+  color: var(--text-secondary-color);
 }
 
 .summary-card span {
@@ -226,23 +219,78 @@ body {
   font-weight: bold;
 }
 
-.summary-card.positive {
-  border-left-color: #4BC0C0;
-}
-.summary-card.positive span {
-  color: #4BC0C0;
+.summary-card.positive { border-color: var(--positive-color); }
+.summary-card.positive span { color: var(--positive-color); }
+
+.summary-card.neutral { border-color: var(--neutral-color); }
+.summary-card.neutral span { color: var(--neutral-color); }
+
+.summary-card.negative { border-color: var(--negative-color); }
+.summary-card.negative span { color: var(--negative-color); }
+
+/* --- Grelha de Gráficos --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr; /* Coluna única por padrão */
+  gap: 2rem;
+  margin-bottom: 3rem;
 }
 
-.summary-card.neutral {
-  border-left-color: #C9CBCE;
-}
-.summary-card.neutral span {
-  color: #8a8d90;
+.chart {
+  background-color: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  color: var(--text-primary-color);
 }
 
-.summary-card.negative {
-  border-left-color: #FF6384;
+.chart h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #495057;
 }
-.summary-card.negative span {
-  color: #FF6384;
+
+/* --- Lista de Feedbacks --- */
+.feedback-list {
+  margin-top: 2rem;
+}
+
+.feedback-item {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin: 15px 0;
+  text-align: left;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-left: 5px solid;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.feedback-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.feedback-item p {
+  margin: 0 0 10px 0;
+  font-style: italic;
+  font-size: 1rem;
+  color: #495057;
+}
+
+.feedback-item small {
+  color: var(--text-secondary-color);
+}
+
+/* Cores da borda para a lista de feedbacks */
+.feedback-item.positive-feedback { border-left-color: var(--positive-color); }
+.feedback-item.neutral-feedback  { border-left-color: var(--neutral-color); }
+.feedback-item.negative-feedback { border-left-color: var(--negative-color); }
+
+
+/* --- Mensagens de Loading e Erro --- */
+.loading-message, .error-message {
+  font-size: 1.2rem;
+  padding: 2rem;
+  color: var(--text-secondary-color);
 }

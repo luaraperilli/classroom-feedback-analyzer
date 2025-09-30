@@ -6,6 +6,12 @@ import SentimentTrendChart from './SentimentTrendChart';
 function Dashboard() {
   const { feedbacks, isLoading, error } = useDashboardData();
 
+  const getSentimentClass = (compound) => {
+    if (compound >= 0.05) return 'positive-feedback';
+    if (compound <= -0.05) return 'negative-feedback';
+    return 'neutral-feedback';
+  };
+
   const getCompoundColor = (compound) => {
     if (compound >= 0.05) return '#28a745';
     if (compound <= -0.05) return '#dc3545';
@@ -21,14 +27,17 @@ function Dashboard() {
       
       <div className="grid-container">
         <SentimentSummary feedbacks={feedbacks} />
-        <SentimentTrendChart feedbacks={feedbacks} />
+        <div className="chart">
+          <SentimentTrendChart feedbacks={feedbacks} />
+        </div>
       </div>
 
       <div className="feedback-list">
         <h2>Feedbacks Recentes</h2>
         {feedbacks && feedbacks.length > 0 ? (
           feedbacks.map((fb) => (
-            <div key={fb.id} className="feedback-item">
+            // Adicionamos a classe dinâmica aqui
+            <div key={fb.id} className={`feedback-item ${getSentimentClass(fb.compound)}`}>
               <p>"{fb.text}"</p>
               <small>
                 Nota de Sentimento: 
