@@ -122,8 +122,8 @@ A aplicação estará disponível em:
 http://localhost:3000
 
 ## 👤 Contas de Exemplo
-Após iniciar o projeto, você pode usar as seguintes credenciais para testar os diferentes papéis (considere que a senha para todos é 123):
+Após iniciar o projeto, é possível utilizar as seguintes credenciais para teste (considere que a senha é 123):
 
-Aluno: student
-Professor: professor
-Coordenador: coordinator
+- Aluno: student
+- Professor: professor
+- Coordenador: coordinator
