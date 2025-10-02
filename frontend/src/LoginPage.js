@@ -28,7 +28,8 @@ function LoginPage() {
 
       if (response.ok) {
         login(data.access_token, data.refresh_token);
-        if (data.user.role === 'professor') {
+        
+        if (data.user.role === 'professor' || data.user.role === 'coordenador') {
           navigate('/dashboard');
         } else {
           navigate('/');
@@ -74,4 +75,3 @@ function LoginPage() {
 }
 
 export default LoginPage;
-

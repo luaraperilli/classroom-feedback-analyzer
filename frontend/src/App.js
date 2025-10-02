@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import './App.css';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
+import CoordinatorPage from './CoordinatorPage';
 import { AuthProvider, useAuth } from './AuthContext';
 
 function StudentRoute({ children }) {
@@ -35,6 +36,19 @@ function DashboardAccessRoute({ children }) {
     : <Navigate to="/" replace />;
 }
 
+function CoordinatorRoute({ children }) {
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Carregando autenticação...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return user?.role === 'coordenador' ? children : <Navigate to="/" replace />;
+}
+
 function Navigation() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -48,7 +62,8 @@ function Navigation() {
     <nav className="main-nav">
       {isAuthenticated && user?.role === 'aluno' && <Link to="/">Enviar Feedback</Link>}
       {isAuthenticated && (user?.role === 'professor' || user?.role === 'coordenador') && <Link to="/dashboard">Dashboard</Link>}
-      
+      {isAuthenticated && user?.role === 'coordenador' && <Link to="/coordinator">Gestão</Link>}
+
       {!isAuthenticated && (
         <>
           <Link to="/login">Login</Link>
@@ -84,6 +99,14 @@ function App() {
                 <DashboardAccessRoute>
                   <Dashboard />
                 </DashboardAccessRoute>
+              }
+            />
+            <Route
+              path="/coordinator"
+              element={
+                <CoordinatorRoute>
+                  <CoordinatorPage />
+                </CoordinatorRoute>
               }
             />
           </Routes>
