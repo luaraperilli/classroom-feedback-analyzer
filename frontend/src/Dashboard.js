@@ -1,25 +1,35 @@
 import React from 'react';
 import { useDashboardData } from './hooks/useDashboardData';
-import SentimentSummary from './SentimentSummary';
-import SentimentTrendChart from './SentimentTrendChart';
+import SentimentSummary from './components/SentimentSummary';
+import SentimentTrendChart from './components/SentimentTrendChart';
+
+const getSentimentClass = (compound) => {
+  if (compound >= 0.05) return 'positive-feedback';
+  if (compound <= -0.05) return 'negative-feedback';
+  return 'neutral-feedback';
+};
+
+/**
+ * Returns the appropriate hexadecimal color based on the composite sentiment score
+ * @param {number} compound 
+ * @returns {string}
+ */
+const getCompoundColor = (compound) => {
+  if (compound >= 0.05) return '#28a745';
+  if (compound <= -0.05) return '#dc3545';
+  return '#6c757d'; // Cinza
+};
 
 function Dashboard() {
   const { feedbacks, isLoading, error } = useDashboardData();
 
-  const getSentimentClass = (compound) => {
-    if (compound >= 0.05) return 'positive-feedback';
-    if (compound <= -0.05) return 'negative-feedback';
-    return 'neutral-feedback';
-  };
+  if (isLoading) {
+    return <p className="loading-message">Carregando dashboard...</p>;
+  }
 
-  const getCompoundColor = (compound) => {
-    if (compound >= 0.05) return '#28a745';
-    if (compound <= -0.05) return '#dc3545';
-    return '#6c757d';
-  };
-
-  if (isLoading) return <p className="loading-message">Carregando dashboard...</p>;
-  if (error) return <p className="error-message">Erro ao carregar dados: {error}</p>;
+  if (error) {
+    return <p className="error-message">Erro ao carregar dados: {error}</p>;
+  }
 
   return (
     <div className="dashboard">
@@ -36,7 +46,6 @@ function Dashboard() {
         <h2>Feedbacks Recentes</h2>
         {feedbacks && feedbacks.length > 0 ? (
           feedbacks.map((fb) => (
-            // Adicionamos a classe dinâmica aqui
             <div key={fb.id} className={`feedback-item ${getSentimentClass(fb.compound)}`}>
               <p>"{fb.text}"</p>
               <small>

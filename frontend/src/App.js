@@ -3,24 +3,39 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } f
 import FeedbackForm from './FeedbackForm';
 import Dashboard from './Dashboard';
 import './App.css';
-import LoginPage from './LoginPage';
+import LoginPage from './LoginPage'; // Certifique-se de que este componente existe
 import RegisterPage from './RegisterPage';
 import { AuthProvider, useAuth } from './AuthContext';
 
+/**
+ * Componente de rota protegida para alunos.
+ * Redireciona para a página de login se não autenticado.
+ * Redireciona para o dashboard se o usuário não for aluno.
+ */
 function StudentRoute({ children }) {
-  const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Carregando autenticação...</div>; // Ou um spinner
   }
-  return user?.role === 'aluno' ? children : <Navigate to="/dashboard" />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return user?.role === 'aluno' ? children : <Navigate to="/dashboard" replace />;
 }
 
 function ProfessorRoute({ children }) {
-  const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Carregando autenticação...</div>; // Ou um spinner
   }
-  return user?.role === 'professor' ? children : <Navigate to="/" />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return user?.role === 'professor' ? children : <Navigate to="/" replace />;
 }
 
 function Navigation() {
@@ -82,3 +97,4 @@ function App() {
 }
 
 export default App;
+
