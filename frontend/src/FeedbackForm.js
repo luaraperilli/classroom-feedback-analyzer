@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './App.css';
 import { useAuth } from './AuthContext';
+import { translateSubject } from './utils/translations';
 
 const interpretSentiment = (compound) => {
   if (compound >= 0.05) return { text: 'Positivo', emoji: '😊', color: '#28a745' };
@@ -10,12 +11,31 @@ const interpretSentiment = (compound) => {
 
 function FeedbackForm() {
   const [feedbackText, setFeedbackText] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [subjects, setSubjects] = useState([]);
   const [sentimentResult, setSentimentResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const { accessToken, user, logout, refreshAccessToken, API_BASE_URL } = useAuth();
 
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      if (!accessToken) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/subjects`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+        const data = await response.json();
+        setSubjects(data);
+      } catch (e) {
+        console.error("Erro ao buscar matérias:", e);
+      }
+    };
+    fetchSubjects();
+  }, [accessToken, API_BASE_URL]);
+
+  // ... (sendFeedback e handleSubmit sem alterações)
   const sendFeedback = useCallback(async (retry = false) => {
     setIsLoading(true);
     setMessage(null);
@@ -29,9 +49,9 @@ function FeedbackForm() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ text: feedbackText }),
+        body: JSON.stringify({ text: feedbackText, subject_id: subjectId }),
       });
-
+      
       if (response.status === 401 && !retry) {
         const refreshed = await refreshAccessToken();
         if (refreshed) {
@@ -48,19 +68,20 @@ function FeedbackForm() {
 
       const data = await response.json();
       setSentimentResult(data);
-      setMessage('Obrigado pelo seu feedback!');
+      setMessage('Obrigado.');
       setFeedbackText('');
+      setSubjectId('');
     } catch (err) {
       console.error('Erro ao enviar feedback:', err);
       setError(err.message || 'Falha ao analisar o sentimento.');
     } finally {
       setIsLoading(false);
     }
-  }, [feedbackText, accessToken, logout, refreshAccessToken, API_BASE_URL]);
+  }, [feedbackText, subjectId, accessToken, logout, refreshAccessToken, API_BASE_URL]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (feedbackText.trim() && accessToken) {
+    if (feedbackText.trim() && subjectId && accessToken) {
       sendFeedback();
     }
   };
@@ -76,6 +97,18 @@ function FeedbackForm() {
       {error && <p className="error-message">{error}</p>}
 
       <form onSubmit={handleSubmit} className="feedback-form">
+        <select
+          value={subjectId}
+          onChange={(e) => setSubjectId(e.target.value)}
+          required
+          disabled={isLoading || !accessToken}
+        >
+          <option value="" disabled>Selecione uma matéria</option>
+          {subjects.map(subject => (
+            <option key={subject.id} value={subject.id}>{translateSubject(subject.name)}</option>
+          ))}
+        </select>
+        
         <textarea
           value={feedbackText}
           onChange={(e) => setFeedbackText(e.target.value)}
@@ -84,8 +117,8 @@ function FeedbackForm() {
           required
           disabled={isLoading || !accessToken}
         />
-        <br />
-        <button type="submit" disabled={isLoading || !feedbackText.trim() || !accessToken}>
+        
+        <button type="submit" disabled={isLoading || !feedbackText.trim() || !subjectId || !accessToken}>
           {isLoading ? 'Analisando...' : 'Enviar'}
         </button>
       </form>
@@ -100,7 +133,6 @@ function FeedbackForm() {
           <p className="compound-explanation">
             A sua nota de sentimento foi: <strong>{sentimentResult.compound.toFixed(2)}</strong>
             <br />
-            <small>(Varia de -1, muito negativo, a +1, muito positivo)</small>
           </p>
         </div>
       )}
@@ -109,4 +141,3 @@ function FeedbackForm() {
 }
 
 export default FeedbackForm;
-

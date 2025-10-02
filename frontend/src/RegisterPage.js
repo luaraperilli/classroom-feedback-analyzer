@@ -67,6 +67,7 @@ function RegisterPage() {
           <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="aluno">Aluno</option>
             <option value="professor">Professor</option>
+            <option value="coordenador">Coordenador</option>
           </select>
         </div>
         {message && <p className="success-message">{message}</p>}
@@ -78,4 +79,3 @@ function RegisterPage() {
 }
 
 export default RegisterPage;
-

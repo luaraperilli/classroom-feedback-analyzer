@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
 
-export function useDashboardData() {
+export function useDashboardData(subjectId, dateRange) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,7 +17,19 @@ export function useDashboardData() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/feedbacks`, {
+      const url = new URL(`${API_BASE_URL}/feedbacks`);
+      if (subjectId) {
+        url.searchParams.append('subject_id', subjectId);
+      }
+      
+      if (dateRange && dateRange.startDate) {
+        url.searchParams.append('start_date', dateRange.startDate.toISOString());
+      }
+      if (dateRange && dateRange.endDate) {
+        url.searchParams.append('end_date', dateRange.endDate.toISOString());
+      }
+
+      const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -46,12 +58,13 @@ export function useDashboardData() {
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, logout, refreshAccessToken, API_BASE_URL]);
+  }, [accessToken, logout, refreshAccessToken, API_BASE_URL, subjectId, dateRange]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (dateRange) {
+        fetchData();
+    }
+  }, [fetchData, dateRange]);
 
   return { feedbacks, isLoading, error, fetchData };
 }
-

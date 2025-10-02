@@ -1,13 +1,13 @@
 import os
 from datetime import timedelta
-
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import JWTManager
+from werkzeug.security import generate_password_hash
 
-from .auth import auth
-from .models import db
+from .models import db, User, Subject
 from .routes import api
+from .auth import auth
 
 def create_app():
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -18,8 +18,8 @@ def create_app():
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY', 'dd48f27aa60077e0e537eed381e77696259a6160e3956088f28f1f5fc45d7fca')
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1) # Token de acesso expira em 1 hora
-    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30) # Refresh token expira em 30 dias
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 
     jwt = JWTManager(app)
 
@@ -32,10 +32,10 @@ def create_app():
         return jsonify({'message': 'Requisição não autorizada. Um token de acesso válido é necessário.', 'status': 401}), 401
 
     @jwt.invalid_token_loader
-    def invalid_token_response(error): # A mudança chave é adicionar o parâmetro 'error'
+    def invalid_token_response(error):
         return jsonify({
             'message': 'O token fornecido é inválido.',
-            'error_details': str(error), # Esta linha nos dará a causa exata
+            'error_details': str(error),
             'status': 401
         }), 401
         
@@ -47,11 +47,9 @@ def create_app():
     def needs_fresh_token_response(jwt_header, jwt_payload):
         return jsonify({'message': 'É necessário um token atualizado para esta ação.', 'status': 401}), 401
     
-    # Configuração da base de dados SQLite
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(instance_path, 'feedback.db')}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Inicializa a extensão SQLAlchemy com a aplicação
     db.init_app(app)
 
     app.register_blueprint(api)
@@ -59,5 +57,38 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        seed_data()
 
     return app
+
+def seed_data():
+    if User.query.first() is None:
+        hashed_password = generate_password_hash("123", method="pbkdf2:sha256")
+        
+        coordinator = User(username="coordinator", password=hashed_password, role="coordenador")
+        professor = User(username="professor", password=hashed_password, role="professor")
+        student = User(username="student", password=hashed_password, role="aluno")
+
+        db.session.add_all([coordinator, professor, student])
+        db.session.commit()
+
+        data_structures = Subject(name="Data Structures")
+        database_systems = Subject(name="Database Systems")
+        software_engineering = Subject(name="Software Engineering")
+        computer_networks = Subject(name="Computer Networks")
+        information_security = Subject(name="Information Security")
+        
+        db.session.add_all([
+            data_structures, 
+            database_systems, 
+            software_engineering, 
+            computer_networks, 
+            information_security
+        ])
+        db.session.commit()
+
+        professor.subjects.append(data_structures)
+        professor.subjects.append(database_systems)
+        professor.subjects.append(software_engineering)
+        
+        db.session.commit()

@@ -3,20 +3,15 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } f
 import FeedbackForm from './FeedbackForm';
 import Dashboard from './Dashboard';
 import './App.css';
-import LoginPage from './LoginPage'; // Certifique-se de que este componente existe
+import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import { AuthProvider, useAuth } from './AuthContext';
 
-/**
- * Componente de rota protegida para alunos.
- * Redireciona para a página de login se não autenticado.
- * Redireciona para o dashboard se o usuário não for aluno.
- */
 function StudentRoute({ children }) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Carregando autenticação...</div>; // Ou um spinner
+    return <div>Carregando autenticação...</div>;
   }
 
   if (!isAuthenticated) {
@@ -25,17 +20,19 @@ function StudentRoute({ children }) {
   return user?.role === 'aluno' ? children : <Navigate to="/dashboard" replace />;
 }
 
-function ProfessorRoute({ children }) {
+function DashboardAccessRoute({ children }) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Carregando autenticação...</div>; // Ou um spinner
+    return <div>Carregando autenticação...</div>; 
   }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  return user?.role === 'professor' ? children : <Navigate to="/" replace />;
+  return (user?.role === 'professor' || user?.role === 'coordenador') 
+    ? children 
+    : <Navigate to="/" replace />;
 }
 
 function Navigation() {
@@ -50,7 +47,7 @@ function Navigation() {
   return (
     <nav className="main-nav">
       {isAuthenticated && user?.role === 'aluno' && <Link to="/">Enviar Feedback</Link>}
-      {isAuthenticated && user?.role === 'professor' && <Link to="/dashboard">Dashboard</Link>}
+      {isAuthenticated && (user?.role === 'professor' || user?.role === 'coordenador') && <Link to="/dashboard">Dashboard</Link>}
       
       {!isAuthenticated && (
         <>
@@ -84,9 +81,9 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <ProfessorRoute>
+                <DashboardAccessRoute>
                   <Dashboard />
-                </ProfessorRoute>
+                </DashboardAccessRoute>
               }
             />
           </Routes>
@@ -97,4 +94,3 @@ function App() {
 }
 
 export default App;
-
