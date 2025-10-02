@@ -431,3 +431,60 @@ body {
 .auth-form button:hover {
   background-color: var(--primary-hover-color);
 }
+
+/* ==========================================================================
+   6. Coordinator Area
+   ========================================================================== */
+
+.coordinator-page {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    text-align: left;
+}
+
+.management-section {
+    background-color: var(--surface-color);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.management-section h2 {
+    margin-top: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.management-section form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.management-section input,
+.management-section select {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+}
+
+.management-section button {
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.management-section button:hover {
+    background-color: var(--primary-hover-color);
+}

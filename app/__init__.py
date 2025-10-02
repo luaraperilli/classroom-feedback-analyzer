@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash
 from .models import db, User, Subject
 from .routes import api
 from .auth import auth
+from .admin import admin_bp
 
 def create_app():
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -54,7 +55,8 @@ def create_app():
 
     app.register_blueprint(api)
     app.register_blueprint(auth)
-
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    
     with app.app_context():
         db.create_all()
         seed_data()
