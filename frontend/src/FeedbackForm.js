@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import './App.css';
+import { useAuth } from './AuthContext';
 
 function FeedbackForm() {
   const [feedbackText, setFeedbackText] = useState('');
   const [sentimentResult, setSentimentResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const { token, user } = useAuth()
 
   const interpretSentiment = (compound) => {
     if (compound >= 0.05) return { text: 'Positivo', emoji: '😊', color: '#28a745' };
@@ -22,7 +24,10 @@ function FeedbackForm() {
     try {
       const response = await fetch('http://127.0.0.1:5000/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ text: feedbackText }),
       });
 
@@ -44,9 +49,9 @@ function FeedbackForm() {
 
   return (
     <header className="App-header">
-      <h1>Análise de Sentimentos da Aula</h1>
-      <p>Como você se sentiu sobre a aula de hoje? A sua opinião é anônima.</p>
-      
+      <h1>Olá, {user?.username}!</h1>
+      <p>Como você se sentiu sobre a aula de hoje?</p>
+    
       {submitted && sentimentResult && !sentimentResult.error && (
         <div className="success-message">
           <p>Obrigado pelo seu feedback!</p>
