@@ -8,7 +8,7 @@ admin_bp = Blueprint("admin_bp", __name__)
 
 def check_if_coordinator():
     claims = get_jwt()
-    return claims.get("role") == "coordenador"
+    return claims.get("role") == User.COORDENADOR
 
 @admin_bp.route("/subjects", methods=["POST"])
 @jwt_required()
@@ -36,7 +36,7 @@ def get_professors():
     if not check_if_coordinator():
         return jsonify({"message": "Acesso negado."}), 403
     
-    professors = User.query.filter_by(role='professor').all()
+    professors = User.query.filter_by(role=User.PROFESSOR).all()
     return jsonify([{'id': p.id, 'username': p.username} for p in professors])
 
 
@@ -52,7 +52,7 @@ def assign_subject_to_professor(subject_id):
     professor = User.query.get(professor_id)
     subject = Subject.query.get(subject_id)
 
-    if not professor or professor.role != 'professor':
+    if not professor or professor.role != User.PROFESSOR:
         return jsonify({"error": "Professor não encontrado."}), 404
     
     if not subject:

@@ -11,7 +11,7 @@ def register():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
-    role = data.get("role", "aluno")
+    role = data.get("role", User.ALUNO) # Padrão para 'ALUNO' se não fornecido
 
     if not username or not password:
         return jsonify({"error": "Nome de usuário e senha são obrigatórios."}), 400

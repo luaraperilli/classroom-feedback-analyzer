@@ -6,20 +6,24 @@ const AuthContext = createContext(null);
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 export const AuthProvider = ({ children }) => {
-  const [accessToken, setAccessToken] = useState(null);
-  const [refreshToken, setRefreshToken] = useState(null);
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken'));
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const decodeAndSetUser = useCallback((token) => {
+    if (!token) {
+      setUser(null);
+      return null;
+    }
     try {
       const decodedToken = jwtDecode(token);
-    setUser({
+      setUser({
         id: decodedToken.sub,
         username: decodedToken.username,
         role: decodedToken.role,
-    });
-    return decodedToken;
+      });
+      return decodedToken;
     } catch (e) {
       console.error("Erro ao decodificar token:", e);
       setUser(null);
@@ -69,53 +73,53 @@ export const AuthProvider = ({ children }) => {
     }
   }, [decodeAndSetUser, logout]);
 
+
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('accessToken');
-    const storedRefreshToken = localStorage.getItem('refreshToken');
-
-    if (storedAccessToken && storedRefreshToken) {
-      const decodedAccess = decodeAndSetUser(storedAccessToken);
-      if (decodedAccess && decodedAccess.exp * 1000 > Date.now()) {
-        setAccessToken(storedAccessToken);
-        setRefreshToken(storedRefreshToken);
+    if (storedAccessToken) {
+      const decoded = decodeAndSetUser(storedAccessToken);
+      if (decoded && decoded.exp * 1000 < Date.now()) {
+        refreshAccessToken().finally(() => setIsLoading(false));
       } else {
-        refreshAccessToken();
+        setAccessToken(storedAccessToken);
+        setIsLoading(false);
       }
     } else {
-      logout();
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [decodeAndSetUser, logout, refreshAccessToken]);
+  }, [decodeAndSetUser, refreshAccessToken]);
 
-  const login = useCallback((newAccessToken, newRefreshToken) => {
+  const login = useCallback((newAccessToken, newRefreshToken, userData) => {
     localStorage.setItem('accessToken', newAccessToken);
     localStorage.setItem('refreshToken', newRefreshToken);
     setAccessToken(newAccessToken);
     setRefreshToken(newRefreshToken);
-    decodeAndSetUser(newAccessToken);
+    if (userData) {
+      setUser(userData);
+    } else {
+      decodeAndSetUser(newAccessToken);
+    }
   }, [decodeAndSetUser]);
 
   const isAuthenticated = !!accessToken;
 
-  if (isLoading) {
-    return <div>Verificando autenticação...</div>;
-  }
+  const value = {
+    isAuthenticated,
+    accessToken,
+    refreshToken,
+    user,
+    login,
+    logout,
+    refreshAccessToken,
+    isLoading,
+    API_BASE_URL
+  };
 
   return (
-    <AuthContext.Provider value={{
-      isAuthenticated,
-      accessToken,
-      refreshToken,
-      user,
-      login,
-      logout,
-      refreshAccessToken,
-      API_BASE_URL
-    }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-

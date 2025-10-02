@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboardData } from './hooks/useDashboardData';
-import SentimentSummary from './components/SentimentSummary';
-import SentimentTrendChart from './components/SentimentTrendChart';
-import { useAuth } from './AuthContext';
-import { translateSubject } from './utils/translations';
+import { useDashboardData } from './useDashboardData';
+import SentimentSummary from '../../components/SentimentSummary';
+import SentimentTrendChart from '../../components/SentimentTrendChart';
+import { useAuth } from '../auth/AuthContext';
+import { translateSubject } from '../../utils/translations';
+import { getSubjects } from '../../services/api';
 
 const getSentimentClass = (compound) => {
     if (compound >= 0.05) return 'positive-feedback';
@@ -20,18 +21,15 @@ const getCompoundColor = (compound) => {
 function Dashboard() {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [subjects, setSubjects] = useState([]);
-  const [period, setPeriod] = useState('all'); // Novo estado para o período
+  const [period, setPeriod] = useState('all');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const { feedbacks, isLoading, error } = useDashboardData(selectedSubject, dateRange);
-  const { accessToken, API_BASE_URL, user } = useAuth();
+  const { accessToken, user } = useAuth();
 
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/subjects`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        const data = await res.json();
+        const data = await getSubjects(accessToken);
         setSubjects(data);
       } catch (e) {
         console.error("Erro ao buscar matérias", e);
@@ -40,7 +38,7 @@ function Dashboard() {
     if (user.role === 'professor' || user.role === 'coordenador') {
         fetchSubjects();
     }
-  }, [accessToken, API_BASE_URL, user.role]);
+  }, [accessToken, user.role]);
 
   useEffect(() => {
     const now = new Date();
@@ -64,15 +62,15 @@ function Dashboard() {
         startDate = null;
         break;
     }
-    
+
     if (startDate) {
         startDate.setHours(0, 0, 0, 0);
     }
 
-    setDateRange({ startDate, endDate });
+    setDateRange({ startDate, endDate: period === 'all' ? null : endDate });
   }, [period]);
 
-  if (isLoading) {
+  if (isLoading && !feedbacks.length) {
     return <p className="loading-message">Carregando dashboard...</p>;
   }
 
@@ -83,7 +81,7 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard do Professor</h1>
+        <h1>Dashboard de Feedback</h1>
         <div className="filters-wrapper">
           <div className="filter-container">
             <label htmlFor="period-filter">Período:</label>
@@ -113,7 +111,7 @@ function Dashboard() {
           </div>
         </div>
       </div>
-      
+
       <div className="grid-container">
         <SentimentSummary feedbacks={feedbacks} />
         <div className="chart">
@@ -123,7 +121,10 @@ function Dashboard() {
 
       <div className="feedback-list">
         <h2>Feedbacks Recentes</h2>
-        {feedbacks && feedbacks.length > 0 ? (
+        {isLoading && <p>Atualizando...</p>}
+        {!isLoading && feedbacks.length === 0 ? (
+          <p>Nenhum feedback recebido para os filtros selecionados.</p>
+        ) : (
           feedbacks.map((fb) => (
             <div key={fb.id} className={`feedback-item ${getSentimentClass(fb.compound)}`}>
               <p>"{fb.text}"</p>
@@ -136,8 +137,6 @@ function Dashboard() {
               </small>
             </div>
           ))
-        ) : (
-          <p>Nenhum feedback recebido para o período selecionado.</p>
         )}
       </div>
     </div>

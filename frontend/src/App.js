@@ -1,53 +1,14 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import FeedbackForm from './FeedbackForm';
-import Dashboard from './Dashboard';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
-import LoginPage from './LoginPage';
-import RegisterPage from './RegisterPage';
-import CoordinatorPage from './CoordinatorPage';
-import { AuthProvider, useAuth } from './AuthContext';
 
-function StudentRoute({ children }) {
-  const { isAuthenticated, user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div>Carregando autenticação...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return user?.role === 'aluno' ? children : <Navigate to="/dashboard" replace />;
-}
-
-function DashboardAccessRoute({ children }) {
-  const { isAuthenticated, user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div>Carregando autenticação...</div>; 
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return (user?.role === 'professor' || user?.role === 'coordenador') 
-    ? children 
-    : <Navigate to="/" replace />;
-}
-
-function CoordinatorRoute({ children }) {
-  const { isAuthenticated, user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div>Carregando autenticação...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return user?.role === 'coordenador' ? children : <Navigate to="/" replace />;
-}
+import FeedbackForm from './features/feedback/FeedbackForm';
+import Dashboard from './features/dashboard/Dashboard';
+import LoginPage from './features/auth/LoginPage';
+import RegisterPage from './features/auth/RegisterPage';
+import CoordinatorPage from './features/coordinator/CoordinatorPage';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
+import ProtectedRoute from './ProtectedRoute'; // Importa da raiz de src
 
 function Navigation() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -88,25 +49,25 @@ function App() {
             <Route
               path="/"
               element={
-                <StudentRoute>
+                <ProtectedRoute allowedRoles={['aluno']}>
                   <FeedbackForm />
-                </StudentRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/dashboard"
               element={
-                <DashboardAccessRoute>
+                <ProtectedRoute allowedRoles={['professor', 'coordenador']}>
                   <Dashboard />
-                </DashboardAccessRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/coordinator"
               element={
-                <CoordinatorRoute>
+                <ProtectedRoute allowedRoles={['coordenador']}>
                   <CoordinatorPage />
-                </CoordinatorRoute>
+                </ProtectedRoute>
               }
             />
           </Routes>
