@@ -1,27 +1,33 @@
-import os
-from datetime import timedelta
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from werkzeug.security import generate_password_hash
 
-from .models import db, User, Subject
+# 1. Importar o objeto de configuração
+from config import config_by_name 
+from .seeder import seed_all
+from .models import db
 from .routes import api
 from .auth import auth
 from .admin import admin_bp
 
-def create_app():
-    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-    os.makedirs(instance_path, exist_ok=True)
+def create_app(config_name='development'):
+    app = Flask(__name__)
+    
+    app.config.from_object(config_by_name[config_name])
 
-    app = Flask(__name__, instance_path=instance_path)
+    register_extensions(app)
+    register_blueprints(app)
+    register_error_handlers(app)
+    
+    with app.app_context():
+        db.create_all()
+        seed_all()
 
+    return app
+
+def register_extensions(app):
+    db.init_app(app)
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
-    app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY', 'dd48f27aa60077e0e537eed381e77696259a6160e3956088f28f1f5fc45d7fca')
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
-
     jwt = JWTManager(app)
 
     @jwt.expired_token_loader
@@ -47,50 +53,18 @@ def create_app():
     @jwt.needs_fresh_token_loader
     def needs_fresh_token_response(jwt_header, jwt_payload):
         return jsonify({'message': 'É necessário um token atualizado para esta ação.', 'status': 401}), 401
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(instance_path, 'feedback.db')}"
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    db.init_app(app)
-
+def register_blueprints(app):
     app.register_blueprint(api)
     app.register_blueprint(auth)
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    
-    with app.app_context():
-        db.create_all()
-        seed_data()
 
-    return app
+def register_error_handlers(app):
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Recurso não encontrado."}), 404
 
-def seed_data():
-    if User.query.first() is None:
-        hashed_password = generate_password_hash("123", method="pbkdf2:sha256")
-        
-        coordinator = User(username="coordinator", password=hashed_password, role="coordenador")
-        professor = User(username="professor", password=hashed_password, role="professor")
-        student = User(username="student", password=hashed_password, role="aluno")
-
-        db.session.add_all([coordinator, professor, student])
-        db.session.commit()
-
-        data_structures = Subject(name="Data Structures")
-        database_systems = Subject(name="Database Systems")
-        software_engineering = Subject(name="Software Engineering")
-        computer_networks = Subject(name="Computer Networks")
-        information_security = Subject(name="Information Security")
-        
-        db.session.add_all([
-            data_structures, 
-            database_systems, 
-            software_engineering, 
-            computer_networks, 
-            information_security
-        ])
-        db.session.commit()
-
-        professor.subjects.append(data_structures)
-        professor.subjects.append(database_systems)
-        professor.subjects.append(software_engineering)
-        
-        db.session.commit()
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        app.logger.error(f"Erro interno do servidor: {error}")
+        return jsonify({"error": "Ocorreu um erro interno no servidor."}), 500

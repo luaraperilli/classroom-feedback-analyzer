@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './AuthContext';
-import './App.css';
-import { translateSubject } from './utils/translations';
+import { useAuth } from '../auth/AuthContext';
+import '../../App.css';
+import { translateSubject } from '../../utils/translations';
+import { getSubjects, getProfessors, createSubject, assignSubjectToProfessor } from '../../services/api';
 
 function CoordinatorPage() {
     const [subjectName, setSubjectName] = useState('');
@@ -11,40 +12,34 @@ function CoordinatorPage() {
     const [selectedSubject, setSelectedSubject] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const { accessToken, API_BASE_URL } = useAuth();
+    const { accessToken } = useAuth();
 
-    const fetchSubjectsAndProfessors = useCallback(async () => {
+    const fetchInitialData = useCallback(async () => {
         try {
-            const [subjectsRes, professorsRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/subjects`, { headers: { 'Authorization': `Bearer ${accessToken}` } }),
-                fetch(`${API_BASE_URL}/admin/professors`, { headers: { 'Authorization': `Bearer ${accessToken}` } })
+            const [subjectsData, professorsData] = await Promise.all([
+                getSubjects(accessToken),
+                getProfessors(accessToken)
             ]);
-            const subjectsData = await subjectsRes.json();
-            const professorsData = await professorsRes.json();
             setSubjects(subjectsData);
             setProfessors(professorsData);
         } catch (e) {
-            setError('Falha ao carregar dados.');
+            setError('Falha ao carregar dados iniciais.');
         }
-    }, [accessToken, API_BASE_URL]);
+    }, [accessToken]);
 
     useEffect(() => {
-        fetchSubjectsAndProfessors();
-    }, [fetchSubjectsAndProfessors]);
+        fetchInitialData();
+    }, [fetchInitialData]);
 
     const handleCreateSubject = async (e) => {
         e.preventDefault();
+        setError('');
+        setMessage('');
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/subjects`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-                body: JSON.stringify({ name: subjectName }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Erro desconhecido');
+            const data = await createSubject(subjectName, accessToken);
             setMessage(`Matéria "${data.name}" criada com sucesso!`);
             setSubjectName('');
-            fetchSubjectsAndProfessors();
+            fetchInitialData();
         } catch (err) {
             setError(err.message);
         }
@@ -52,14 +47,10 @@ function CoordinatorPage() {
 
     const handleAssignSubject = async (e) => {
         e.preventDefault();
+        setError('');
+        setMessage('');
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/subjects/${selectedSubject}/assign`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-                body: JSON.stringify({ professor_id: selectedProfessor }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Erro desconhecido');
+            const data = await assignSubjectToProfessor(selectedSubject, selectedProfessor, accessToken);
             setMessage(data.message);
         } catch (err) {
             setError(err.message);
@@ -71,7 +62,7 @@ function CoordinatorPage() {
             <h1>Área do Coordenador</h1>
             {message && <p className="success-message">{message}</p>}
             {error && <p className="error-message">{error}</p>}
-            
+
             <div className="management-section">
                 <h2>Cadastrar Nova Matéria</h2>
                 <form onSubmit={handleCreateSubject}>
@@ -87,7 +78,7 @@ function CoordinatorPage() {
             </div>
 
             <div className="management-section">
-                <h2>Vincular Professor</h2>
+                <h2>Vincular Professor a uma Matéria</h2>
                 <form onSubmit={handleAssignSubject}>
                     <select value={selectedProfessor} onChange={(e) => setSelectedProfessor(e.target.value)} required>
                         <option value="" disabled>Selecione um professor</option>

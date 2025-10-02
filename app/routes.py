@@ -2,31 +2,28 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime
 from .models import db, Feedback, User, Subject
-from .services import analyze_sentiment_text
+from .services import analyze_sentiment_text, create_feedback
 
 api = Blueprint("api", __name__)
+
+def validate_feedback_payload(data):
+    if not data or "text" not in data or "subject_id" not in data:
+        return False, "Pedido inválido. Os campos 'text' e 'subject_id' são obrigatórios."
+    return True, ""
 
 @api.route("/analyze", methods=["POST"])
 @jwt_required()
 def analyze_and_save_feedback():
     data = request.get_json()
-    if not data or "text" not in data or "subject_id" not in data:
-        return jsonify({"error": "Pedido inválido. Os campos 'text' e 'subject_id' são obrigatórios."}), 400
+    is_valid, error_message = validate_feedback_payload(data)
+    if not is_valid:
+        return jsonify({"error": error_message}), 400
 
     text_to_analyze = data["text"]
     subject_id = data["subject_id"]
+    
     sentiment_scores = analyze_sentiment_text(text_to_analyze)
-
-    new_feedback = Feedback(
-        text=text_to_analyze,
-        subject_id=subject_id,
-        compound=sentiment_scores["compound"],
-        neg=sentiment_scores["neg"],
-        neu=sentiment_scores["neu"],
-        pos=sentiment_scores["pos"],
-    )
-    db.session.add(new_feedback)
-    db.session.commit()
+    create_feedback(text_to_analyze, subject_id, sentiment_scores)
 
     return jsonify(sentiment_scores), 201
 
@@ -38,7 +35,7 @@ def get_all_feedbacks():
     user = User.query.get(user_id)
     role = claims.get("role")
 
-    if role not in ["professor", "coordenador"]:
+    if role not in [User.PROFESSOR, User.COORDENADOR]:
         return jsonify({"message": "Acesso negado."}), 403
 
     query = Feedback.query
@@ -46,7 +43,7 @@ def get_all_feedbacks():
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
 
-    if role == "professor":
+    if role == User.PROFESSOR:
         professor_subject_ids = [s.id for s in user.subjects]
         query = query.filter(Feedback.subject_id.in_(professor_subject_ids))
 
@@ -71,11 +68,11 @@ def get_subjects():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
-    if user.role == "professor":
+    if user.role == User.PROFESSOR:
         subjects = user.subjects
-    elif user.role in ["coordenador", "aluno"]:
+    elif user.role in [User.COORDENADOR, User.ALUNO]:
         subjects = Subject.query.all()
     else:
         return jsonify({"error": "Role inválida"}), 403
-
+    
     return jsonify([subject.to_dict() for subject in subjects]), 200

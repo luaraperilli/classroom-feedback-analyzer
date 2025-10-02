@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import './App.css';
-import { useAuth } from './AuthContext';
-import { translateSubject } from './utils/translations';
+import '../../App.css';
+import { useAuth } from '../auth/AuthContext';
+import { translateSubject } from '../../utils/translations';
+import { getSubjects, analyzeFeedback } from '../../services/api';
 
 const interpretSentiment = (compound) => {
   if (compound >= 0.05) return { text: 'Positivo', emoji: '😊', color: '#28a745' };
@@ -17,25 +18,21 @@ function FeedbackForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const { accessToken, user, logout, refreshAccessToken, API_BASE_URL } = useAuth();
+  const { accessToken, user, logout, refreshAccessToken } = useAuth();
 
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!accessToken) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/subjects`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` },
-        });
-        const data = await response.json();
+        const data = await getSubjects(accessToken);
         setSubjects(data);
       } catch (e) {
         console.error("Erro ao buscar matérias:", e);
       }
     };
     fetchSubjects();
-  }, [accessToken, API_BASE_URL]);
+  }, [accessToken]);
 
-  // ... (sendFeedback e handleSubmit sem alterações)
   const sendFeedback = useCallback(async (retry = false) => {
     setIsLoading(true);
     setMessage(null);
@@ -43,41 +40,28 @@ function FeedbackForm() {
     setSentimentResult(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ text: feedbackText, subject_id: subjectId }),
-      });
-      
-      if (response.status === 401 && !retry) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          return sendFeedback(true);
-        } else {
-          logout();
-          setError('Sessão expirada. Por favor, faça login novamente.');
-          return;
-        }
-      } else if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Erro ao enviar feedback: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await analyzeFeedback(feedbackText, subjectId, accessToken);
       setSentimentResult(data);
       setMessage('Obrigado.');
       setFeedbackText('');
       setSubjectId('');
     } catch (err) {
-      console.error('Erro ao enviar feedback:', err);
-      setError(err.message || 'Falha ao analisar o sentimento.');
+        if (err.message.includes('401') && !retry) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+              return sendFeedback(true);
+            } else {
+              logout();
+              setError('Sessão expirada. Por favor, faça login novamente.');
+            }
+        } else {
+            console.error('Erro ao enviar feedback:', err);
+            setError(err.message || 'Falha ao analisar o sentimento.');
+        }
     } finally {
       setIsLoading(false);
     }
-  }, [feedbackText, subjectId, accessToken, logout, refreshAccessToken, API_BASE_URL]);
+  }, [feedbackText, subjectId, accessToken, logout, refreshAccessToken]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -92,7 +76,7 @@ function FeedbackForm() {
     <header className="App-header">
       <h1>Olá, {user?.username}!</h1>
       <p>Como você se sentiu sobre a aula de hoje?</p>
-    
+
       {message && <p className="success-message">{message}</p>}
       {error && <p className="error-message">{error}</p>}
 
@@ -108,7 +92,7 @@ function FeedbackForm() {
             <option key={subject.id} value={subject.id}>{translateSubject(subject.name)}</option>
           ))}
         </select>
-        
+
         <textarea
           value={feedbackText}
           onChange={(e) => setFeedbackText(e.target.value)}
@@ -117,7 +101,7 @@ function FeedbackForm() {
           required
           disabled={isLoading || !accessToken}
         />
-        
+
         <button type="submit" disabled={isLoading || !feedbackText.trim() || !subjectId || !accessToken}>
           {isLoading ? 'Analisando...' : 'Enviar'}
         </button>

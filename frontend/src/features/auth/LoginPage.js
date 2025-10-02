@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+import { login as apiLogin } from '../../services/api';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -16,30 +15,17 @@ function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const data = await apiLogin(username, password);
+      login(data.access_token, data.refresh_token, data.user);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        login(data.access_token, data.refresh_token);
-        
-        if (data.user.role === 'professor' || data.user.role === 'coordenador') {
-          navigate('/dashboard');
-        } else {
-          navigate('/');
-        }
+      if (data.user.role === 'professor' || data.user.role === 'coordenador') {
+        navigate('/dashboard');
       } else {
-        setError(data.error || 'Erro ao fazer login.');
+        navigate('/');
       }
     } catch (err) {
-      console.error('Erro de rede ou servidor:', err);
-      setError('Não foi possível conectar ao servidor. Tente novamente mais tarde.');
+      console.error('Erro de login:', err);
+      setError(err.message || 'Credenciais inválidas ou erro no servidor.');
     }
   };
 

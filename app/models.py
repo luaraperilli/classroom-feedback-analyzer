@@ -9,10 +9,14 @@ user_subjects = db.Table('user_subjects',
 )
 
 class User(db.Model):
+    ALUNO = 'aluno'
+    PROFESSOR = 'professor'
+    COORDENADOR = 'coordenador'
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), nullable=False, default='aluno') # 'aluno', 'professor', 'coordenador'
+    role = db.Column(db.String(50), nullable=False, default='ALUNO') # 'ALUNO', 'PROFESSOR', 'COORDENADOR'
     
     subjects = db.relationship('Subject', secondary=user_subjects, lazy='subquery',
         backref=db.backref('professors', lazy=True))
