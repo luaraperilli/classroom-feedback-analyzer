@@ -1,14 +1,4 @@
 from pysentimiento import create_analyzer
-from wordcloud import WordCloud
-import nltk
-from nltk.corpus import stopwords
-from .models import Feedback
-
-# A verificação de erro foi corrigida aqui
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError: # Esta é a forma moderna e correta
-    nltk.download('stopwords')
 
 sentiment_analyzer = create_analyzer(task="sentiment", lang="pt")
 
@@ -18,6 +8,8 @@ def analyze_sentiment_text(text: str) -> dict:
 
     result = sentiment_analyzer.predict(text)
     probabilities = result.probas
+    
+    # Calculates a compound score, which is the difference between the probability of being positive and negative
     compound_score = probabilities.get('POS', 0.0) - probabilities.get('NEG', 0.0)
 
     return {
@@ -26,21 +18,3 @@ def analyze_sentiment_text(text: str) -> dict:
         'neu': round(probabilities.get('NEU', 0.0), 4),
         'pos': round(probabilities.get('POS', 0.0), 4)
     }
-
-def generate_keywords() -> list:
-    all_feedbacks_text = " ".join([fb.text for fb in Feedback.query.all()])
-    if not all_feedbacks_text.strip():
-        return []
-
-    portuguese_stopwords = set(stopwords.words('portuguese'))
-    
-    wordcloud = WordCloud(
-        stopwords=portuguese_stopwords,
-        background_color="white",
-        width=800,
-        height=400,
-        max_words=50
-    ).generate(all_feedbacks_text)
-    
-    return [{"text": word, "value": freq} for word, freq in wordcloud.words_.items()]
-

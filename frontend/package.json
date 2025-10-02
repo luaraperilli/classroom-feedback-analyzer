@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "jwt-decode": "^4.0.0",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.1",
@@ -21,7 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start-backend:win": "cd .. && .\\venv\\Scripts\\activate && python run.py",
+    "start-backend:win": "cd .. && venv\\Scripts\\flask --app run run --debug",
     "start-backend:unix": "cd .. && source venv/bin/activate && python run.py",
     "dev": "concurrently \"npm start\" \"npm run start-backend:win\""
   },
