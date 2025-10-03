@@ -42,7 +42,8 @@ export const login = (username, password) => request('/login', { body: { usernam
 export const register = (username, password, role) => request('/register', { body: { username, password, role } });
 
 // Feedbacks
-export const analyzeFeedback = (text, subject_id, token) => request('/analyze', { body: { text, subject_id }, token });
+export const analyzeFeedback = (feedbackData, token) => request('/analyze', { body: feedbackData, token });
+
 export const getFeedbacks = async (subjectId, dateRange, token) => {
     const url = new URL(`${API_BASE_URL}/feedbacks`);
     if (subjectId) url.searchParams.append('subject_id', subjectId);
@@ -58,6 +59,33 @@ export const getFeedbacks = async (subjectId, dateRange, token) => {
     return data;
 };
 
+// Análise de Risco
+export const getStudentsAtRisk = async (subjectId, minRisk, token) => {
+    const url = new URL(`${API_BASE_URL}/students-at-risk`);
+    if (subjectId) url.searchParams.append('subject_id', subjectId);
+    if (minRisk) url.searchParams.append('min_risk', minRisk);
+
+    const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar alunos em risco');
+    return data;
+};
+
+export const getStudentProgress = async (studentId, subjectId, token) => {
+    const url = new URL(`${API_BASE_URL}/student-progress/${studentId}`);
+    if (subjectId) url.searchParams.append('subject_id', subjectId);
+
+    const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar progresso do aluno');
+    return data;
+};
 
 // Subjects
 export const getSubjects = (token) => request('/subjects', { token });

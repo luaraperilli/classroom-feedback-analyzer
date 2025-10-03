@@ -64,7 +64,7 @@ function CoordinatorPage() {
             {error && <p className="error-message">{error}</p>}
 
             <div className="management-section">
-                <h2>Cadastrar Nova Matéria</h2>
+                <h2>Cadastrar Matéria</h2>
                 <form onSubmit={handleCreateSubject}>
                     <input
                         type="text"
@@ -78,7 +78,7 @@ function CoordinatorPage() {
             </div>
 
             <div className="management-section">
-                <h2>Vincular Professor a uma Matéria</h2>
+                <h2>Vincular Professor à Matéria</h2>
                 <form onSubmit={handleAssignSubject}>
                     <select value={selectedProfessor} onChange={(e) => setSelectedProfessor(e.target.value)} required>
                         <option value="" disabled>Selecione um professor</option>

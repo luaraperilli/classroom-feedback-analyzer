@@ -210,7 +210,6 @@ body {
   margin-bottom: 2rem;
 }
 
-/* --- Cartões de Resumo --- */
 .summary-container {
   grid-column: 1 / -1;
   display: flex;
@@ -319,15 +318,101 @@ body {
 .feedback-item.neutral-feedback  { border-left-color: var(--neutral-color); }
 .feedback-item.negative-feedback { border-left-color: var(--negative-color); }
 
+.dashboard-tabs {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 1rem;
+}
 
-/* --- Mensagens de Loading e Erro --- */
+.tab-button {
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary-color);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  top: 2px;
+}
+
+.tab-button:hover {
+  color: var(--primary-color);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.feedback-meta {
+  font-size: 0.9rem;
+  color: var(--text-secondary-color);
+}
+
+.feedback-ratings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.rating-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.rating-icon {
+  font-size: 1.2rem;
+}
+
+.feedback-comment {
+  font-style: italic;
+  color: #495057;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 3px solid var(--primary-color);
+}
+
+.feedback-scores {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary-color);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+
 .loading-message, .error-message {
   font-size: 1.2rem;
   padding: 2rem;
   color: var(--text-secondary-color);
 }
 
-/* --- Header e Filtro --- */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -433,7 +518,419 @@ body {
 }
 
 /* ==========================================================================
-   6. Coordinator Area
+   6. Structured Feedback Form
+   ========================================================================== */
+
+.structured-feedback-form {
+  width: 90%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-section {
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary-color);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.section-subtitle {
+  color: var(--text-secondary-color);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.subject-select {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  background-color: var(--surface-color);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.subject-select:focus {
+  border-color: var(--primary-color);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+.questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.rating-question {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.question-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary-color);
+  margin-bottom: 1rem;
+}
+
+.question-icon {
+  font-size: 1.5rem;
+}
+
+.rating-options {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.rating-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background-color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  color: var(--text-secondary-color);
+}
+
+.rating-button:hover {
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.rating-button.selected {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  transform: scale(1.15);
+}
+
+.rating-label {
+  text-align: center;
+  color: var(--text-secondary-color);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.comment-textarea {
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: var(--surface-color);
+}
+
+.comment-textarea:focus {
+  border-color: var(--primary-color);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+.average-score {
+  text-align: center;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.average-score strong {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+}
+
+.submit-feedback-button {
+  width: 100%;
+  padding: 15px 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  transition: all 0.2s ease-in-out;
+  margin-top: 1rem;
+}
+
+.submit-feedback-button:hover:not(:disabled) {
+  background-color: var(--primary-hover-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.submit-feedback-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.success-message-card {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #c3e6cb;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.success-icon {
+  font-size: 2rem;
+}
+
+.feedback-success-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #28a745;
+  color: white;
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  animation: scaleIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+/* ==========================================================================
+   7. Risk Analysis
+   ========================================================================== */
+
+.risk-analysis-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.risk-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.risk-header h2 {
+  margin-bottom: 0.5rem;
+}
+
+.risk-header p {
+  color: var(--text-secondary-color);
+}
+
+.risk-filters {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: var(--text-secondary-color);
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-color);
+  cursor: pointer;
+}
+
+.risk-summary {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.risk-stat {
+  background-color: var(--surface-color);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  min-width: 150px;
+  border-top: 5px solid;
+}
+
+.risk-stat.high {
+  border-color: #dc3545;
+}
+
+.risk-stat.medium {
+  border-color: #ffc107;
+}
+
+.risk-stat.low {
+  border-color: #28a745;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-primary-color);
+}
+
+.stat-label {
+  display: block;
+  font-size: 1rem;
+  color: var(--text-secondary-color);
+  margin-top: 0.5rem;
+}
+
+.no-risk-message {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--surface-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.no-risk-message .success-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.students-risk-list {
+  margin-top: 2rem;
+}
+
+.risk-level-section {
+  margin-bottom: 3rem;
+}
+
+.risk-level-title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid currentColor;
+}
+
+.students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.student-risk-card {
+  background-color: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border-left: 5px solid;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.student-risk-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.student-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: var(--text-primary-color);
+}
+
+.subject-name {
+  color: var(--text-secondary-color);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.risk-metrics {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary-color);
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text-primary-color);
+}
+
+.metric-value.risk-score {
+  font-size: 1.3rem;
+}
+
+/* ==========================================================================
+   8. Coordinator Area
    ========================================================================== */
 
 .coordinator-page {

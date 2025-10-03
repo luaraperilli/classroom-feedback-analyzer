@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboardData } from './useDashboardData';
 import SentimentSummary from '../../components/SentimentSummary';
 import SentimentTrendChart from '../../components/SentimentTrendChart';
+import RiskAnalysis from './RiskAnalysis';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
@@ -23,6 +24,7 @@ function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   const [period, setPeriod] = useState('all');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
+  const [activeTab, setActiveTab] = useState('feedbacks'); // 'feedbacks' ou 'risk'
   const { feedbacks, isLoading, error } = useDashboardData(selectedSubject, dateRange);
   const { accessToken, user } = useAuth();
 
@@ -70,18 +72,18 @@ function Dashboard() {
     setDateRange({ startDate, endDate: period === 'all' ? null : endDate });
   }, [period]);
 
-  if (isLoading && !feedbacks.length) {
+  if (isLoading && !feedbacks.length && activeTab === 'feedbacks') {
     return <p className="loading-message">Carregando dashboard...</p>;
   }
 
-  if (error) {
+  if (error && activeTab === 'feedbacks') {
     return <p className="error-message">Erro ao carregar dados: {error}</p>;
   }
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard de Feedback</h1>
+        <h1>Dashboard</h1>
         <div className="filters-wrapper">
           <div className="filter-container">
             <label htmlFor="period-filter">Período:</label>
@@ -112,33 +114,92 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="grid-container">
-        <SentimentSummary feedbacks={feedbacks} />
-        <div className="chart">
-          <SentimentTrendChart feedbacks={feedbacks} />
-        </div>
+      <div className="dashboard-tabs">
+        <button 
+          className={`tab-button ${activeTab === 'feedbacks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('feedbacks')}
+        >
+          Feedbacks
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'risk' ? 'active' : ''}`}
+          onClick={() => setActiveTab('risk')}
+        >
+          Análise de Risco
+        </button>
       </div>
 
-      <div className="feedback-list">
-        <h2>Feedbacks Recentes</h2>
-        {isLoading && <p>Atualizando...</p>}
-        {!isLoading && feedbacks.length === 0 ? (
-          <p>Nenhum feedback recebido para os filtros selecionados.</p>
-        ) : (
-          feedbacks.map((fb) => (
-            <div key={fb.id} className={`feedback-item ${getSentimentClass(fb.compound)}`}>
-              <p>"{fb.text}"</p>
-              <small>
-                <strong>Matéria: {translateSubject(fb.subject)}</strong> | Nota de Sentimento: 
-                <strong style={{ color: getCompoundColor(fb.compound) }}>
-                  {' '}{fb.compound.toFixed(4)}
-                </strong> 
-                {' '}| Recebido em: {new Date(fb.created_at).toLocaleString()}
-              </small>
+      {activeTab === 'feedbacks' && (
+        <>
+          <div className="grid-container">
+            <SentimentSummary feedbacks={feedbacks} />
+            <div className="chart">
+              <SentimentTrendChart feedbacks={feedbacks} />
             </div>
-          ))
-        )}
-      </div>
+          </div>
+
+          <div className="feedback-list">
+            <h2>Feedbacks Recentes</h2>
+            {isLoading && <p>Atualizando...</p>}
+            {!isLoading && feedbacks.length === 0 ? (
+              <p>Nenhum feedback recebido para os filtros selecionados.</p>
+            ) : (
+              feedbacks.map((fb) => (
+                <div key={fb.id} className={`feedback-item ${getSentimentClass(fb.compound || 0)}`}>
+                  <div className="feedback-header">
+                    <strong>{fb.student_username}</strong>
+                    <span className="feedback-meta">
+                      <strong>{translateSubject(fb.subject)}</strong> | 
+                      {' '}{new Date(fb.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  <div className="feedback-ratings">
+                    <div className="rating-item">
+                      <span className="rating-icon">📚</span>
+                      <span>Material: {fb.material_quality}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">👨‍🏫</span>
+                      <span>Didática: {fb.teaching_method}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">🧠</span>
+                      <span>Compreensão: {fb.content_understanding}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">⏱️</span>
+                      <span>Ritmo: {fb.class_pace}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">💡</span>
+                      <span>Exemplos: {fb.practical_examples}/5</span>
+                    </div>
+                  </div>
+
+                  {fb.additional_comment && (
+                    <p className="feedback-comment">💬 "{fb.additional_comment}"</p>
+                  )}
+
+                  <div className="feedback-scores">
+                    <span>Score Geral: <strong>{(fb.overall_score * 4 + 1).toFixed(1)}/5</strong></span>
+                    {fb.compound !== null && (
+                      <span>
+                        Sentimento: 
+                        <strong style={{ color: getCompoundColor(fb.compound) }}>
+                          {' '}{fb.compound.toFixed(2)}
+                        </strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'risk' && <RiskAnalysis />}
     </div>
   );
 }

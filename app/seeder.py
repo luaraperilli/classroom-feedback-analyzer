@@ -1,7 +1,8 @@
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 from .models import db, User, Subject, Feedback
-from .services import analyze_sentiment_text
+from .services import create_feedback
+import random
 
 def seed_all():
     if User.query.first() is None:
@@ -16,9 +17,15 @@ def seed_users():
 
     coordinator = User(username="coordinator", password=hashed_password, role=User.COORDENADOR)
     professor = User(username="professor", password=hashed_password, role=User.PROFESSOR)
-    student = User(username="student", password=hashed_password, role=User.ALUNO)
+    
+    students = [
+        User(username="student1", password=hashed_password, role=User.ALUNO),
+        User(username="student2", password=hashed_password, role=User.ALUNO),
+        User(username="student3", password=hashed_password, role=User.ALUNO),
+        User(username="student4", password=hashed_password, role=User.ALUNO),
+    ]
 
-    db.session.add_all([coordinator, professor, student])
+    db.session.add_all([coordinator, professor] + students)
     db.session.commit()
 
 def seed_subjects():
@@ -47,34 +54,114 @@ def seed_subjects():
 def seed_feedbacks():
     now = datetime.utcnow()
     
-    feedbacks_data = [
-        {"subject_name": "Data Structures", "text": "A aula sobre listas ligadas foi muito clara e os exemplos ajudaram bastante a entender a matéria.", "created_at": now - timedelta(days=1)},
-        {"subject_name": "Data Structures", "text": "Achei o ritmo da aula um pouco rápido demais. Tive dificuldade para acompanhar o final.", "created_at": now - timedelta(days=2)},
-        {"subject_name": "Database Systems", "text": "Gostei muito da explicação sobre normalização de banco de dados, finalmente entendi a diferença entre as formas normais.", "created_at": now - timedelta(days=3)},
-        {"subject_name": "Software Engineering", "text": "A aula foi ok, mas poderia ter mais exemplos práticos de como aplicar os conceitos no dia a dia.", "created_at": now - timedelta(days=4)},
-        {"subject_name": "Database Systems", "text": "O professor explicou muito bem o conteúdo, mas o material de apoio poderia ser melhor.", "created_at": now - timedelta(days=8)},
-        {"subject_name": "Data Structures", "text": "O exercício proposto foi muito desafiador, mas consegui aprender muito ao resolvê-lo.", "created_at": now - timedelta(days=10)},
-        {"subject_name": "Software Engineering", "text": "Não gostei da aula de hoje, achei o tema muito abstrato e a explicação não ajudou a clarear.", "created_at": now - timedelta(days=12)},
-        {"subject_name": "Computer Networks", "text": "Excelente introdução ao modelo OSI. Muito bem explicado.", "created_at": now - timedelta(days=15)},
-        {"subject_name": "Data Structures", "text": "A aula sobre árvores binárias foi fantástica!", "created_at": now - timedelta(days=20)},
-        {"subject_name": "Database Systems", "text": "O tópico de SQL Injection foi muito relevante e apresentado de forma prática.", "created_at": now - timedelta(days=25)},
-        {"subject_name": "Software Engineering", "text": "Gostaria de mais discussões sobre metodologias ágeis.", "created_at": now - timedelta(days=35)},
-    ]
-
-    for feedback_info in feedbacks_data:
-        subject = Subject.query.filter_by(name=feedback_info["subject_name"]).first()
-        if subject:
-            sentiment_scores = analyze_sentiment_text(feedback_info["text"])
+    students = User.query.filter_by(role=User.ALUNO).all()
+    subjects = Subject.query.filter(Subject.name.in_([
+        'Data Structures', 
+        'Database Systems', 
+        'Software Engineering'
+    ])).all()
+    
+    if not students or not subjects:
+        return
+    
+    student_profiles = {
+        'student1': 'satisfeito',
+        'student2': 'moderado', 
+        'student3': 'insatisfeito',
+        'student4': 'variado',
+    }
+    
+    comments = {
+        'satisfeito': [
+            "Adorei a aula de hoje! Muito bem explicado.",
+            "O professor é excelente, consegui entender tudo.",
+            "Material muito bom e aula dinâmica.",
+            "Estou aprendendo muito nesta disciplina.",
+        ],
+        'moderado': [
+            "A aula foi ok, mas alguns pontos ficaram confusos.",
+            "Entendi a maior parte, mas preciso revisar alguns conceitos.",
+            "Bom conteúdo, mas o ritmo estava rápido.",
+            "Material interessante, porém poderia ter mais exemplos.",
+        ],
+        'insatisfeito': [
+            "Não consegui acompanhar a explicação.",
+            "Achei muito difícil e não entendi quase nada.",
+            "O material não ajudou muito.",
+            "Estou com muita dificuldade nesta matéria.",
+        ],
+        'variado': [
+            "Aula boa, mas poderia melhorar.",
+            "Alguns pontos foram claros, outros não.",
+            "Gostei da primeira parte, mas a segunda ficou confusa.",
+            "Material ok, explicação poderia ser melhor.",
+        ]
+    }
+    
+    for student in students:
+        profile = student_profiles.get(student.username, 'moderado')
+        
+        num_feedbacks = {
+            'satisfeito': random.randint(5, 8),
+            'moderado': random.randint(3, 6),
+            'insatisfeito': random.randint(2, 4),
+            'variado': random.randint(4, 7)
+        }
+        
+        for i in range(num_feedbacks[profile]):
+            subject = random.choice(subjects)
+            days_ago = random.randint(1, 30)
+            created_date = now - timedelta(days=days_ago)
             
-            new_feedback = Feedback(
-                text=feedback_info["text"],
+            if profile == 'satisfeito':
+                base_scores = [4, 5]
+            elif profile == 'moderado':
+                base_scores = [3, 4]
+            elif profile == 'insatisfeito':
+                base_scores = [1, 2, 3]
+            else:
+                base_scores = [2, 3, 4]
+            
+            answers = {
+                'material_quality': random.choice(base_scores),
+                'teaching_method': random.choice(base_scores),
+                'content_understanding': random.choice(base_scores),
+                'class_pace': random.choice(base_scores),
+                'practical_examples': random.choice(base_scores)
+            }
+            
+            comment = None
+            if random.random() < 0.7:
+                comment = random.choice(comments[profile])
+            
+            feedback = Feedback(
+                student_id=student.id,
                 subject_id=subject.id,
-                compound=sentiment_scores["compound"],
-                neg=sentiment_scores["neg"],
-                neu=sentiment_scores["neu"],
-                pos=sentiment_scores["pos"],
-                created_at=feedback_info["created_at"]
+                material_quality=answers['material_quality'],
+                teaching_method=answers['teaching_method'],
+                content_understanding=answers['content_understanding'],
+                class_pace=answers['class_pace'],
+                practical_examples=answers['practical_examples'],
+                additional_comment=comment,
+                created_at=created_date
             )
-            db.session.add(new_feedback)
             
+            feedback.overall_score = feedback.calculate_overall_score()
+            
+            if comment:
+                from .services import analyze_sentiment_text
+                sentiment = analyze_sentiment_text(comment)
+                if sentiment:
+                    feedback.compound = sentiment['compound']
+                    feedback.neg = sentiment['neg']
+                    feedback.neu = sentiment['neu']
+                    feedback.pos = sentiment['pos']
+            
+            db.session.add(feedback)
+    
     db.session.commit()
+    
+    from .services import update_student_risk_analysis
+    for student in students:
+        for subject in subjects:
+            update_student_risk_analysis(student.id, subject.id)
