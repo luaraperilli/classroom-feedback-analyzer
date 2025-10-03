@@ -234,7 +234,3 @@ Onde:
 
 - Biblioteca [pysentimiento](https://github.com/pysentimiento/pysentimiento) pela análise de sentimentos
 - Comunidade React e Flask
-
----
-
-**Desenvolvido com ❤️ para melhorar a educação através de dados e feedback contínuo.**
