@@ -91,7 +91,11 @@ def get_students_at_risk(subject_id=None, min_risk_level='medio'):
     if subject_id:
         query = query.filter_by(subject_id=subject_id)
     
-    risk_levels = {'baixo': ['medio', 'alto'], 'medio': ['alto'], 'alto': ['alto']}
+    risk_levels = {
+        'baixo': ['baixo', 'medio', 'alto'],
+        'medio': ['medio', 'alto'],
+        'alto': ['alto']
+        }
     levels_to_include = risk_levels.get(min_risk_level, ['alto'])
     
     query = query.filter(StudentRiskAnalysis.risk_level.in_(levels_to_include))
