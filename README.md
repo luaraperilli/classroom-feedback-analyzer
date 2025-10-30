@@ -18,20 +18,17 @@ Os dados são salvos em um banco de dados SQLite e apresentados em um dashboard 
 ### 📝 Feedback Estruturado dos Alunos
 O aluno fornece feedback com base em 6 perguntas de autoavaliação, divididas em 3 pilares, usando uma escala de 1 (Muito Insatisfeito) a 5 (Muito Satisfeito):
 
-#### Pilar Comportamental:
-* “Participo ativamente das aulas e atividades propostas pelo professor.”
-* “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
-
-#### Pilar Emocional:
-* “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
-* “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
-
-#### Pilar Cognitivo:
-* “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
-* “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
-
-#### Comentário:
-* O aluno deve fornecer um comentário por escrito para justificar as suas avaliações.
+- Pilar Comportamental:
+  - “Participo ativamente das aulas e atividades propostas pelo professor.”
+  - “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
+- Pilar Emocional:
+  - “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
+  - “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
+- Pilar Cognitivo:
+  - “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
+  - “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
+- Comentário:
+  - O aluno deve fornecer um comentário por escrito para justificar as suas avaliações.
 
 ### 🤖 Análise de Sentimentos em Português
 - Utiliza a biblioteca `pysentimiento` para análise precisa em português.
@@ -43,15 +40,18 @@ O aluno fornece feedback com base em 6 perguntas de autoavaliação, divididas e
   - Score médio das avaliações estruturadas (peso: 50%)
   - Sentimento médio dos comentários (peso: 30%)
   - Consistência/frequência de feedbacks (peso: 20%)
+
 - Classificação em 3 Níveis:
   - 🚨 Alto Risco (≥ 60%)
   - ⚠️ Risco Moderado (30-59%)
   - ✅ Baixo Risco (< 30%)
+
 - Dashboard de Risco com:
   - Cards de resumo por nível de risco
   - Lista detalhada de alunos em risco
   - Métricas individuais por aluno/matéria
   - Filtros por matéria e nível mínimo de risco
+
 - Atualização Automática: O risco é recalculado a cada novo feedback.
 
 ### 👑 Área de Gestão do Coordenador
