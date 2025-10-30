@@ -111,6 +111,8 @@ function FeedbackForm() {
   };
 
   const allQuestionsAnswered = questions.every(q => ratings[q.id]);
+  
+  const isFormValid = allQuestionsAnswered && subjectId && additionalComment.trim() !== '';
 
   const sendFeedback = useCallback(async (retry = false) => {
     setIsLoading(true);
@@ -125,12 +127,12 @@ function FeedbackForm() {
       welcoming_environment: ratings.welcoming_environment,
       comprehension_effort: ratings.comprehension_effort,
       content_connection: ratings.content_connection,
-      additional_comment: additionalComment.trim() || null
+      additional_comment: additionalComment.trim()
     };
 
     try {
       const data = await analyzeFeedback(payload, accessToken);
-      setMessage('Feedback enviado com sucesso! Obrigado pela participação.');
+      setMessage('Informações enviadas com sucesso!');
       setShowResult(true);
       
       setTimeout(() => {
@@ -159,7 +161,7 @@ function FeedbackForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (allQuestionsAnswered && subjectId && accessToken) {
+    if (isFormValid && accessToken) {
       sendFeedback();
     }
   };
@@ -240,19 +242,20 @@ function FeedbackForm() {
                 id="comment"
                 value={additionalComment}
                 onChange={(e) => setAdditionalComment(e.target.value)}
-                placeholder="Gostaria de adicionar algum comentário? O que foi bom? O que pode melhorar?"
+                placeholder="Por favor, justifique suas respostas ou deixe um comentário sobre a aula."
                 rows="4"
                 disabled={isLoading || !accessToken}
                 className="comment-textarea"
+                required 
               />
             </div>
 
             <button 
               type="submit" 
-              disabled={isLoading || !allQuestionsAnswered || !subjectId || !accessToken}
+              disabled={isLoading || !isFormValid || !accessToken}
               className="submit-feedback-button"
             >
-              {isLoading ? 'Enviando...' : 'Enviar Feedback'}
+              {isLoading ? 'Enviando...' : 'Enviar'}
             </button>
           </>
         )}
