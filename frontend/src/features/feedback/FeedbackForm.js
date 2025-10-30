@@ -6,29 +6,40 @@ import { getSubjects, analyzeFeedback } from '../../services/api';
 
 const questions = [
   {
-    id: 'material_quality',
-    label: 'Como você avalia a qualidade do material didático?',
+    id: 'active_participation',
+    label: 'Participo ativamente das aulas e atividades propostas pelo professor.',
+    pillar: 'Comportamental',
+    icon: '🙋‍♂️'
+  },
+  {
+    id: 'task_completion',
+    label: 'Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.',
+    pillar: 'Comportamental',
+    icon: '📅'
+  },
+  {
+    id: 'motivation_interest',
+    label: 'Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.',
+    pillar: 'Emocional',
+    icon: '💡'
+  },
+  {
+    id: 'welcoming_environment',
+    label: 'Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.',
+    pillar: 'Emocional',
+    icon: '🤗'
+  },
+  {
+    id: 'comprehension_effort',
+    label: 'Dedico tempo e esforço para compreender os conceitos apresentados em aula.',
+    pillar: 'Cognitivo',
     icon: '📚'
   },
   {
-    id: 'teaching_method',
-    label: 'Como você avalia a didática do professor?',
-    icon: '👨‍🏫'
-  },
-  {
-    id: 'content_understanding',
-    label: 'Quanto você conseguiu compreender do conteúdo?',
-    icon: '🧠'
-  },
-  {
-    id: 'class_pace',
-    label: 'O ritmo da aula estava adequado?',
-    icon: '⏱️'
-  },
-  {
-    id: 'practical_examples',
-    label: 'Os exemplos práticos ajudaram no aprendizado?',
-    icon: '💡'
+    id: 'content_connection',
+    label: 'Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.',
+    pillar: 'Cognitivo',
+    icon: '🔗'
   }
 ];
 
@@ -45,7 +56,11 @@ function RatingQuestion({ question, value, onChange }) {
     <div className="rating-question">
       <label className="question-label">
         <span className="question-icon">{question.icon}</span>
-        {question.label}
+        <div>
+          <span style={{ fontSize: '0.8rem', color: '#6c757d', fontWeight: 500 }}>{question.pillar}</span>
+          <br/>
+          {question.label}
+        </div>
       </label>
       <div className="rating-options">
         {[1, 2, 3, 4, 5].map(rating => (
@@ -104,11 +119,12 @@ function FeedbackForm() {
 
     const payload = {
       subject_id: parseInt(subjectId),
-      material_quality: ratings.material_quality,
-      teaching_method: ratings.teaching_method,
-      content_understanding: ratings.content_understanding,
-      class_pace: ratings.class_pace,
-      practical_examples: ratings.practical_examples,
+      active_participation: ratings.active_participation,
+      task_completion: ratings.task_completion,
+      motivation_interest: ratings.motivation_interest,
+      welcoming_environment: ratings.welcoming_environment,
+      comprehension_effort: ratings.comprehension_effort,
+      content_connection: ratings.content_connection,
       additional_comment: additionalComment.trim() || null
     };
 
@@ -192,7 +208,7 @@ function FeedbackForm() {
         {subjectId && (
           <>
             <div className="form-section">
-              <h3 className="section-title">Avalie os aspectos da aula</h3>
+              <h3 className="section-title">Avalie seu engajamento na aula</h3>
               <p className="section-subtitle">
                 Use a escala de 1 (muito insatisfeito) a 5 (muito satisfeito)
               </p>
