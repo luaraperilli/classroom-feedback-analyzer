@@ -18,19 +18,19 @@ Os dados são salvos em um banco de dados SQLite e apresentados em um dashboard 
 ### 📝 Feedback Estruturado dos Alunos
 O aluno fornece feedback com base em 6 perguntas de autoavaliação, divididas em 3 pilares, usando uma escala de 1 (Muito Insatisfeito) a 5 (Muito Satisfeito):
 
-**Pilar Comportamental:**
-1.  “Participo ativamente das aulas e atividades propostas pelo professor.”
-2.  “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
+# Pilar Comportamental:
+* “Participo ativamente das aulas e atividades propostas pelo professor.”
+* “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
 
-**Pilar Emocional:**
-3.  “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
-4.  “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
+# Pilar Emocional:
+* “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
+* “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
 
-**Pilar Cognitivo:**
-5.  “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
-6.  “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
+# Pilar Cognitivo:
+* “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
+* “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
 
-**Comentário (Obrigatório):**
+# Comentário:
 * O aluno deve fornecer um comentário por escrito para justificar as suas avaliações.
 
 ### 🤖 Análise de Sentimentos em Português
