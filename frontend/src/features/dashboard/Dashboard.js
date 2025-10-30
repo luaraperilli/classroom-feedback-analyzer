@@ -156,24 +156,28 @@ function Dashboard() {
                   
                   <div className="feedback-ratings">
                     <div className="rating-item">
-                      <span className="rating-icon">📚</span>
-                      <span>Material: {fb.material_quality}/5</span>
+                      <span className="rating-icon">🙋‍♂️</span>
+                      <span>Participação: {fb.active_participation}/5</span>
                     </div>
                     <div className="rating-item">
-                      <span className="rating-icon">👨‍🏫</span>
-                      <span>Didática: {fb.teaching_method}/5</span>
-                    </div>
-                    <div className="rating-item">
-                      <span className="rating-icon">🧠</span>
-                      <span>Compreensão: {fb.content_understanding}/5</span>
-                    </div>
-                    <div className="rating-item">
-                      <span className="rating-icon">⏱️</span>
-                      <span>Ritmo: {fb.class_pace}/5</span>
+                      <span className="rating-icon">📅</span>
+                      <span>Tarefas: {fb.task_completion}/5</span>
                     </div>
                     <div className="rating-item">
                       <span className="rating-icon">💡</span>
-                      <span>Exemplos: {fb.practical_examples}/5</span>
+                      <span>Motivação: {fb.motivation_interest}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">🤗</span>
+                      <span>Ambiente: {fb.welcoming_environment}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">📚</span>
+                      <span>Esforço: {fb.comprehension_effort}/5</span>
+                    </div>
+                    <div className="rating-item">
+                      <span className="rating-icon">🔗</span>
+                      <span>Conexão: {fb.content_connection}/5</span>
                     </div>
                   </div>
 
