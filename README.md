@@ -21,12 +21,15 @@ O aluno fornece feedback com base em 6 perguntas de autoavaliação, divididas e
 - Pilar Comportamental:
   - “Participo ativamente das aulas e atividades propostas pelo professor.”
   - “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
+
 - Pilar Emocional:
   - “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
   - “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
+
 - Pilar Cognitivo:
   - “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
   - “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
+
 - Comentário:
   - O aluno deve fornecer um comentário por escrito para justificar as suas avaliações.
 
