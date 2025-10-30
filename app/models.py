@@ -33,14 +33,13 @@ class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    
-    material_quality = db.Column(db.Integer, nullable=False)
-    teaching_method = db.Column(db.Integer, nullable=False)
-    content_understanding = db.Column(db.Integer, nullable=False)
-    class_pace = db.Column(db.Integer, nullable=False) 
-    practical_examples = db.Column(db.Integer, nullable=False)
-    additional_comment = db.Column(db.String(500), nullable=True)
-    
+    active_participation = db.Column(db.Integer, nullable=False)
+    task_completion = db.Column(db.Integer, nullable=False)
+    motivation_interest = db.Column(db.Integer, nullable=False)
+    welcoming_environment = db.Column(db.Integer, nullable=False)
+    comprehension_effort = db.Column(db.Integer, nullable=False)
+    content_connection = db.Column(db.Integer, nullable=False)
+    additional_comment = db.Column(db.String(500), nullable=False)
     compound = db.Column(db.Float, nullable=True)
     neg = db.Column(db.Float, nullable=True)
     neu = db.Column(db.Float, nullable=True)
@@ -53,11 +52,12 @@ class Feedback(db.Model):
 
     def calculate_overall_score(self):
         scores = [
-            self.material_quality,
-            self.teaching_method,
-            self.content_understanding,
-            self.class_pace,
-            self.practical_examples
+            self.active_participation,
+            self.task_completion,
+            self.motivation_interest,
+            self.welcoming_environment,
+            self.comprehension_effort,
+            self.content_connection
         ]
         # Normaliza para escala 0-1 (onde 1 é muito satisfeito e 0 é muito insatisfeito)
         average = sum(scores) / len(scores)
@@ -70,11 +70,12 @@ class Feedback(db.Model):
             'student_username': self.student.username if self.student else 'Unknown',
             'subject': self.subject.name,
             'subject_id': self.subject_id,
-            'material_quality': self.material_quality,
-            'teaching_method': self.teaching_method,
-            'content_understanding': self.content_understanding,
-            'class_pace': self.class_pace,
-            'practical_examples': self.practical_examples,
+            'active_participation': self.active_participation,
+            'task_completion': self.task_completion,
+            'motivation_interest': self.motivation_interest,
+            'welcoming_environment': self.welcoming_environment,
+            'comprehension_effort': self.comprehension_effort,
+            'content_connection': self.content_connection,
             'additional_comment': self.additional_comment,
             'compound': self.compound,
             'neg': self.neg,

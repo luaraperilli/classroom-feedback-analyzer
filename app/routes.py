@@ -9,18 +9,23 @@ api = Blueprint("api", __name__)
 def validate_feedback_payload(data):
     required_fields = [
         'subject_id',
-        'material_quality',
-        'teaching_method',
-        'content_understanding',
-        'class_pace',
-        'practical_examples'
-    ]
+        'active_participation',
+        'task_completion',
+        'motivation_interest',
+        'welcoming_environment',
+        'comprehension_effort',
+        'content_connection',
+        'additional_comment'
+        ]
     
     for field in required_fields:
         if field not in data:
             return False, f"Campo '{field}' é obrigatório."
     
-    rating_fields = required_fields[1:] 
+    if not data.get("additional_comment") or not data.get("additional_comment").strip():
+        return False, "Campo 'additional_comment' é obrigatório e não pode estar vazio."
+    
+    rating_fields = required_fields[1:7]
     for field in rating_fields:
         value = data.get(field)
         if not isinstance(value, int) or value < 1 or value > 5:
@@ -39,14 +44,15 @@ def analyze_and_save_feedback():
         return jsonify({"error": error_message}), 400
     
     subject_id = data["subject_id"]
-    additional_comment = data.get("additional_comment", "").strip() or None
+    additional_comment = data.get("additional_comment", "").strip()
     
     answers = {
-        'material_quality': data['material_quality'],
-        'teaching_method': data['teaching_method'],
-        'content_understanding': data['content_understanding'],
-        'class_pace': data['class_pace'],
-        'practical_examples': data['practical_examples']
+        'active_participation': data['active_participation'],
+        'task_completion': data['task_completion'],
+        'motivation_interest': data['motivation_interest'],
+        'welcoming_environment': data['welcoming_environment'],
+        'comprehension_effort': data['comprehension_effort'],
+        'content_connection': data['content_connection']
     }
     
     try:
@@ -106,7 +112,6 @@ def get_at_risk_students():
     subject_filter_id = request.args.get('subject_id')
     min_risk_level = request.args.get('min_risk', 'medio')  # baixo, medio, alto
     
-    # Professor vê apenas alunos de suas matérias
     if role == User.PROFESSOR:
         professor_subject_ids = [s.id for s in user.subjects]
         
@@ -114,14 +119,12 @@ def get_at_risk_students():
             if int(subject_filter_id) not in professor_subject_ids:
                 return jsonify({"message": "Acesso negado a esta matéria."}), 403
         
-        # Busca alunos em risco das matérias do professor
         at_risk = []
         for subject_id in professor_subject_ids:
             if subject_filter_id and int(subject_filter_id) != subject_id:
                 continue
             at_risk.extend(get_students_at_risk(subject_id, min_risk_level))
     else:
-        # Coordenador vê todos
         at_risk = get_students_at_risk(subject_filter_id, min_risk_level)
     
     return jsonify([analysis.to_dict() for analysis in at_risk]), 200
@@ -140,7 +143,6 @@ def get_student_progress(student_id):
 
     subject_filter_id = request.args.get('subject_id')
     
-    # Busca análises de risco do aluno
     query = StudentRiskAnalysis.query.filter_by(student_id=student_id)
     
     if subject_filter_id:

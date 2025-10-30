@@ -28,11 +28,12 @@ def create_feedback(student_id, subject_id, answers, additional_comment=None):
     new_feedback = Feedback(
         student_id=student_id,
         subject_id=subject_id,
-        material_quality=answers['material_quality'],
-        teaching_method=answers['teaching_method'],
-        content_understanding=answers['content_understanding'],
-        class_pace=answers['class_pace'],
-        practical_examples=answers['practical_examples'],
+        active_participation=answers['active_participation'],
+        task_completion=answers['task_completion'],
+        motivation_interest=answers['motivation_interest'],
+        welcoming_environment=answers['welcoming_environment'],
+        comprehension_effort=answers['comprehension_effort'],
+        content_connection=answers['content_connection'],
         additional_comment=additional_comment
     )
     
@@ -58,6 +59,13 @@ def update_student_risk_analysis(student_id, subject_id):
     ).all()
     
     if not feedbacks:
+        analysis = StudentRiskAnalysis.query.filter_by(
+            student_id=student_id,
+            subject_id=subject_id
+        ).first()
+        if analysis:
+            db.session.delete(analysis)
+            db.session.commit()
         return None
     
     avg_score = sum(f.overall_score for f in feedbacks) / len(feedbacks)
@@ -92,10 +100,10 @@ def get_students_at_risk(subject_id=None, min_risk_level='medio'):
         query = query.filter_by(subject_id=subject_id)
     
     risk_levels = {
-        'baixo': ['baixo', 'medio', 'alto'],
-        'medio': ['medio', 'alto'],
-        'alto': ['alto']
-        }
+        'baixo': ['baixo', 'medio', 'alto'], # Inclui baixo, médio e alto
+        'medio': ['medio', 'alto'],          # Inclui médio e alto
+        'alto': ['alto']                     # Inclui apenas alto
+    }
     levels_to_include = risk_levels.get(min_risk_level, ['alto'])
     
     query = query.filter(StudentRiskAnalysis.risk_level.in_(levels_to_include))

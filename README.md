@@ -4,33 +4,39 @@ Uma aplicação web full-stack projetada para coletar feedback estruturado de al
 
 ## 🚀 Sobre o Projeto
 
-Esta ferramenta permite que os alunos avaliem diversos aspectos das aulas através de um sistema de avaliação estruturado (escala de 1 a 5). O backend, construído com Python e Flask, processa essas avaliações e comentários opcionais usando um modelo de machine learning para análise de sentimentos em português.
+Esta ferramenta permite que os alunos avaliem o seu próprio engajamento através de um sistema de avaliação estruturado (escala de 1 a 5). O backend, construído com Python e Flask, processa essas avaliações e comentários obrigatórios usando um modelo de machine learning para análise de sentimentos em português.
 
-Os dados são salvos em um banco de dados SQLite e apresentados em um dashboard interativo para o professor ou coordenador, que pode visualizar tendências, filtrar por matéria e período, e obter conhecimentos valiosos sobre a percepção da turma. A aplicação também conta com um sistema de análise de risco de evasão que identifica alunos que podem precisar de suporte adicional, baseado em múltiplos indicadores de desempenho e satisfação.
+Os dados são salvos em um banco de dados SQLite e apresentados em um dashboard interativo para o professor ou coordenador, que pode visualizar tendências, filtrar por matéria e período, e obter perceções valiosas sobre a turma. A aplicação também conta com um sistema de análise de risco de evasão que identifica alunos que podem precisar de suporte adicional, baseado em múltiplos indicadores de desempenho e satisfação.
 
 ## ✨ Funcionalidades Principais
 
 ### 👤 Sistema de Autenticação e Papéis
-- Sistema de usuários com papéis distintos para Alunos, Professores e Coordenadores
-- Autenticação segura com JWT (JSON Web Tokens)
-- Controle de acesso baseado em permissões
+- Sistema de usuários com papéis distintos para Alunos, Professores e Coordenadores.
+- Autenticação segura com JWT (JSON Web Tokens).
+- Controle de acesso baseado em permissões.
 
 ### 📝 Feedback Estruturado dos Alunos
-- 5 Perguntas de Avaliação com escala de 1 a 5:
-  - 📚 Qualidade do material didático
-  - 👨‍🏫 Didática do professor
-  - 🧠 Compreensão do conteúdo
-  - ⏱️ Ritmo da aula
-  - 💡 Qualidade dos exemplos práticos
-- Comentário adicional opcional para feedback mais detalhado
-- Interface visual intuitiva com botões de seleção
-- Feedback em tempo real da avaliação média
-- Animação de sucesso ao enviar
+O aluno fornece feedback com base em 6 perguntas de autoavaliação, divididas em 3 pilares, usando uma escala de 1 (Muito Insatisfeito) a 5 (Muito Satisfeito):
+
+**Pilar Comportamental:**
+1.  “Participo ativamente das aulas e atividades propostas pelo professor.”
+2.  “Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.”
+
+**Pilar Emocional:**
+3.  “Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.”
+4.  “Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.”
+
+**Pilar Cognitivo:**
+5.  “Dedico tempo e esforço para compreender os conceitos apresentados em aula.”
+6.  “Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.”
+
+**Comentário (Obrigatório):**
+* O aluno deve fornecer um comentário por escrito para justificar as suas avaliações.
 
 ### 🤖 Análise de Sentimentos em Português
-- Utiliza a biblioteca `pysentimiento` para análise precisa em português
-- Análise automática dos comentários opcionais
-- Cálculo de score composto (positivo, neutro, negativo)
+- Utiliza a biblioteca `pysentimiento` para análise precisa em português.
+- Análise automática dos comentários.
+- Cálculo de score composto (positivo, neutro, negativo).
 
 ### 🎯 Sistema de Análise de Risco de Evasão
 - Cálculo Automático de Risco baseado em:
@@ -46,35 +52,13 @@ Os dados são salvos em um banco de dados SQLite e apresentados em um dashboard 
   - Lista detalhada de alunos em risco
   - Métricas individuais por aluno/matéria
   - Filtros por matéria e nível mínimo de risco
-- Atualização Automática: O risco é recalculado a cada novo feedback
-
-### 💾 Persistência de Dados
-- Todos os feedbacks são salvos em banco de dados SQLite
-- Schema e dados iniciais criados automaticamente
-- Histórico completo de avaliações por aluno
-
-### 📈 Dashboard Interativo para Professores/Coordenadores
-- Aba de Feedbacks:
-  - Cartões de Resumo: Visão geral com contagem e percentagem de feedbacks positivos, neutros e negativos
-  - Gráfico de Tendência: Evolução dos sentimentos ao longo do tempo
-  - Lista Detalhada: Feedbacks recentes com todas as avaliações estruturadas
-  - Filtros: Por matéria e período de tempo
-- Aba de Análise de Risco:
-  - Identificação visual de alunos em risco
-  - Métricas detalhadas por aluno
-  - Filtros personalizáveis
-  - Alertas de atenção
-
-### 🔒 Rotas Protegidas
-- Acesso controlado baseado no papel do usuário
-- Professores só visualizam suas matérias
-- Coordenadores têm acesso completo
+- Atualização Automática: O risco é recalculado a cada novo feedback.
 
 ### 👑 Área de Gestão do Coordenador
-- Criar novas matérias
-- Vincular matérias a professores
-- Visualizar todos os professores cadastrados
-- Acesso total ao sistema de análise de risco
+- Criar novas matérias.
+- Vincular matérias a professores.
+- Visualizar todos os professores cadastrados.
+- Acesso total ao sistema de análise de risco.
 
 ### ⚙️ API REST
 - Endpoints para análise e listagem de feedbacks
@@ -205,9 +189,11 @@ Após iniciar o projeto, utilize as seguintes credenciais (senha: `123`):
 | Usuário      | Papel       | Acesso                                      |
 |--------------|-------------|---------------------------------------------|
 | `student1`   | Aluno       | Baixo risco - Feedbacks positivos           |
-| `student2`   | Aluno       | Médio risco - Feedbacks moderados           |
-| `student3`   | Aluno       | Alto risco - Feedbacks negativos            |
-| `student4`   | Aluno       | Risco variado - Feedbacks mistos            |
+| `student2`   | Aluno       | Baixo risco - Feedbacks positivos           |
+| `student3`   | Aluno       | Médio variado - Feedbacks moderados         |
+| `student4`   | Aluno       | Médio variado - Feedbacks moderados         |
+| `student5`   | Aluno       | Alto variado - Feedbacks negativos          |
+| `student6`   | Aluno       | Alto variado - Feedbacks negativos          |
 | `professor`  | Professor   | Dashboard + Análise de Risco (suas matérias)|
 | `coordinator`| Coordenador | Dashboard + Análise de Risco + Gestão       |
 
