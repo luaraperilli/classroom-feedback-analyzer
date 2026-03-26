@@ -45,7 +45,6 @@ class Feedback(db.Model):
     neu = db.Column(db.Float, nullable=True)
     pos = db.Column(db.Float, nullable=True)
     
-    # Score geral calculado
     overall_score = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
@@ -59,7 +58,6 @@ class Feedback(db.Model):
             self.comprehension_effort,
             self.content_connection
         ]
-        # Normaliza para escala 0-1 (onde 1 é muito satisfeito e 0 é muito insatisfeito)
         average = sum(scores) / len(scores)
         return (average - 1) / 4
 
@@ -86,15 +84,12 @@ class Feedback(db.Model):
         }
 
 class StudentRiskAnalysis(db.Model):
-    """Tabela para armazenar análise de risco de evasão por aluno/matéria"""
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    
-    # Métricas calculadas
-    average_score = db.Column(db.Float, nullable=False)  # Média dos scores gerais
-    average_sentiment = db.Column(db.Float, nullable=True)  # Média do compound
-    feedback_count = db.Column(db.Integer, nullable=False)  # Número de feedbacks
+    average_score = db.Column(db.Float, nullable=False)
+    average_sentiment = db.Column(db.Float, nullable=True)
+    feedback_count = db.Column(db.Integer, nullable=False)
     
     risk_score = db.Column(db.Float, nullable=False)
     risk_level = db.Column(db.String(20), nullable=False)
@@ -105,34 +100,29 @@ class StudentRiskAnalysis(db.Model):
     subject = db.relationship('Subject', backref='risk_analyses')
     
     def calculate_risk_score(self):
-        """
-        Calcula o score de risco baseado em múltiplos fatores
-        Risk Score: 0 (sem risco) a 1 (alto risco)
-        """
-        # Componente 1: Score médio invertido (quanto menor o score, maior o risco)
+        # Inverted average score: lower engagement → higher risk component
         score_risk = 1 - self.average_score
-        
-        # Componente 2: Sentimento
+
         sentiment_risk = 0
         if self.average_sentiment is not None:
-            # Converte compound de -1/+1 para 0/1 (risco)
+            # Convert compound [-1, +1] to a risk value in [0, 1]
             sentiment_risk = (1 - self.average_sentiment) / 2
-        
-        # Componente 3: Consistência (poucos feedbacks = maior incerteza)
+
+        # Fewer submissions increase uncertainty, capped contribution at 5 feedbacks
         consistency_risk = max(0, (5 - self.feedback_count) / 5) * 0.3
-        
-        # Peso: 50% score, 30% sentimento, 20% consistência
+
+        # Weights: 50% engagement score, 30% sentiment, 20% submission consistency.
+        # When no sentiment data is available, redistribute to 70/0/30.
         weights = [0.5, 0.3, 0.2]
         if self.average_sentiment is None:
-            weights = [0.7, 0, 0.3]  # Ajusta pesos se não houver sentimento
-        
+            weights = [0.7, 0, 0.3]
+
         self.risk_score = (
             score_risk * weights[0] +
             sentiment_risk * weights[1] +
             consistency_risk * weights[2]
         )
-        
-        # Define nível de risco
+
         if self.risk_score >= 0.6:
             self.risk_level = 'alto'
         elif self.risk_score >= 0.3:

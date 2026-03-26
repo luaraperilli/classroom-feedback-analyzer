@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { getWeekLabel } from '../utils/sentiment';
 
 ChartJS.register(
   CategoryScale,
@@ -21,45 +22,58 @@ ChartJS.register(
   Legend
 );
 
-function SentimentTrendChart({ feedbacks }) {
-  const processDataForChart = (feedbackList) => {
-    if (!feedbackList || feedbackList.length === 0) {
-      return { labels: [], data: [] };
-    }
+const groupFeedbacksByDay = (feedbackList) => {
+  const groups = feedbackList.reduce((acc, fb) => {
+    const date = new Date(fb.created_at);
+    const key = date.toISOString().split('T')[0]; // YYYY-MM-DD ensures correct sort
+    const label = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    if (!acc[key]) acc[key] = { label, scores: [] };
+    acc[key].scores.push(fb.compound);
+    return acc;
+  }, {});
 
-    const dailyScores = feedbackList.reduce((acc, fb) => {
-      const date = new Date(fb.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(fb.compound);
-      return acc;
-    }, {});
+  return Object.keys(groups)
+    .sort()
+    .map((key) => ({
+      label: groups[key].label,
+      avg: groups[key].scores.reduce((s, v) => s + v, 0) / groups[key].scores.length,
+    }));
+};
 
-    const sortedDates = Object.keys(dailyScores).sort((a, b) => {
-      const [dayA, monthA] = a.split('/');
-      const [dayB, monthB] = b.split('/');
-      return new Date(`2024-${monthA}-${dayA}`) - new Date(`2024-${monthB}-${dayB}`);
-    });
-    
-    const labels = sortedDates;
-    const data = sortedDates.map(date => {
-      const scores = dailyScores[date];
-      const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-      return average.toFixed(2);
-    });
+const groupFeedbacksByWeek = (feedbackList) => {
+  const groups = feedbackList.reduce((acc, fb) => {
+    const key = getWeekLabel(fb.created_at);
+    if (!acc[key]) acc[key] = { scores: [] };
+    acc[key].scores.push(fb.compound);
+    return acc;
+  }, {});
 
-    return { labels, data };
-  };
+  return Object.keys(groups).map((key) => ({
+    label: key,
+    avg: groups[key].scores.reduce((s, v) => s + v, 0) / groups[key].scores.length,
+  }));
+};
 
-  const { labels, data: chartData } = processDataForChart(feedbacks);
+function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
+  if (!feedbacks || feedbacks.length === 0) {
+    return <p>Dados insuficientes para gerar o gráfico de tendência.</p>;
+  }
+
+  const validFeedbacks = feedbacks.filter((fb) => fb.compound !== null && fb.compound !== undefined);
+  if (validFeedbacks.length === 0) {
+    return <p>Nenhum dado de sentimento disponível.</p>;
+  }
+
+  const points = groupBy === 'week'
+    ? groupFeedbacksByWeek(validFeedbacks)
+    : groupFeedbacksByDay(validFeedbacks);
 
   const data = {
-    labels: labels,
+    labels: points.map((p) => p.label),
     datasets: [
       {
-        label: 'Média de Sentimento Diário',
-        data: chartData,
+        label: 'Média de Sentimento',
+        data: points.map((p) => p.avg.toFixed(2)),
         fill: true,
         backgroundColor: 'rgba(74, 144, 226, 0.2)',
         borderColor: 'rgba(74, 144, 226, 1)',
@@ -73,65 +87,45 @@ function SentimentTrendChart({ feedbacks }) {
   const options = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'top',
-      },
+      legend: { position: 'top' },
       title: {
         display: true,
         text: 'Tendência de Sentimento ao Longo do Tempo',
-        font: {
-          size: 18,
-        },
+        font: { size: 18 },
       },
       subtitle: {
         display: true,
-        text: 'A linha representa a média de sentimento (-1 a +1) de todos os feedbacks recebidos em cada dia.',
-        padding: {
-            bottom: 20
-        }
+        text: 'A linha representa a média de sentimento (-1 a +1) dos feedbacks.',
+        padding: { bottom: 20 },
       },
       tooltip: {
         callbacks: {
-            footer: function(tooltipItems) {
-                return 'Nota: -1 (Negativo) a +1 (Positivo)';
-            }
-        }
-      }
+          footer: () => 'Nota: -1 (Negativo) a +1 (Positivo)',
+        },
+      },
     },
     scales: {
       y: {
         beginAtZero: false,
-        min: -1, 
+        min: -1,
         max: 1,
         title: {
-            display: true,
-            text: 'Média de Sentimento (Negativo ◄ ► Positivo)',
-            font: {
-                size: 14
-            }
-        }
+          display: true,
+          text: 'Negativo ◄ ► Positivo',
+          font: { size: 14 },
+        },
       },
       x: {
         title: {
-            display: true,
-            text: 'Data de Recebimento',
-            font: {
-                size: 14
-            }
-        }
-      }
+          display: true,
+          text: groupBy === 'week' ? 'Semana' : 'Data',
+          font: { size: 14 },
+        },
+      },
     },
   };
 
-  return (
-    <div>
-      {feedbacks && feedbacks.length > 0 ? (
-        <Line options={options} data={data} />
-      ) : (
-        <p>Dados insuficientes para gerar o gráfico de tendência.</p>
-      )}
-    </div>
-  );
+  return <Line options={options} data={data} />;
 }
 
 export default SentimentTrendChart;

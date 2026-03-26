@@ -1,5 +1,3 @@
-// Este arquivo deve ser salvo em: frontend/src/features/dashboard/RiskAnalysis.js
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getStudentsAtRisk, getSubjects } from '../../services/api';

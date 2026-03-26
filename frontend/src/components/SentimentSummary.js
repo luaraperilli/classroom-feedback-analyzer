@@ -1,9 +1,5 @@
 import React from 'react';
 
-/**
- * Component to display a summary of sentiments from feedbacks
- * @param {Array} feedbacks 
- */
 function SentimentSummary({ feedbacks }) {
   const totalFeedbacks = feedbacks.length;
   const positiveCount = feedbacks.filter(fb => fb.compound >= 0.05).length;

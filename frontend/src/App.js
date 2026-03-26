@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import './App.css';
 
 import FeedbackForm from './features/feedback/FeedbackForm';
+import StudentHistory from './features/student/StudentHistory';
 import Dashboard from './features/dashboard/Dashboard';
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import CoordinatorPage from './features/coordinator/CoordinatorPage';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
-import ProtectedRoute from './ProtectedRoute'; // Importa da raiz de src
+import ProtectedRoute from './ProtectedRoute';
 
 function Navigation() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -21,9 +22,18 @@ function Navigation() {
 
   return (
     <nav className="main-nav">
-      {isAuthenticated && user?.role === 'aluno' && <Link to="/">Enviar Feedback</Link>}
-      {isAuthenticated && (user?.role === 'professor' || user?.role === 'coordenador') && <Link to="/dashboard">Dashboard</Link>}
-      {isAuthenticated && user?.role === 'coordenador' && <Link to="/coordinator">Gestão</Link>}
+      {isAuthenticated && user?.role === 'aluno' && (
+        <>
+          <Link to="/">Enviar Feedback</Link>
+          <Link to="/historico">Meu Progresso</Link>
+        </>
+      )}
+      {isAuthenticated && (user?.role === 'professor' || user?.role === 'coordenador') && (
+        <Link to="/dashboard">Dashboard</Link>
+      )}
+      {isAuthenticated && user?.role === 'coordenador' && (
+        <Link to="/coordinator">Gestão</Link>
+      )}
 
       {!isAuthenticated && (
         <>
@@ -32,7 +42,9 @@ function Navigation() {
         </>
       )}
 
-      {isAuthenticated && <button onClick={handleLogout} className="logout-button">Sair</button>}
+      {isAuthenticated && (
+        <button onClick={handleLogout} className="logout-button">Sair</button>
+      )}
     </nav>
   );
 }
@@ -51,6 +63,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['aluno']}>
                   <FeedbackForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/historico"
+              element={
+                <ProtectedRoute allowedRoles={['aluno']}>
+                  <StudentHistory />
                 </ProtectedRoute>
               }
             />

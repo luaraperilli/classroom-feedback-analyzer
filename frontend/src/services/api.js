@@ -1,96 +1,97 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const request = async (endpoint, options = {}) => {
-    const { body, ...customConfig } = options;
-    const headers = { 'Content-Type': 'application/json' };
+  const { body, token, ...customConfig } = options;
+  const headers = { 'Content-Type': 'application/json' };
 
-    if (options.token) {
-        headers.Authorization = `Bearer ${options.token}`;
-    }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
-    const config = {
-        method: body ? 'POST' : 'GET',
-        ...customConfig,
-        headers: {
-            ...headers,
-            ...customConfig.headers,
-        },
-    };
+  const config = {
+    method: body ? 'POST' : 'GET',
+    ...customConfig,
+    headers: { ...headers, ...customConfig.headers },
+  };
 
-    if (body) {
-        config.body = JSON.stringify(body);
-    }
+  if (body) {
+    config.body = JSON.stringify(body);
+  }
 
-    let response;
-    try {
-        response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    } catch (e) {
-        throw new Error("Erro de conexão. Verifique sua rede.");
-    }
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  } catch {
+    throw new Error('Erro de conexão. Verifique sua rede.');
+  }
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (!response.ok) {
-        throw new Error(data.error || data.message || `Erro ${response.status}`);
-    }
+  if (!response.ok) {
+    throw new Error(data.error || data.message || `Erro ${response.status}`);
+  }
 
-    return data;
+  return data;
 };
 
-// Auth
-export const login = (username, password) => request('/login', { body: { username, password } });
-export const register = (username, password, role) => request('/register', { body: { username, password, role } });
-
-// Feedbacks
-export const analyzeFeedback = (feedbackData, token) => request('/analyze', { body: feedbackData, token });
-
-export const getFeedbacks = async (subjectId, dateRange, token) => {
-    const url = new URL(`${API_BASE_URL}/feedbacks`);
-    if (subjectId) url.searchParams.append('subject_id', subjectId);
-    if (dateRange?.startDate) url.searchParams.append('start_date', dateRange.startDate.toISOString());
-    if (dateRange?.endDate) url.searchParams.append('end_date', dateRange.endDate.toISOString());
-
-    const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao buscar feedbacks');
-    return data;
+const buildUrl = (path, params = {}) => {
+  const url = new URL(`${API_BASE_URL}${path}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      url.searchParams.append(key, value);
+    }
+  });
+  return url.toString();
 };
 
-// Análise de Risco
-export const getStudentsAtRisk = async (subjectId, minRisk, token) => {
-    const url = new URL(`${API_BASE_URL}/students-at-risk`);
-    if (subjectId) url.searchParams.append('subject_id', subjectId);
-    if (minRisk) url.searchParams.append('min_risk', minRisk);
+export const login = (username, password) =>
+  request('/login', { body: { username, password } });
 
-    const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
+export const register = (username, password, role) =>
+  request('/register', { body: { username, password, role } });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao buscar alunos em risco');
-    return data;
-};
+export const analyzeFeedback = (feedbackData, token) =>
+  request('/analyze', { body: feedbackData, token });
 
-export const getStudentProgress = async (studentId, subjectId, token) => {
-    const url = new URL(`${API_BASE_URL}/student-progress/${studentId}`);
-    if (subjectId) url.searchParams.append('subject_id', subjectId);
+export const getFeedbacks = (subjectId, dateRange, token) =>
+  request(
+    `/feedbacks?${new URLSearchParams({
+      ...(subjectId ? { subject_id: subjectId } : {}),
+      ...(dateRange?.startDate ? { start_date: dateRange.startDate.toISOString() } : {}),
+      ...(dateRange?.endDate ? { end_date: dateRange.endDate.toISOString() } : {}),
+    })}`,
+    { token }
+  );
 
-    const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
+export const getMyFeedbacks = (subjectId, token) =>
+  request(
+    `/my-feedbacks${subjectId ? `?subject_id=${subjectId}` : ''}`,
+    { token }
+  );
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao buscar progresso do aluno');
-    return data;
-};
+export const getStudentsAtRisk = (subjectId, minRisk, token) =>
+  request(
+    buildUrl('/students-at-risk', {
+      subject_id: subjectId || undefined,
+      min_risk: minRisk || undefined,
+    }).replace(API_BASE_URL, ''),
+    { token }
+  );
 
-// Subjects
+export const getStudentProgress = (studentId, subjectId, token) =>
+  request(
+    buildUrl(`/student-progress/${studentId}`, {
+      subject_id: subjectId || undefined,
+    }).replace(API_BASE_URL, ''),
+    { token }
+  );
+
 export const getSubjects = (token) => request('/subjects', { token });
 
-// Admin/Coordinator
-export const createSubject = (name, token) => request('/admin/subjects', { body: { name }, token });
+export const createSubject = (name, token) =>
+  request('/admin/subjects', { body: { name }, token });
+
 export const getProfessors = (token) => request('/admin/professors', { token });
-export const assignSubjectToProfessor = (subjectId, professorId, token) => request(`/admin/subjects/${subjectId}/assign`, { body: { professor_id: professorId }, token });
+
+export const assignSubjectToProfessor = (subjectId, professorId, token) =>
+  request(`/admin/subjects/${subjectId}/assign`, { body: { professor_id: professorId }, token });

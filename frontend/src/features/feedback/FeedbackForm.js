@@ -1,54 +1,55 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../App.css';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects, analyzeFeedback } from '../../services/api';
+import SentimentResult from '../student/SentimentResult';
 
-const questions = [
+const QUESTIONS = [
   {
     id: 'active_participation',
     label: 'Participo ativamente das aulas e atividades propostas pelo professor.',
     pillar: 'Comportamental',
-    icon: '🙋‍♂️'
+    icon: '🙋‍♂️',
   },
   {
     id: 'task_completion',
     label: 'Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.',
     pillar: 'Comportamental',
-    icon: '📅'
+    icon: '📅',
   },
   {
     id: 'motivation_interest',
     label: 'Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.',
     pillar: 'Emocional',
-    icon: '💡'
+    icon: '💡',
   },
   {
     id: 'welcoming_environment',
     label: 'Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.',
     pillar: 'Emocional',
-    icon: '🤗'
+    icon: '🤗',
   },
   {
     id: 'comprehension_effort',
     label: 'Dedico tempo e esforço para compreender os conceitos apresentados em aula.',
     pillar: 'Cognitivo',
-    icon: '📚'
+    icon: '📚',
   },
   {
     id: 'content_connection',
     label: 'Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.',
     pillar: 'Cognitivo',
-    icon: '🔗'
-  }
+    icon: '🔗',
+  },
 ];
 
-const ratingLabels = {
+const RATING_LABELS = {
   1: 'Muito insatisfeito',
   2: 'Insatisfeito',
   3: 'Neutro',
   4: 'Satisfeito',
-  5: 'Muito satisfeito'
+  5: 'Muito satisfeito',
 };
 
 function RatingQuestion({ question, value, onChange }) {
@@ -57,27 +58,47 @@ function RatingQuestion({ question, value, onChange }) {
       <label className="question-label">
         <span className="question-icon">{question.icon}</span>
         <div>
-          <span style={{ fontSize: '0.8rem', color: '#6c757d', fontWeight: 500 }}>{question.pillar}</span>
-          <br/>
+          <span className="question-pillar">{question.pillar}</span>
+          <br />
           {question.label}
         </div>
       </label>
       <div className="rating-options">
-        {[1, 2, 3, 4, 5].map(rating => (
+        {[1, 2, 3, 4, 5].map((rating) => (
           <button
             key={rating}
             type="button"
             className={`rating-button ${value === rating ? 'selected' : ''}`}
             onClick={() => onChange(question.id, rating)}
-            title={ratingLabels[rating]}
+            title={RATING_LABELS[rating]}
           >
             {rating}
           </button>
         ))}
       </div>
-      {value && (
-        <p className="rating-label">{ratingLabels[value]}</p>
-      )}
+      {value && <p className="rating-label">{RATING_LABELS[value]}</p>}
+    </div>
+  );
+}
+
+function ProgressSteps({ subjectId, allAnswered, hasComment }) {
+  const steps = [
+    { label: 'Matéria', done: !!subjectId },
+    { label: 'Avaliação', done: allAnswered },
+    { label: 'Comentário', done: hasComment },
+  ];
+
+  return (
+    <div className="progress-steps">
+      {steps.map((step, i) => (
+        <React.Fragment key={step.label}>
+          <div className={`progress-step ${step.done ? 'done' : ''}`}>
+            <div className="step-circle">{step.done ? '✓' : i + 1}</div>
+            <span className="step-label">{step.label}</span>
+          </div>
+          {i < steps.length - 1 && <div className={`step-connector ${step.done ? 'done' : ''}`} />}
+        </React.Fragment>
+      ))}
     </div>
   );
 }
@@ -88,35 +109,30 @@ function FeedbackForm() {
   const [ratings, setRatings] = useState({});
   const [additionalComment, setAdditionalComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const [showResult, setShowResult] = useState(false);
+  const [submittedFeedback, setSubmittedFeedback] = useState(null);
   const { accessToken, user, logout, refreshAccessToken } = useAuth();
 
   useEffect(() => {
-    const fetchSubjects = async () => {
-      if (!accessToken) return;
-      try {
-        const data = await getSubjects(accessToken);
-        setSubjects(data);
-      } catch (e) {
-        console.error("Erro ao buscar matérias:", e);
-      }
-    };
-    fetchSubjects();
+    if (!accessToken) return;
+    getSubjects(accessToken)
+      .then(setSubjects)
+      .catch(() => {});
   }, [accessToken]);
 
   const handleRatingChange = (questionId, value) => {
-    setRatings(prev => ({ ...prev, [questionId]: value }));
+    setRatings((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const allQuestionsAnswered = questions.every(q => ratings[q.id]);
-  
-  const isFormValid = allQuestionsAnswered && subjectId && additionalComment.trim() !== '';
+  const allQuestionsAnswered = QUESTIONS.every((q) => ratings[q.id]);
+  const hasComment = additionalComment.trim() !== '';
+  const isFormValid = allQuestionsAnswered && subjectId && hasComment;
 
-  const sendFeedback = useCallback(async (retry = false) => {
+  const handleSubmit = async (event, retry = false) => {
+    if (event) event.preventDefault();
+    if (!isFormValid || !accessToken) return;
+
     setIsLoading(true);
-    setMessage(null);
     setError(null);
 
     const payload = {
@@ -127,62 +143,58 @@ function FeedbackForm() {
       welcoming_environment: ratings.welcoming_environment,
       comprehension_effort: ratings.comprehension_effort,
       content_connection: ratings.content_connection,
-      additional_comment: additionalComment.trim()
+      additional_comment: additionalComment.trim(),
     };
 
     try {
       const data = await analyzeFeedback(payload, accessToken);
-      setMessage('Informações enviadas com sucesso!');
-      setShowResult(true);
-      
-      setTimeout(() => {
-        setSubjectId('');
-        setRatings({});
-        setAdditionalComment('');
-        setShowResult(false);
-      }, 3000);
+      setSubmittedFeedback(data);
     } catch (err) {
       if (err.message.includes('401') && !retry) {
         const refreshed = await refreshAccessToken();
         if (refreshed) {
-          return sendFeedback(true);
+          return handleSubmit(null, true);
         } else {
           logout();
           setError('Sessão expirada. Por favor, faça login novamente.');
         }
       } else {
-        console.error('Erro ao enviar feedback:', err);
         setError(err.message || 'Falha ao enviar o feedback.');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [subjectId, ratings, additionalComment, accessToken, logout, refreshAccessToken]);
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (isFormValid && accessToken) {
-      sendFeedback();
-    }
   };
 
-  const calculateAverageScore = () => {
-    const values = Object.values(ratings);
-    if (values.length === 0) return 0;
-    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+  const handleReset = () => {
+    setSubjectId('');
+    setRatings({});
+    setAdditionalComment('');
+    setSubmittedFeedback(null);
+    setError(null);
   };
+
+  if (submittedFeedback) {
+    return (
+      <main className="App-header">
+        <h1>Obrigado, {user?.username}!</h1>
+        <p>Seu feedback foi registrado com sucesso.</p>
+        <SentimentResult feedback={submittedFeedback} onClose={handleReset} />
+      </main>
+    );
+  }
 
   return (
-    <header className="App-header">
+    <main className="App-header">
       <h1>Olá, {user?.username}!</h1>
       <p>Como foi a aula de hoje? Sua opinião é muito importante.</p>
 
-      {message && (
-        <div className="success-message-card">
-          <span className="success-icon">✅</span>
-          <p>{message}</p>
-        </div>
-      )}
+      <ProgressSteps
+        subjectId={subjectId}
+        allAnswered={allQuestionsAnswered}
+        hasComment={hasComment}
+      />
+
       {error && <p className="error-message">{error}</p>}
 
       <form onSubmit={handleSubmit} className="structured-feedback-form">
@@ -199,7 +211,7 @@ function FeedbackForm() {
             className="subject-select"
           >
             <option value="" disabled>Escolha uma matéria...</option>
-            {subjects.map(subject => (
+            {subjects.map((subject) => (
               <option key={subject.id} value={subject.id}>
                 {translateSubject(subject.name)}
               </option>
@@ -214,9 +226,8 @@ function FeedbackForm() {
               <p className="section-subtitle">
                 Use a escala de 1 (muito insatisfeito) a 5 (muito satisfeito)
               </p>
-              
               <div className="questions-container">
-                {questions.map(question => (
+                {QUESTIONS.map((question) => (
                   <RatingQuestion
                     key={question.id}
                     question={question}
@@ -225,49 +236,35 @@ function FeedbackForm() {
                   />
                 ))}
               </div>
-
-              {allQuestionsAnswered && (
-                <div className="average-score">
-                  <span>Sua avaliação média: </span>
-                  <strong>{calculateAverageScore()}/5</strong>
-                </div>
-              )}
             </div>
 
             <div className="form-section">
               <label htmlFor="comment" className="section-title">
-                Comentário Adicional
+                Comentário sobre a aula
               </label>
               <textarea
                 id="comment"
                 value={additionalComment}
                 onChange={(e) => setAdditionalComment(e.target.value)}
-                placeholder="Por favor, justifique suas respostas ou deixe um comentário sobre a aula."
+                placeholder="Como foi a aula? O que você achou do ritmo, dos conteúdos ou do ambiente?"
                 rows="4"
                 disabled={isLoading || !accessToken}
                 className="comment-textarea"
-                required 
+                required
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading || !isFormValid || !accessToken}
               className="submit-feedback-button"
             >
-              {isLoading ? 'Enviando...' : 'Enviar'}
+              {isLoading ? 'Enviando...' : 'Enviar feedback'}
             </button>
           </>
         )}
       </form>
-
-      {showResult && (
-        <div className="feedback-success-animation">
-          <div className="success-checkmark">✓</div>
-          <p>Feedback registrado!</p>
-        </div>
-      )}
-    </header>
+    </main>
   );
 }
 

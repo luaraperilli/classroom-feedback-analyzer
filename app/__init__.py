@@ -2,8 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-# 1. Importar o objeto de configuração
-from config import config_by_name 
+from config import config_by_name
 from .seeder import seed_all
 from .models import db
 from .routes import api

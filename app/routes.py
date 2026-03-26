@@ -6,6 +6,10 @@ from .services import create_feedback, get_students_at_risk
 
 api = Blueprint("api", __name__)
 
+
+def _get_user(user_id):
+    return db.session.get(User, int(user_id))
+
 def validate_feedback_payload(data):
     required_fields = [
         'subject_id',
@@ -68,7 +72,7 @@ def analyze_and_save_feedback():
 def get_all_feedbacks():
     claims = get_jwt()
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = _get_user(user_id)
     role = claims.get("role")
 
     if role not in [User.PROFESSOR, User.COORDENADOR]:
@@ -100,17 +104,16 @@ def get_all_feedbacks():
 @api.route("/students-at-risk", methods=["GET"])
 @jwt_required()
 def get_at_risk_students():
-    """Retorna alunos em risco de evasão"""
     claims = get_jwt()
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = _get_user(user_id)
     role = claims.get("role")
 
     if role not in [User.PROFESSOR, User.COORDENADOR]:
         return jsonify({"message": "Acesso negado."}), 403
 
     subject_filter_id = request.args.get('subject_id')
-    min_risk_level = request.args.get('min_risk', 'medio')  # baixo, medio, alto
+    min_risk_level = request.args.get('min_risk', 'medio')
     
     if role == User.PROFESSOR:
         professor_subject_ids = [s.id for s in user.subjects]
@@ -132,17 +135,16 @@ def get_at_risk_students():
 @api.route("/student-progress/<int:student_id>", methods=["GET"])
 @jwt_required()
 def get_student_progress(student_id):
-    """Retorna progresso detalhado de um aluno"""
     claims = get_jwt()
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = _get_user(user_id)
     role = claims.get("role")
 
     if role not in [User.PROFESSOR, User.COORDENADOR]:
         return jsonify({"message": "Acesso negado."}), 403
 
     subject_filter_id = request.args.get('subject_id')
-    
+
     query = StudentRiskAnalysis.query.filter_by(student_id=student_id)
     
     if subject_filter_id:
@@ -170,12 +172,26 @@ def get_student_progress(student_id):
         'recent_feedbacks': [f.to_dict() for f in recent_feedbacks]
     }), 200
 
+@api.route("/my-feedbacks", methods=["GET"])
+@jwt_required()
+def get_my_feedbacks():
+    student_id = get_jwt_identity()
+    subject_filter_id = request.args.get('subject_id')
+
+    query = Feedback.query.filter_by(student_id=student_id)
+    if subject_filter_id:
+        query = query.filter_by(subject_id=subject_filter_id)
+
+    feedbacks = query.order_by(Feedback.created_at.asc()).all()
+    return jsonify([fb.to_dict() for fb in feedbacks]), 200
+
+
 @api.route("/subjects", methods=["GET"])
 @jwt_required()
 def get_subjects():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    
+    user = _get_user(user_id)
+
     if user.role == User.PROFESSOR:
         subjects = user.subjects
     elif user.role in [User.COORDENADOR, User.ALUNO]:

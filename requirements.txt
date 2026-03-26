@@ -1,9 +1,7 @@
 Flask
 flask-cors
-pandas
-scikit-learn
-nltk
-pysentimiento
-jupyter
+flask-sqlalchemy
 Flask-Bcrypt
 Flask-JWT-Extended
+pysentimiento
+python-dotenv

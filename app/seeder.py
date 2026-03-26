@@ -182,30 +182,12 @@ def seed_feedbacks():
     db.session.commit()
     print(f"{len(feedbacks_to_add)} feedbacks criados.")
 
-    print("Calculando análise de risco para todos os alunos...")
     from .services import update_student_risk_analysis
-    
-    all_subjects = Subject.query.all()
-    for student in students:
-        for subject in all_subjects:
-            has_feedback = Feedback.query.filter_by(student_id=student.id, subject_id=subject.id).first()
-            if has_feedback:
-                update_student_risk_analysis(student.id, subject.id)
-    
-    print("Análise de risco concluída.")
-    
-    db.session.bulk_save_objects(feedbacks_to_add)
-    db.session.commit()
-    print(f"{len(feedbacks_to_add)} feedbacks criados.")
 
-    print("Calculando análise de risco para todos os alunos.")
-    from .services import update_student_risk_analysis
-    
     all_subjects = Subject.query.all()
     for student in students:
         for subject in all_subjects:
-            has_feedback = Feedback.query.filter_by(student_id=student.id, subject_id=subject.id).first()
-            if has_feedback:
+            if Feedback.query.filter_by(student_id=student.id, subject_id=subject.id).first():
                 update_student_risk_analysis(student.id, subject.id)
-    
+
     print("Análise de risco concluída.")

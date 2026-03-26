@@ -6,25 +6,14 @@ import RiskAnalysis from './RiskAnalysis';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
-
-const getSentimentClass = (compound) => {
-    if (compound >= 0.05) return 'positive-feedback';
-    if (compound <= -0.05) return 'negative-feedback';
-    return 'neutral-feedback';
-};
-
-const getCompoundColor = (compound) => {
-    if (compound >= 0.05) return '#28a745';
-    if (compound <= -0.05) return '#dc3545';
-    return '#6c757d';
-};
+import { getSentimentClass, getSentimentColor } from '../../utils/sentiment';
 
 function Dashboard() {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [subjects, setSubjects] = useState([]);
   const [period, setPeriod] = useState('all');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
-  const [activeTab, setActiveTab] = useState('feedbacks'); // 'feedbacks' ou 'risk'
+  const [activeTab, setActiveTab] = useState('feedbacks');
   const { feedbacks, isLoading, error } = useDashboardData(selectedSubject, dateRange);
   const { accessToken, user } = useAuth();
 
@@ -190,7 +179,7 @@ function Dashboard() {
                     {fb.compound !== null && (
                       <span>
                         Sentimento: 
-                        <strong style={{ color: getCompoundColor(fb.compound) }}>
+                        <strong style={{ color: getSentimentColor(fb.compound) }}>
                           {' '}{fb.compound.toFixed(2)}
                         </strong>
                       </span>
