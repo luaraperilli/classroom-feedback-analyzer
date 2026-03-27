@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime
+from werkzeug.security import check_password_hash, generate_password_hash
 from .models import db, Feedback, User, Subject, StudentRiskAnalysis
 from .services import create_feedback, get_students_at_risk
+from .decorators import requires_role
 
 api = Blueprint("api", __name__)
 
@@ -49,7 +51,17 @@ def analyze_and_save_feedback():
     
     subject_id = data["subject_id"]
     additional_comment = data.get("additional_comment", "").strip()
-    
+
+    # Prevent duplicate submissions for the same subject on the same day
+    today = datetime.utcnow().date()
+    duplicate = Feedback.query.filter(
+        Feedback.student_id == int(student_id),
+        Feedback.subject_id == subject_id,
+        db.func.date(Feedback.created_at) == today
+    ).first()
+    if duplicate:
+        return jsonify({"error": "Você já enviou um feedback para esta matéria hoje."}), 409
+
     answers = {
         'active_participation': data['active_participation'],
         'task_completion': data['task_completion'],
@@ -69,14 +81,12 @@ def analyze_and_save_feedback():
 
 @api.route("/feedbacks", methods=["GET"])
 @jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
 def get_all_feedbacks():
     claims = get_jwt()
     user_id = get_jwt_identity()
     user = _get_user(user_id)
     role = claims.get("role")
-
-    if role not in [User.PROFESSOR, User.COORDENADOR]:
-        return jsonify({"message": "Acesso negado."}), 403
 
     query = Feedback.query
     subject_filter_id = request.args.get('subject_id')
@@ -103,14 +113,12 @@ def get_all_feedbacks():
 
 @api.route("/students-at-risk", methods=["GET"])
 @jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
 def get_at_risk_students():
     claims = get_jwt()
     user_id = get_jwt_identity()
     user = _get_user(user_id)
     role = claims.get("role")
-
-    if role not in [User.PROFESSOR, User.COORDENADOR]:
-        return jsonify({"message": "Acesso negado."}), 403
 
     subject_filter_id = request.args.get('subject_id')
     min_risk_level = request.args.get('min_risk', 'medio')
@@ -134,14 +142,12 @@ def get_at_risk_students():
 
 @api.route("/student-progress/<int:student_id>", methods=["GET"])
 @jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
 def get_student_progress(student_id):
     claims = get_jwt()
     user_id = get_jwt_identity()
     user = _get_user(user_id)
     role = claims.get("role")
-
-    if role not in [User.PROFESSOR, User.COORDENADOR]:
-        return jsonify({"message": "Acesso negado."}), 403
 
     subject_filter_id = request.args.get('subject_id')
 
@@ -184,6 +190,52 @@ def get_my_feedbacks():
 
     feedbacks = query.order_by(Feedback.created_at.asc()).all()
     return jsonify([fb.to_dict() for fb in feedbacks]), 200
+
+
+@api.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    user_id = get_jwt_identity()
+    user = _get_user(user_id)
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "display_name": user.display_name,
+    }), 200
+
+
+@api.route("/profile", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    user_id = get_jwt_identity()
+    user = _get_user(user_id)
+    data = request.get_json()
+
+    first_name = data.get("first_name", "").strip() or None
+    last_name = data.get("last_name", "").strip() or None
+    new_password = data.get("new_password", "").strip()
+    current_password = data.get("current_password", "").strip()
+
+    if new_password:
+        if not current_password or not check_password_hash(user.password, current_password):
+            return jsonify({"error": "Senha atual incorreta."}), 400
+        user.password = generate_password_hash(new_password, method="pbkdf2:sha256")
+
+    user.first_name = first_name
+    user.last_name = last_name
+    db.session.commit()
+
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "display_name": user.display_name,
+    }), 200
 
 
 @api.route("/subjects", methods=["GET"])

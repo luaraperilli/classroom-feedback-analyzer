@@ -12,11 +12,19 @@ class User(db.Model):
     ALUNO = 'aluno'
     PROFESSOR = 'professor'
     COORDENADOR = 'coordenador'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(50), nullable=False, default='ALUNO')
+    first_name = db.Column(db.String(80), nullable=True)
+    last_name = db.Column(db.String(80), nullable=True)
+
+    @property
+    def display_name(self):
+        if self.first_name:
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.username
     
     subjects = db.relationship('Subject', secondary=user_subjects, lazy='subquery',
         backref=db.backref('professors', lazy=True))
@@ -65,7 +73,7 @@ class Feedback(db.Model):
         return {
             'id': self.id,
             'student_id': self.student_id,
-            'student_username': self.student.username if self.student else 'Unknown',
+            'student_username': self.student.display_name if self.student else 'Unknown',
             'subject': self.subject.name,
             'subject_id': self.subject_id,
             'active_participation': self.active_participation,
@@ -99,33 +107,39 @@ class StudentRiskAnalysis(db.Model):
     student = db.relationship('User', backref='risk_analyses')
     subject = db.relationship('Subject', backref='risk_analyses')
     
+    WEIGHT_SCORE            = 0.5
+    WEIGHT_SENTIMENT        = 0.3
+    WEIGHT_CONSISTENCY      = 0.2
+    WEIGHT_SCORE_NO_SENT    = 0.7
+    WEIGHT_CONSISTENCY_NO_SENT = 0.3
+    CONSISTENCY_CAP         = 5
+    THRESHOLD_ALTO          = 0.6
+    THRESHOLD_MEDIO         = 0.3
+
     def calculate_risk_score(self):
-        # Inverted average score: lower engagement → higher risk component
         score_risk = 1 - self.average_score
 
-        sentiment_risk = 0
+        sentiment_risk = 0.0
         if self.average_sentiment is not None:
-            # Convert compound [-1, +1] to a risk value in [0, 1]
             sentiment_risk = (1 - self.average_sentiment) / 2
 
-        # Fewer submissions increase uncertainty, capped contribution at 5 feedbacks
-        consistency_risk = max(0, (5 - self.feedback_count) / 5) * 0.3
+        consistency_risk = max(0, (self.CONSISTENCY_CAP - self.feedback_count) / self.CONSISTENCY_CAP)
 
-        # Weights: 50% engagement score, 30% sentiment, 20% submission consistency.
-        # When no sentiment data is available, redistribute to 70/0/30.
-        weights = [0.5, 0.3, 0.2]
-        if self.average_sentiment is None:
-            weights = [0.7, 0, 0.3]
+        if self.average_sentiment is not None:
+            self.risk_score = (
+                score_risk       * self.WEIGHT_SCORE       +
+                sentiment_risk   * self.WEIGHT_SENTIMENT   +
+                consistency_risk * self.WEIGHT_CONSISTENCY
+            )
+        else:
+            self.risk_score = (
+                score_risk       * self.WEIGHT_SCORE_NO_SENT       +
+                consistency_risk * self.WEIGHT_CONSISTENCY_NO_SENT
+            )
 
-        self.risk_score = (
-            score_risk * weights[0] +
-            sentiment_risk * weights[1] +
-            consistency_risk * weights[2]
-        )
-
-        if self.risk_score >= 0.6:
+        if self.risk_score >= self.THRESHOLD_ALTO:
             self.risk_level = 'alto'
-        elif self.risk_score >= 0.3:
+        elif self.risk_score >= self.THRESHOLD_MEDIO:
             self.risk_level = 'medio'
         else:
             self.risk_level = 'baixo'
@@ -134,7 +148,7 @@ class StudentRiskAnalysis(db.Model):
         return {
             'id': self.id,
             'student_id': self.student_id,
-            'student_username': self.student.username,
+            'student_username': self.student.display_name,
             'subject_id': self.subject_id,
             'subject_name': self.subject.name,
             'average_score': round(self.average_score, 3),

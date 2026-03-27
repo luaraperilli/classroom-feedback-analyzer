@@ -1,270 +1,280 @@
 import React, { useState, useEffect } from 'react';
-import '../../App.css';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects, analyzeFeedback } from '../../services/api';
-import SentimentResult from '../student/SentimentResult';
+
+const MAX_COMMENT = 400;
 
 const QUESTIONS = [
-  {
-    id: 'active_participation',
-    label: 'Participo ativamente das aulas e atividades propostas pelo professor.',
-    pillar: 'Comportamental',
-    icon: '🙋‍♂️',
-  },
-  {
-    id: 'task_completion',
-    label: 'Cumpro as tarefas e prazos estabelecidos na disciplina com regularidade.',
-    pillar: 'Comportamental',
-    icon: '📅',
-  },
-  {
-    id: 'motivation_interest',
-    label: 'Sinto-me motivado(a) e interessado(a) pelos conteúdos trabalhados nesta disciplina.',
-    pillar: 'Emocional',
-    icon: '💡',
-  },
-  {
-    id: 'welcoming_environment',
-    label: 'Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.',
-    pillar: 'Emocional',
-    icon: '🤗',
-  },
-  {
-    id: 'comprehension_effort',
-    label: 'Dedico tempo e esforço para compreender os conceitos apresentados em aula.',
-    pillar: 'Cognitivo',
-    icon: '📚',
-  },
-  {
-    id: 'content_connection',
-    label: 'Consigo relacionar os conteúdos desta disciplina com situações práticas ou outras matérias.',
-    pillar: 'Cognitivo',
-    icon: '🔗',
-  },
+  { id: 'active_participation',  label: 'Participo ativamente das aulas e atividades.'    },
+  { id: 'task_completion',       label: 'Cumpro as tarefas e prazos com regularidade.'    },
+  { id: 'motivation_interest',   label: 'Me sinto motivado pelos conteúdos da disciplina.' },
+  { id: 'welcoming_environment', label: 'O ambiente de aula é acolhedor e me estimula.'   },
+  { id: 'comprehension_effort',  label: 'Me dedico a entender os conceitos apresentados.' },
+  { id: 'content_connection',    label: 'Consigo conectar o conteúdo com a prática.'      },
 ];
 
-const RATING_LABELS = {
-  1: 'Muito insatisfeito',
-  2: 'Insatisfeito',
-  3: 'Neutro',
-  4: 'Satisfeito',
-  5: 'Muito satisfeito',
-};
+const RATING_LABELS = ['', 'Discordo totalmente', 'Discordo', 'Neutro', 'Concordo', 'Concordo totalmente'];
 
-function RatingQuestion({ question, value, onChange }) {
+const STEP_LABELS = ['Matéria', 'Avaliação', 'Comentário'];
+
+
+function StepIndicator({ current }) {
   return (
-    <div className="rating-question">
-      <label className="question-label">
-        <span className="question-icon">{question.icon}</span>
-        <div>
-          <span className="question-pillar">{question.pillar}</span>
-          <br />
-          {question.label}
-        </div>
-      </label>
-      <div className="rating-options">
-        {[1, 2, 3, 4, 5].map((rating) => (
+    <div className="flex items-center justify-center gap-0 mb-8">
+      {STEP_LABELS.map((label, i) => {
+        const done   = i < current;
+        const active = i === current;
+        return (
+          <React.Fragment key={label}>
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all
+                ${done   ? 'bg-positive text-white' :
+                  active ? 'bg-primary text-white ring-4 ring-primary/20' :
+                           'bg-slate-100 text-[#64748b]'}`}>
+                {done ? '✓' : i + 1}
+              </div>
+              <span className={`text-xs font-medium ${done || active ? 'text-[#1e293b]' : 'text-[#94a3b8]'}`}>
+                {label}
+              </span>
+            </div>
+            {i < STEP_LABELS.length - 1 && (
+              <div className={`h-0.5 w-16 mb-4 mx-1 transition-colors ${done ? 'bg-positive' : 'bg-slate-100'}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+
+function LikertQuestion({ question, value, onChange }) {
+  return (
+    <div className="bg-bg rounded-xl p-4">
+      <p className="text-sm text-[#1e293b] font-medium mb-3">{question.label}</p>
+      <div className="flex gap-2 justify-between">
+        {[1, 2, 3, 4, 5].map((n) => (
           <button
-            key={rating}
+            key={n}
             type="button"
-            className={`rating-button ${value === rating ? 'selected' : ''}`}
-            onClick={() => onChange(question.id, rating)}
-            title={RATING_LABELS[rating]}
+            onClick={() => onChange(question.id, n)}
+            title={RATING_LABELS[n]}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all
+              ${value === n
+                ? 'bg-primary border-primary text-white shadow-md scale-105'
+                : 'border-slate-200 text-[#64748b] hover:border-primary/50 hover:text-primary bg-white'}`}
           >
-            {rating}
+            {n}
           </button>
         ))}
       </div>
-      {value && <p className="rating-label">{RATING_LABELS[value]}</p>}
+      <p className={`text-xs text-center mt-2 transition-opacity ${value ? 'text-[#64748b] opacity-100' : 'opacity-0'}`}>
+        {RATING_LABELS[value] || '—'}
+      </p>
     </div>
   );
 }
 
-function ProgressSteps({ subjectId, allAnswered, hasComment }) {
-  const steps = [
-    { label: 'Matéria', done: !!subjectId },
-    { label: 'Avaliação', done: allAnswered },
-    { label: 'Comentário', done: hasComment },
-  ];
+
+function RatingProgress({ answered, total }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-500"
+          style={{ width: `${(answered / total) * 100}%` }}
+        />
+      </div>
+      <span className="text-xs text-[#94a3b8] flex-shrink-0">{answered}/{total} respondidas</span>
+    </div>
+  );
+}
+
+
+function CommentField({ value, onChange, disabled }) {
+  const remaining = MAX_COMMENT - value.length;
+  const isNearLimit = remaining < 60;
 
   return (
-    <div className="progress-steps">
-      {steps.map((step, i) => (
-        <React.Fragment key={step.label}>
-          <div className={`progress-step ${step.done ? 'done' : ''}`}>
-            <div className="step-circle">{step.done ? '✓' : i + 1}</div>
-            <span className="step-label">{step.label}</span>
-          </div>
-          {i < steps.length - 1 && <div className={`step-connector ${step.done ? 'done' : ''}`} />}
-        </React.Fragment>
-      ))}
+    <div className="bg-surface rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+      <label htmlFor="comment" className="block text-sm font-semibold text-[#1e293b] mb-1">
+        Como foi a aula pra você hoje?
+      </label>
+      <p className="text-xs text-[#94a3b8] mb-3">
+        Escreva livremente — suas palavras serão analisadas e as mais relevantes serão destacadas no resultado.
+      </p>
+      <textarea
+        id="comment"
+        value={value}
+        onChange={(e) => onChange(e.target.value.slice(0, MAX_COMMENT))}
+        rows={4}
+        required
+        disabled={disabled}
+        placeholder="Fique à vontade para compartilhar o que quiser: o ritmo, o conteúdo e/ou como você se sentiu."
+        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-[#1e293b]
+                   placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                   focus:border-primary resize-none transition"
+      />
+      <div className="flex justify-end mt-1.5">
+        <span className={`text-xs transition-colors ${isNearLimit ? 'text-amber-500 font-medium' : 'text-[#94a3b8]'}`}>
+          {remaining} caracteres restantes
+        </span>
+      </div>
     </div>
   );
 }
+
 
 function FeedbackForm() {
   const [subjectId, setSubjectId] = useState('');
-  const [subjects, setSubjects] = useState([]);
-  const [ratings, setRatings] = useState({});
-  const [additionalComment, setAdditionalComment] = useState('');
+  const [subjects, setSubjects]   = useState([]);
+  const [ratings, setRatings]     = useState({});
+  const [comment, setComment]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [submittedFeedback, setSubmittedFeedback] = useState(null);
+  const [error, setError]         = useState(null);
+
   const { accessToken, user, logout, refreshAccessToken } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    let cancelled = false;
     if (!accessToken) return;
     getSubjects(accessToken)
-      .then(setSubjects)
+      .then((data) => { if (!cancelled) setSubjects(data); })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [accessToken]);
 
-  const handleRatingChange = (questionId, value) => {
-    setRatings((prev) => ({ ...prev, [questionId]: value }));
-  };
+  const answeredCount = QUESTIONS.filter((q) => ratings[q.id]).length;
+  const allAnswered   = answeredCount === QUESTIONS.length;
+  const isValid       = !!subjectId && allAnswered && comment.trim() !== '';
+  const currentStep   = !subjectId ? 0 : !allAnswered ? 1 : 2;
 
-  const allQuestionsAnswered = QUESTIONS.every((q) => ratings[q.id]);
-  const hasComment = additionalComment.trim() !== '';
-  const isFormValid = allQuestionsAnswered && subjectId && hasComment;
+  const displayName = user?.first_name || user?.username;
 
-  const handleSubmit = async (event, retry = false) => {
-    if (event) event.preventDefault();
-    if (!isFormValid || !accessToken) return;
+  const handleSubmit = async (e, retry = false) => {
+    if (e) e.preventDefault();
+    if (!isValid || !accessToken) return;
 
     setIsLoading(true);
     setError(null);
 
     const payload = {
-      subject_id: parseInt(subjectId),
-      active_participation: ratings.active_participation,
-      task_completion: ratings.task_completion,
-      motivation_interest: ratings.motivation_interest,
+      subject_id:            parseInt(subjectId),
+      active_participation:  ratings.active_participation,
+      task_completion:       ratings.task_completion,
+      motivation_interest:   ratings.motivation_interest,
       welcoming_environment: ratings.welcoming_environment,
-      comprehension_effort: ratings.comprehension_effort,
-      content_connection: ratings.content_connection,
-      additional_comment: additionalComment.trim(),
+      comprehension_effort:  ratings.comprehension_effort,
+      content_connection:    ratings.content_connection,
+      additional_comment:    comment.trim(),
     };
 
     try {
       const data = await analyzeFeedback(payload, accessToken);
-      setSubmittedFeedback(data);
+      navigate('/historico', { state: { latest: data } });
     } catch (err) {
       if (err.message.includes('401') && !retry) {
         const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          return handleSubmit(null, true);
-        } else {
-          logout();
-          setError('Sessão expirada. Por favor, faça login novamente.');
-        }
+        if (refreshed) return handleSubmit(null, true);
+        logout();
+        setError('Sessão expirada. Por favor, faça login novamente.');
       } else {
-        setError(err.message || 'Falha ao enviar o feedback.');
+        setError(err.message || 'Não foi possível enviar. Tente novamente.');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setSubjectId('');
-    setRatings({});
-    setAdditionalComment('');
-    setSubmittedFeedback(null);
-    setError(null);
-  };
-
-  if (submittedFeedback) {
-    return (
-      <main className="App-header">
-        <h1>Obrigado, {user?.username}!</h1>
-        <p>Seu feedback foi registrado com sucesso.</p>
-        <SentimentResult feedback={submittedFeedback} onClose={handleReset} />
-      </main>
-    );
-  }
-
   return (
-    <main className="App-header">
-      <h1>Olá, {user?.username}!</h1>
-      <p>Como foi a aula de hoje? Sua opinião é muito importante.</p>
+    <div className="min-h-screen bg-bg">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
 
-      <ProgressSteps
-        subjectId={subjectId}
-        allAnswered={allQuestionsAnswered}
-        hasComment={hasComment}
-      />
-
-      {error && <p className="error-message">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="structured-feedback-form">
-        <div className="form-section">
-          <label htmlFor="subject-select" className="section-title">
-            Selecione a matéria
-          </label>
-          <select
-            id="subject-select"
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            required
-            disabled={isLoading || !accessToken}
-            className="subject-select"
-          >
-            <option value="" disabled>Escolha uma matéria...</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {translateSubject(subject.name)}
-              </option>
-            ))}
-          </select>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#1e293b]">Olá, {displayName}!</h1>
+          <p className="text-[#64748b] mt-1">Como foi a aula de hoje? Sua opinião importa.</p>
         </div>
 
-        {subjectId && (
-          <>
-            <div className="form-section">
-              <h3 className="section-title">Avalie seu engajamento na aula</h3>
-              <p className="section-subtitle">
-                Use a escala de 1 (muito insatisfeito) a 5 (muito satisfeito)
-              </p>
-              <div className="questions-container">
-                {QUESTIONS.map((question) => (
-                  <RatingQuestion
-                    key={question.id}
-                    question={question}
-                    value={ratings[question.id]}
-                    onChange={handleRatingChange}
-                  />
-                ))}
-              </div>
-            </div>
+        <StepIndicator current={currentStep} />
 
-            <div className="form-section">
-              <label htmlFor="comment" className="section-title">
-                Comentário sobre a aula
-              </label>
-              <textarea
-                id="comment"
-                value={additionalComment}
-                onChange={(e) => setAdditionalComment(e.target.value)}
-                placeholder="Como foi a aula? O que você achou do ritmo, dos conteúdos ou do ambiente?"
-                rows="4"
-                disabled={isLoading || !accessToken}
-                className="comment-textarea"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading || !isFormValid || !accessToken}
-              className="submit-feedback-button"
-            >
-              {isLoading ? 'Enviando...' : 'Enviar feedback'}
-            </button>
-          </>
+        {error && (
+          <div className="mb-6 text-sm text-negative bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            {error}
+          </div>
         )}
-      </form>
-    </main>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Step 1 — Subject chips */}
+          <div className="bg-surface rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+            <p className="text-sm font-semibold text-[#1e293b] mb-3">
+              Qual matéria você quer avaliar?
+            </p>
+            {subjects.length === 0 ? (
+              <p className="text-sm text-[#94a3b8]">Nenhuma matéria disponível.</p>
+            ) : (
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+                {subjects.map((s) => {
+                  const selected = String(subjectId) === String(s.id);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => setSubjectId(String(s.id))}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${selected
+                          ? 'bg-primary border-primary text-white shadow-sm'
+                          : 'border-slate-200 text-[#64748b] hover:border-primary/50 hover:text-primary bg-white'}`}
+                    >
+                      {translateSubject(s.name)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {subjectId && (
+            <>
+              {/* Step 2 — Likert */}
+              <div className="bg-surface rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+                <h2 className="text-sm font-semibold text-[#1e293b] mb-1">Como você se sentiu nesta aula?</h2>
+                <p className="text-xs text-[#64748b] mb-4">1 = discordo totalmente &nbsp;·&nbsp; 5 = concordo totalmente</p>
+                <RatingProgress answered={answeredCount} total={QUESTIONS.length} />
+                <div className="space-y-3">
+                  {QUESTIONS.map((q) => (
+                    <LikertQuestion
+                      key={q.id}
+                      question={q}
+                      value={ratings[q.id]}
+                      onChange={(id, val) => setRatings((prev) => ({ ...prev, [id]: val }))}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 3 — Comment */}
+              <CommentField value={comment} onChange={setComment} disabled={isLoading} />
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading || !isValid}
+                className="w-full py-3 rounded-xl bg-primary text-white text-sm font-semibold
+                           hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed
+                           shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
+              >
+                {isLoading ? 'Enviando...' : 'Enviar Feedback'}
+              </button>
+            </>
+          )}
+        </form>
+      </div>
+    </div>
   );
 }
 

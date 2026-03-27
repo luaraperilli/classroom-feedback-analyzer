@@ -1,193 +1,190 @@
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
-from .models import db, User, Subject, Feedback, StudentRiskAnalysis
-from .services import analyze_sentiment_text
+from .models import db, User, Subject, Feedback
+from .services import analyze_sentiment_text, update_student_risk_analysis
 import random
-import re
+
+SUBJECT_NAMES = [
+    'Data Structures',
+    'Database Systems',
+    'Software Engineering',
+    'Computer Networks',
+    'Information Security',
+]
+
+# (username, display name used in comments, risk profile)
+# (username, first_name, last_name, risk_profile)
+STUDENTS = [
+    ('Marina',   'Marina',   'Santos',   'baixo'),
+    ('Gabriela', 'Gabriela', 'Oliveira', 'baixo'),
+    ('Alan',     'Alan',     'Costa',    'medio'),
+    ('Pedro',    'Pedro',    'Almeida',  'medio'),
+    ('Gabriel',  'Gabriel',  'Ferreira', 'alto'),
+    ('Juliana',  'Juliana',  'Lima',     'alto'),
+]
+
+# Comments per profile — varied enough to produce distinct sentiment arcs
+COMMENTS = {
+    'baixo': [
+        'Adorei a aula de hoje! O professor explicou muito bem e consegui acompanhar tudo.',
+        'Aula excelente. Estou aprendendo bastante e me sinto motivado a continuar.',
+        'O conteúdo foi bem apresentado. Consigo relacionar com o que vimos na semana passada.',
+        'Participei bastante hoje e cumpri todas as atividades. Ambiente acolhedor.',
+        'Muito boa aula. O ritmo estava ótimo e tirei todas as dúvidas que tinha.',
+        'Me sinto confiante com o conteúdo. A prática ajudou muito a fixar.',
+        'Ótima dinâmica de aula. Gostei especialmente dos exemplos práticos.',
+        'Consegui entregar todas as tarefas e ainda ajudei um colega. Satisfeito.',
+        'Aula produtiva. O conteúdo foi claro e o ambiente estimulante.',
+        'Estou gostando muito da disciplina. Sinto evolução semana a semana.',
+    ],
+    'medio': [
+        'A aula foi ok, mas alguns pontos ficaram confusos. Vou rever o material.',
+        'Participei parcialmente. Tive dificuldade em um exercício mas resolvi depois.',
+        'O ritmo estava um pouco rápido hoje. Precisei parar e reler algumas partes.',
+        'Entendi a maior parte, mas a parte prática me gerou dúvidas.',
+        'Aula razoável. Consigo acompanhar, mas minha motivação está oscilando.',
+        'Fiz as tarefas, mas com dificuldade em algumas. Preciso estudar mais.',
+        'Alguns conceitos ainda não estão claros pra mim. Vou pedir ajuda.',
+        'A aula foi boa em geral, mas fiquei perdido em um ponto específico.',
+        'Estou conseguindo acompanhar, mas o conteúdo está ficando mais denso.',
+        'Aula mediana. Espero que a próxima seja mais tranquila.',
+    ],
+    'alto': [
+        'Não estou conseguindo acompanhar o ritmo. Me sinto muito perdido.',
+        'Não entendo nada do que é explicado. Estou desmotivado e pensando em desistir.',
+        'As tarefas são muito difíceis e já estou atrasado em várias delas.',
+        'Me sinto completamente perdido nesta matéria. Não consigo participar.',
+        'O conteúdo avança rápido demais. Não consigo absorver nada.',
+        'Estou atrasado e sem motivação. Não sei se vou conseguir recuperar.',
+        'Muito difícil. Não consigo relacionar com nada que já aprendi antes.',
+        'Me sinto excluído das discussões porque não entendo o básico.',
+        'Já perdi muitas entregas. Estou considerando trancar a matéria.',
+        'Nada faz sentido pra mim ainda. Preciso de um suporte diferente.',
+    ],
+}
+
+# Score ranges per profile
+SCORES = {
+    'baixo': [4, 5],
+    'medio': [2, 3, 4],
+    'alto':  [1, 2],
+}
+
+# Sentiment arc per profile: list of week offsets and tendency modifier
+# This makes the chart show nuanced evolution instead of flat data
+def get_week_modifier(profile, week_index, total_weeks):
+    if profile == 'baixo':
+        # Starts good, small dip mid-semester, recovers
+        progress = week_index / max(total_weeks - 1, 1)
+        return 0.1 * (-1 if 0.3 < progress < 0.6 else 1)
+    if profile == 'medio':
+        # Starts neutral, worsens slightly, stabilises
+        progress = week_index / max(total_weeks - 1, 1)
+        return -0.15 * progress + 0.05
+    # alto: steady decline
+    return -0.05 * week_index
+
 
 def seed_all():
-    if User.query.first() is None:
-        seed_users()
-        seed_subjects()
-        seed_feedbacks()
-        print("Banco de dados populado com sucesso.")
-    else:
-        print("Banco de dados já populado.")
+    if User.query.first() is not None:
+        print('Database already seeded.')
+        return
+    seed_users()
+    seed_subjects()
+    seed_feedbacks()
+    print('Database seeded successfully.')
+
 
 def seed_users():
-    hashed_password = generate_password_hash("123", method="pbkdf2:sha256")
+    pw = generate_password_hash('123', method='pbkdf2:sha256')
 
-    coordinator = User(username="coordinator", password=hashed_password, role=User.COORDENADOR)
-    professor = User(username="professor", password=hashed_password, role=User.PROFESSOR)
-    
+    coordinator = User(username='Coordenador', password=pw, role=User.COORDENADOR)
+    professor   = User(username='Professor',   password=pw, role=User.PROFESSOR)
     db.session.add_all([coordinator, professor])
-    
-    # 2 Alunos de Baixo Risco
-    db.session.add(User(username="student1", password=hashed_password, role=User.ALUNO))
-    db.session.add(User(username="student2", password=hashed_password, role=User.ALUNO))
 
-    # 2 Alunos de Médio Risco
-    db.session.add(User(username="student3", password=hashed_password, role=User.ALUNO))
-    db.session.add(User(username="student4", password=hashed_password, role=User.ALUNO))
-
-    # 2 Alunos de Alto Risco
-    db.session.add(User(username="student5", password=hashed_password, role=User.ALUNO))
-    db.session.add(User(username="student6", password=hashed_password, role=User.ALUNO))
+    for username, first_name, last_name, _ in STUDENTS:
+        db.session.add(User(username=username, password=pw, role=User.ALUNO,
+                            first_name=first_name, last_name=last_name))
 
     db.session.commit()
-    print("Utilizadores criados (1 coord, 1 prof, 6 alunos).")
+    print(f'Users created: coordinator, professor, {len(STUDENTS)} students.')
+
 
 def seed_subjects():
-    if Subject.query.first() is not None:
-        print("Matérias já existem.")
-        return
-
-    data_structures = Subject(name="Data Structures")
-    database_systems = Subject(name="Database Systems")
-    software_engineering = Subject(name="Software Engineering")
-    computer_networks = Subject(name="Computer Networks")
-    information_security = Subject(name="Information Security")
-
-    db.session.add_all([
-        data_structures, 
-        database_systems, 
-        software_engineering, 
-        computer_networks, 
-        information_security
-    ])
+    subjects = [Subject(name=name) for name in SUBJECT_NAMES]
+    db.session.add_all(subjects)
     db.session.commit()
 
     professor = User.query.filter_by(role=User.PROFESSOR).first()
-    if professor:
-        professor.subjects.append(data_structures)
-        professor.subjects.append(database_systems)
-        professor.subjects.append(software_engineering)
-        db.session.commit()
-    print("Matérias criadas e associadas ao professor.")
+    for subject in subjects[:3]:
+        professor.subjects.append(subject)
+    db.session.commit()
+    print('Subjects created and assigned.')
 
 
 def seed_feedbacks():
-    if Feedback.query.first() is not None:
-        print("Feedbacks já existem.")
-        return
-
-    print("Gerando feedbacks para 6 alunos...")
+    students = {u.username: u for u in User.query.filter_by(role=User.ALUNO).all()}
+    subjects = Subject.query.filter(Subject.name.in_(SUBJECT_NAMES[:3])).all()
     now = datetime.utcnow()
-    
-    students = User.query.filter_by(role=User.ALUNO).all()
-    professor_subjects = Subject.query.filter(Subject.name.in_([
-        'Data Structures', 
-        'Database Systems', 
-        'Software Engineering'
-    ])).all()
-    
-    if not students or not professor_subjects:
-        print("Nenhum aluno ou matéria de professor encontrado para gerar feedbacks.")
-        return
-    
-    comments = {
-        'alto': [
-            "Estou completamente perdido nesta matéria. Não consigo participar.",
-            "Não entendo nada do que é explicado, me sinto muito desmotivado.",
-            "As tarefas são muito difíceis e já estou atrasado em várias.",
-            "O ambiente não me ajuda e tenho dificuldade em me conectar com o conteúdo.",
-            "Me sinto burro nesta aula, acho que vou desistir."
-        ],
-        'medio': [
-            "A aula é ok, mas alguns pontos ficam bem confusos.",
-            "Eu participo às vezes, mas não entrego todas as tarefas a tempo.",
-            "Estou me esforçando, mas a minha motivação vai e vem.",
-            "O ambiente é bom, mas sinto que preciso de mais ajuda para me conectar com a matéria.",
-            "Consigo fazer o básico, mas tenho dificuldade em aplicar na prática."
-        ],
-        'baixo': [
-            "Estou adorando a disciplina! Participo sempre que posso.",
-            "Consigo cumprir todas as tarefas e me sinto muito motivado.",
-            "O ambiente da aula é excelente e acolhedor.",
-            "Dedico-me bastante e consigo ver a aplicação prática do conteúdo.",
-            "Aula excelente, estou aprendendo muito!"
-        ]
-    }
-    
-    score_ranges = {
-        'alto': [1, 2],         # Scores muito baixos
-        'medio': [2, 3, 4],     # Scores medianos
-        'baixo': [4, 5]         # Scores altos
-    }
 
     feedbacks_to_add = []
 
-    for student in students:
-        match = re.search(r'(\d+)$', student.username)
-        if not match:
-            continue
-            
-        student_num = int(match.group(1))
-        
-        if 1 <= student_num <= 2:
-            profile = 'baixo'
-        elif 3 <= student_num <= 4:
-            profile = 'medio'
-        elif 5 <= student_num <= 6:
-            profile = 'alto'
-        else:
-            continue
+    for username, _, _, profile in STUDENTS:
+        student = students[username]
+        score_pool   = SCORES[profile]
+        comment_pool = COMMENTS[profile]
 
-        base_scores = score_ranges[profile]
-        comment_list = comments[profile]
-        
-        num_feedbacks = random.randint(3, 5) 
-        
+        # Each student gets 8-12 feedbacks spread over 8 weeks
+        total_weeks = 8
+        num_feedbacks = random.randint(8, 12)
+
         for i in range(num_feedbacks):
-            subject = random.choice(professor_subjects)
-            days_ago = random.randint(1, 30)
-            created_date = now - timedelta(days=days_ago)
-            
-            answers = {
-                'active_participation': random.choice(base_scores),
-                'task_completion': random.choice(base_scores),
-                'motivation_interest': random.choice(base_scores),
-                'welcoming_environment': random.choice(base_scores),
-                'comprehension_effort': random.choice(base_scores),
-                'content_connection': random.choice(base_scores)
-            }
-            
-            comment = random.choice(comment_list)
-            
-            feedback = Feedback(
+            week_index = random.randint(0, total_weeks - 1)
+            # Spread within the week
+            days_offset = week_index * 7 + random.randint(0, 4)
+            created_at  = now - timedelta(days=(total_weeks * 7 - days_offset))
+
+            base_scores = [random.choice(score_pool) for _ in range(6)]
+
+            # Apply arc modifier: nudge scores up or down based on week
+            modifier = get_week_modifier(profile, week_index, total_weeks)
+            adjusted = [max(1, min(5, round(s + modifier))) for s in base_scores]
+
+            comment = random.choice(comment_pool)
+            subject = random.choice(subjects)
+
+            fb = Feedback(
                 student_id=student.id,
                 subject_id=subject.id,
-                active_participation=answers['active_participation'],
-                task_completion=answers['task_completion'],
-                motivation_interest=answers['motivation_interest'],
-                welcoming_environment=answers['welcoming_environment'],
-                comprehension_effort=answers['comprehension_effort'],
-                content_connection=answers['content_connection'],
+                active_participation=adjusted[0],
+                task_completion=adjusted[1],
+                motivation_interest=adjusted[2],
+                welcoming_environment=adjusted[3],
+                comprehension_effort=adjusted[4],
+                content_connection=adjusted[5],
                 additional_comment=comment,
-                created_at=created_date
+                created_at=created_at,
             )
-            
-            feedback.overall_score = feedback.calculate_overall_score()
-            
+            fb.overall_score = fb.calculate_overall_score()
+
             sentiment = analyze_sentiment_text(comment)
             if sentiment:
-                feedback.compound = sentiment['compound']
-                feedback.neg = sentiment['neg']
-                feedback.neu = sentiment['neu']
-                feedback.pos = sentiment['pos']
-            
-            feedbacks_to_add.append(feedback)
-    
+                fb.compound = sentiment['compound']
+                fb.neg      = sentiment['neg']
+                fb.neu      = sentiment['neu']
+                fb.pos      = sentiment['pos']
+
+            feedbacks_to_add.append(fb)
+
     db.session.bulk_save_objects(feedbacks_to_add)
     db.session.commit()
-    print(f"{len(feedbacks_to_add)} feedbacks criados.")
-
-    from .services import update_student_risk_analysis
+    print(f'{len(feedbacks_to_add)} feedbacks created.')
 
     all_subjects = Subject.query.all()
-    for student in students:
+    for username, _, _, _ in STUDENTS:
+        student = students[username]
         for subject in all_subjects:
             if Feedback.query.filter_by(student_id=student.id, subject_id=subject.id).first():
                 update_student_risk_analysis(student.id, subject.id)
 
-    print("Análise de risco concluída.")
+    print('Risk analysis computed.')

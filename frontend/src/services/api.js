@@ -1,7 +1,7 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+import API_BASE_URL from '../config';
 
 const request = async (endpoint, options = {}) => {
-  const { body, token, ...customConfig } = options;
+  const { body, token, method, ...customConfig } = options;
   const headers = { 'Content-Type': 'application/json' };
 
   if (token) {
@@ -9,7 +9,7 @@ const request = async (endpoint, options = {}) => {
   }
 
   const config = {
-    method: body ? 'POST' : 'GET',
+    method: method || (body ? 'POST' : 'GET'),
     ...customConfig,
     headers: { ...headers, ...customConfig.headers },
   };
@@ -47,25 +47,30 @@ const buildUrl = (path, params = {}) => {
 export const login = (username, password) =>
   request('/login', { body: { username, password } });
 
-export const register = (username, password, role) =>
-  request('/register', { body: { username, password, role } });
+export const register = (username, password, role, firstName, lastName) =>
+  request('/register', { body: { username, password, role, first_name: firstName, last_name: lastName } });
+
+export const getProfile = (token) => request('/profile', { token });
+
+export const updateProfile = (data, token) =>
+  request('/profile', { method: 'PUT', body: data, token });
 
 export const analyzeFeedback = (feedbackData, token) =>
   request('/analyze', { body: feedbackData, token });
 
 export const getFeedbacks = (subjectId, dateRange, token) =>
   request(
-    `/feedbacks?${new URLSearchParams({
-      ...(subjectId ? { subject_id: subjectId } : {}),
-      ...(dateRange?.startDate ? { start_date: dateRange.startDate.toISOString() } : {}),
-      ...(dateRange?.endDate ? { end_date: dateRange.endDate.toISOString() } : {}),
-    })}`,
+    buildUrl('/feedbacks', {
+      subject_id:  subjectId || undefined,
+      start_date:  dateRange?.startDate?.toISOString() || undefined,
+      end_date:    dateRange?.endDate?.toISOString()   || undefined,
+    }).replace(API_BASE_URL, ''),
     { token }
   );
 
 export const getMyFeedbacks = (subjectId, token) =>
   request(
-    `/my-feedbacks${subjectId ? `?subject_id=${subjectId}` : ''}`,
+    buildUrl('/my-feedbacks', { subject_id: subjectId || undefined }).replace(API_BASE_URL, ''),
     { token }
   );
 
@@ -73,7 +78,7 @@ export const getStudentsAtRisk = (subjectId, minRisk, token) =>
   request(
     buildUrl('/students-at-risk', {
       subject_id: subjectId || undefined,
-      min_risk: minRisk || undefined,
+      min_risk:   minRisk   || undefined,
     }).replace(API_BASE_URL, ''),
     { token }
   );

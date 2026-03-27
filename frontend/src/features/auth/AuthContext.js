@@ -1,13 +1,12 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import API_BASE_URL from '../../config';
+import { getProfile } from '../../services/api';
 
 const AuthContext = createContext(null);
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
-  const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken'));
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +34,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setAccessToken(null);
-    setRefreshToken(null);
     setUser(null);
   }, []);
 
@@ -82,7 +80,10 @@ export const AuthProvider = ({ children }) => {
         refreshAccessToken().finally(() => setIsLoading(false));
       } else {
         setAccessToken(storedAccessToken);
-        setIsLoading(false);
+        getProfile(storedAccessToken)
+          .then((profile) => setUser((prev) => prev ? { ...prev, ...profile } : profile))
+          .catch(() => {})
+          .finally(() => setIsLoading(false));
       }
     } else {
       setIsLoading(false);
@@ -93,7 +94,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('accessToken', newAccessToken);
     localStorage.setItem('refreshToken', newRefreshToken);
     setAccessToken(newAccessToken);
-    setRefreshToken(newRefreshToken);
     if (userData) {
       setUser(userData);
     } else {
@@ -101,18 +101,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, [decodeAndSetUser]);
 
+  const updateUser = useCallback((partialUser) => {
+    setUser((prev) => prev ? { ...prev, ...partialUser } : prev);
+  }, []);
+
   const isAuthenticated = !!accessToken;
 
   const value = {
     isAuthenticated,
     accessToken,
-    refreshToken,
     user,
     login,
     logout,
+    updateUser,
     refreshAccessToken,
     isLoading,
-    API_BASE_URL
   };
 
   return (
