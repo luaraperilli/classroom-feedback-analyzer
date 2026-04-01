@@ -3,6 +3,7 @@ import { useDashboardData } from './useDashboardData';
 import SentimentSummary from '../../components/SentimentSummary';
 import SentimentTrendChart from '../../components/SentimentTrendChart';
 import RiskAnalysis from './RiskAnalysis';
+import GlobalShapAnalysis from './GlobalShapAnalysis';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
@@ -213,8 +214,9 @@ function Dashboard() {
   const [activeTab, setActiveTab]             = useState('feedbacks');
   const [visibleCount, setVisibleCount]       = useState(10);
 
-  const [riskSubject, setRiskSubject]   = useState('');
-  const [minRiskLevel, setMinRiskLevel] = useState('medio');
+  const [riskSubject, setRiskSubject]       = useState('');
+  const [minRiskLevel, setMinRiskLevel]   = useState('medio');
+  const [shapSubject, setShapSubject]     = useState('');
 
   const { feedbacks, isLoading, error } = useDashboardData(selectedSubject, dateRange);
   const { accessToken, user } = useAuth();
@@ -342,7 +344,7 @@ function Dashboard() {
                   ))}
                 </FilterSelect>
               </>
-            ) : (
+            ) : activeTab === 'risk' ? (
               <>
                 <FilterSelect
                   id="risk-subject-filter"
@@ -367,6 +369,18 @@ function Dashboard() {
                   <option value="alto">Apenas alto risco</option>
                 </FilterSelect>
               </>
+            ) : (
+              <FilterSelect
+                id="shap-subject-filter"
+                label="Matéria"
+                value={shapSubject}
+                onChange={(e) => setShapSubject(e.target.value)}
+              >
+                <option value="">Todas as matérias</option>
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.id}>{translateSubject(s.name)}</option>
+                ))}
+              </FilterSelect>
             )}
           </div>
         </div>
@@ -376,6 +390,7 @@ function Dashboard() {
           {[
             { id: 'feedbacks', label: 'Feedbacks' },
             { id: 'risk',      label: 'Análise de Risco' },
+            { id: 'shap',      label: 'Explicabilidade' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -449,6 +464,11 @@ function Dashboard() {
         {/* Risk tab */}
         {activeTab === 'risk' && (
           <RiskAnalysis selectedSubject={riskSubject} minRiskLevel={minRiskLevel} />
+        )}
+
+        {/* Explainability tab */}
+        {activeTab === 'shap' && (
+          <GlobalShapAnalysis selectedSubject={shapSubject} />
         )}
 
       </div>

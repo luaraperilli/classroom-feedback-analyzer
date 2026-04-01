@@ -1,8 +1,37 @@
+import numpy as np
+import shap
 from pysentimiento import create_analyzer
-from sqlalchemy import func
+from lime.lime_text import LimeTextExplainer
 from .models import db, Feedback, StudentRiskAnalysis
 
 sentiment_analyzer = create_analyzer(task="sentiment", lang="pt")
+
+lime_explainer = LimeTextExplainer(
+    class_names=['NEG', 'NEU', 'POS'],
+    random_state=42,
+)
+
+shap_masker = shap.maskers.Text(tokenizer=r"\W+")
+
+def _predict_proba(texts):
+    results = []
+    for text in texts:
+        try:
+            pred = sentiment_analyzer.predict(text)
+            results.append([
+                pred.probas.get('NEG', 0.0),
+                pred.probas.get('NEU', 0.0),
+                pred.probas.get('POS', 0.0),
+            ])
+        except Exception:
+            results.append([0.33, 0.34, 0.33])
+    return np.array(results)
+
+shap_explainer = shap.Explainer(
+    _predict_proba,
+    shap_masker,
+    output_names=['NEG', 'NEU', 'POS'],
+)
 
 def analyze_sentiment_text(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
@@ -10,7 +39,6 @@ def analyze_sentiment_text(text: str) -> dict:
 
     result = sentiment_analyzer.predict(text)
     probabilities = result.probas
-    
     compound_score = probabilities.get('POS', 0.0) - probabilities.get('NEG', 0.0)
 
     return {
@@ -19,6 +47,43 @@ def analyze_sentiment_text(text: str) -> dict:
         'neu': round(probabilities.get('NEU', 0.0), 4),
         'pos': round(probabilities.get('POS', 0.0), 4)
     }
+
+POS_IDX = 2
+
+def explain_sentiment_lime(text: str) -> dict:
+    if not isinstance(text, str) or not text.strip():
+        return {}
+
+    exp = lime_explainer.explain_instance(
+        text,
+        _predict_proba,
+        labels=[POS_IDX],
+        num_features=30,
+        num_samples=300,
+    )
+
+    return {word.lower(): round(weight, 4) for word, weight in exp.as_list(label=POS_IDX)}
+
+def explain_sentiment_shap(text: str) -> dict:
+    if not isinstance(text, str) or not text.strip():
+        return {}
+
+    shap_values = shap_explainer([text], max_evals=500)
+
+    values = shap_values.values[0, :, POS_IDX]
+    tokens = shap_values.data[0]
+
+    import re
+    result = {}
+    for token, val in zip(tokens, values):
+        clean = re.sub(r'[^\wáàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]', '', token).strip().lower()
+        if not clean:
+            continue
+        if clean in result:
+            result[clean] += float(val)
+        else:
+            result[clean] = float(val)
+    return {k: round(v, 4) for k, v in result.items()}
 
 def create_feedback(student_id, subject_id, answers, additional_comment=None):
     sentiment_scores = None

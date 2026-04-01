@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from .models import db, Feedback, User, Subject, StudentRiskAnalysis
-from .services import create_feedback, get_students_at_risk
+from .services import create_feedback, get_students_at_risk, explain_sentiment_lime, explain_sentiment_shap
 from .decorators import requires_role
 
 api = Blueprint("api", __name__)
@@ -73,6 +73,18 @@ def analyze_and_save_feedback():
     
     try:
         feedback = create_feedback(student_id, subject_id, answers, additional_comment)
+
+        if additional_comment and additional_comment.strip():
+            try:
+                feedback.token_attributions = explain_sentiment_lime(additional_comment)
+            except Exception:
+                pass
+            try:
+                feedback.shap_attributions = explain_sentiment_shap(additional_comment)
+            except Exception:
+                pass
+            db.session.commit()
+
         return jsonify(feedback.to_dict()), 201
     except Exception as e:
         db.session.rollback()
@@ -177,6 +189,53 @@ def get_student_progress(student_id):
         'risk_analyses': [a.to_dict() for a in analyses],
         'recent_feedbacks': [f.to_dict() for f in recent_feedbacks]
     }), 200
+
+@api.route("/global-shap", methods=["GET"])
+@jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
+def get_global_shap():
+    claims = get_jwt()
+    user_id = get_jwt_identity()
+    user = _get_user(user_id)
+    role = claims.get("role")
+
+    subject_filter_id = request.args.get('subject_id')
+
+    query = Feedback.query.filter(Feedback.shap_attributions_json.isnot(None))
+
+    if role == User.PROFESSOR:
+        professor_subject_ids = [s.id for s in user.subjects]
+        query = query.filter(Feedback.subject_id.in_(professor_subject_ids))
+
+    if subject_filter_id:
+        query = query.filter(Feedback.subject_id == subject_filter_id)
+
+    feedbacks = query.all()
+
+    word_stats = {}
+    for fb in feedbacks:
+        attributions = fb.shap_attributions
+        if not attributions:
+            continue
+        for word, value in attributions.items():
+            if word not in word_stats:
+                word_stats[word] = {'total': 0.0, 'count': 0}
+            word_stats[word]['total'] += value
+            word_stats[word]['count'] += 1
+
+    result = []
+    for word, stats in word_stats.items():
+        mean_val = stats['total'] / stats['count']
+        result.append({
+            'word': word,
+            'mean_shap': round(mean_val, 4),
+            'count': stats['count'],
+        })
+
+    result.sort(key=lambda x: abs(x['mean_shap']), reverse=True)
+
+    return jsonify(result[:30]), 200
+
 
 @api.route("/my-feedbacks", methods=["GET"])
 @jwt_required()

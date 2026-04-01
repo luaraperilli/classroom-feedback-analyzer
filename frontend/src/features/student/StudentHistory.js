@@ -14,8 +14,8 @@ const SENTIMENT_META = {
 };
 
 
-function HighlightedText({ text }) {
-  const tokens = tokenizeAndScore(text);
+function HighlightedText({ text, tokenAttributions }) {
+  const tokens = tokenizeAndScore(text, tokenAttributions || null);
   return (
     <span className="leading-relaxed">
       {tokens.map(({ token, style }, i) =>
@@ -47,7 +47,7 @@ function ExplainabilityModal({ onClose }) {
           <h3 className="text-base font-semibold text-[#1e293b]">Como funciona o destaque?</h3>
         </div>
         <p className="text-sm text-[#64748b] leading-relaxed">
-          O sistema analisa cada palavra do seu comentário e identifica quais mais influenciaram a classificação do sentimento.
+          O sistema usa técnicas de Inteligência Artificial Explicável (XAI) para identificar quais palavras mais influenciaram a classificação do sentimento.
         </p>
         <div className="bg-bg rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
@@ -62,9 +62,15 @@ function ExplainabilityModal({ onClose }) {
             <span className="text-[#64748b]">A <span className="font-medium text-[#1e293b]">intensidade da cor</span> indica o peso da palavra — cores mais fortes = maior influência.</span>
           </div>
         </div>
-        <p className="text-xs text-[#94a3b8]">
-          Essa explicação é uma aproximação visual das técnicas SHAP e LIME, usadas para tornar a análise de sentimentos mais transparente.
-        </p>
+        <div className="bg-bg rounded-xl p-3 space-y-1.5">
+          <p className="text-xs font-semibold text-[#1e293b]">Métodos disponíveis:</p>
+          <p className="text-xs text-[#64748b]">
+            <span className="font-semibold text-primary">LIME</span> — Local Interpretable Model-agnostic Explanations. Gera perturbações do texto e observa como o modelo reage para estimar a contribuição de cada palavra.
+          </p>
+          <p className="text-xs text-[#64748b]">
+            <span className="font-semibold text-primary">SHAP</span> — SHapley Additive exPlanations. Baseado na teoria dos jogos, calcula o valor de Shapley de cada palavra — a contribuição marginal justa de cada feature para a predição.
+          </p>
+        </div>
         <button
           onClick={onClose}
           className="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition"
@@ -221,11 +227,42 @@ function countWeeksWithData(feedbacks) {
   return weeks.size;
 }
 
+function MethodToggle({ method, setMethod, hasLime, hasShap }) {
+  if (!hasLime && !hasShap) return null;
+  return (
+    <div className="flex items-center gap-1 mb-2">
+      <span className="text-[10px] text-slate-400 uppercase tracking-wide mr-1">Método:</span>
+      {hasLime && (
+        <button
+          onClick={() => setMethod('lime')}
+          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition ${
+            method === 'lime' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          LIME
+        </button>
+      )}
+      {hasShap && (
+        <button
+          onClick={() => setMethod('shap')}
+          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition ${
+            method === 'shap' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          SHAP
+        </button>
+      )}
+    </div>
+  );
+}
+
 function FeedbackCard({ fb, defaultOpen, onInfo }) {
   const [expanded, setExpanded] = useState(defaultOpen);
+  const [method, setMethod]     = useState('lime');
   const label = getSentimentLabel(fb.compound);
   const meta  = SENTIMENT_META[label];
   const date  = new Date(fb.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const attributions = method === 'shap' ? fb.shap_attributions : fb.token_attributions;
 
   return (
     <div
@@ -259,8 +296,14 @@ function FeedbackCard({ fb, defaultOpen, onInfo }) {
           {fb.additional_comment && (
             <div>
               <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wide mb-2">O que você escreveu</p>
+              <MethodToggle
+                method={method}
+                setMethod={setMethod}
+                hasLime={!!fb.token_attributions}
+                hasShap={!!fb.shap_attributions}
+              />
               <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-bg rounded-xl px-4 py-3 border-l-4 border-primary/30">
-                <HighlightedText text={fb.additional_comment} />
+                <HighlightedText text={fb.additional_comment} tokenAttributions={attributions} />
               </blockquote>
               <ExplainabilityLegend onInfo={onInfo} />
             </div>
@@ -286,6 +329,7 @@ function StudentHistory() {
   const [isLoading, setIsLoading]             = useState(true);
   const [error, setError]                     = useState(null);
   const [showModal, setShowModal]             = useState(false);
+  const [latestMethod, setLatestMethod]       = useState('lime');
 
   useEffect(() => {
     let cancelled = false;
@@ -380,8 +424,17 @@ function StudentHistory() {
             </div>
             <div>
               <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wide mb-2">O que você escreveu</p>
+              <MethodToggle
+                method={latestMethod}
+                setMethod={setLatestMethod}
+                hasLime={!!latestFeedback.token_attributions}
+                hasShap={!!latestFeedback.shap_attributions}
+              />
               <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-bg rounded-xl px-4 py-3 border-l-4 border-primary/30">
-                <HighlightedText text={latestFeedback.additional_comment} />
+                <HighlightedText
+                  text={latestFeedback.additional_comment}
+                  tokenAttributions={latestMethod === 'shap' ? latestFeedback.shap_attributions : latestFeedback.token_attributions}
+                />
               </blockquote>
               <ExplainabilityLegend onInfo={() => setShowModal(true)} />
             </div>

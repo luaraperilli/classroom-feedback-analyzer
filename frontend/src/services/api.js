@@ -91,6 +91,12 @@ export const getStudentProgress = (studentId, subjectId, token) =>
     { token }
   );
 
+export const getGlobalShap = (subjectId, token) =>
+  request(
+    buildUrl('/global-shap', { subject_id: subjectId || undefined }).replace(API_BASE_URL, ''),
+    { token }
+  );
+
 export const getSubjects = (token) => request('/subjects', { token });
 
 export const createSubject = (name, token) =>

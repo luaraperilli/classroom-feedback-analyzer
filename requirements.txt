@@ -5,3 +5,5 @@ Flask-Bcrypt
 Flask-JWT-Extended
 pysentimiento
 python-dotenv
+lime
+shap

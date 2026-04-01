@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 import datetime
+import json
 
 db = SQLAlchemy()
 
@@ -52,8 +53,30 @@ class Feedback(db.Model):
     neg = db.Column(db.Float, nullable=True)
     neu = db.Column(db.Float, nullable=True)
     pos = db.Column(db.Float, nullable=True)
-    
+    token_attributions_json = db.Column(db.Text, nullable=True)
+    shap_attributions_json  = db.Column(db.Text, nullable=True)
+
     overall_score = db.Column(db.Float, nullable=False)
+
+    @property
+    def token_attributions(self):
+        if self.token_attributions_json:
+            return json.loads(self.token_attributions_json)
+        return None
+
+    @token_attributions.setter
+    def token_attributions(self, value):
+        self.token_attributions_json = json.dumps(value) if value else None
+
+    @property
+    def shap_attributions(self):
+        if self.shap_attributions_json:
+            return json.loads(self.shap_attributions_json)
+        return None
+
+    @shap_attributions.setter
+    def shap_attributions(self, value):
+        self.shap_attributions_json = json.dumps(value) if value else None
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
 
@@ -88,6 +111,8 @@ class Feedback(db.Model):
             'neu': self.neu,
             'pos': self.pos,
             'overall_score': self.overall_score,
+            'token_attributions': self.token_attributions,
+            'shap_attributions': self.shap_attributions,
             'created_at': self.created_at.isoformat()
         }
 

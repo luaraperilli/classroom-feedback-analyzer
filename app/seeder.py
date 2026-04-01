@@ -1,8 +1,9 @@
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 from .models import db, User, Subject, Feedback
-from .services import analyze_sentiment_text, update_student_risk_analysis
+from .services import analyze_sentiment_text, update_student_risk_analysis, explain_sentiment_lime, explain_sentiment_shap
 import random
+import json
 
 SUBJECT_NAMES = [
     'Data Structures',
@@ -122,10 +123,41 @@ def seed_subjects():
     print('Subjects created and assigned.')
 
 
+def _precompute_attributions():
+    unique_comments = set()
+    for pool in COMMENTS.values():
+        unique_comments.update(pool)
+
+    sentiment_cache = {}
+    lime_cache = {}
+    shap_cache = {}
+
+    for i, comment in enumerate(unique_comments, 1):
+        print(f'  Computing attributions {i}/{len(unique_comments)}: {comment[:40]}...')
+
+        sentiment_cache[comment] = analyze_sentiment_text(comment)
+
+        try:
+            lime_cache[comment] = json.dumps(explain_sentiment_lime(comment))
+        except Exception:
+            lime_cache[comment] = None
+
+        try:
+            shap_cache[comment] = json.dumps(explain_sentiment_shap(comment))
+        except Exception:
+            shap_cache[comment] = None
+
+    return sentiment_cache, lime_cache, shap_cache
+
+
 def seed_feedbacks():
     students = {u.username: u for u in User.query.filter_by(role=User.ALUNO).all()}
     subjects = Subject.query.filter(Subject.name.in_(SUBJECT_NAMES[:3])).all()
     now = datetime.utcnow()
+
+    print('Pre-computing sentiment + LIME + SHAP for unique comments...')
+    sentiment_cache, lime_cache, shap_cache = _precompute_attributions()
+    print('Done. Creating feedbacks...')
 
     feedbacks_to_add = []
 
@@ -134,19 +166,16 @@ def seed_feedbacks():
         score_pool   = SCORES[profile]
         comment_pool = COMMENTS[profile]
 
-        # Each student gets 8-12 feedbacks spread over 8 weeks
         total_weeks = 8
         num_feedbacks = random.randint(8, 12)
 
         for i in range(num_feedbacks):
             week_index = random.randint(0, total_weeks - 1)
-            # Spread within the week
             days_offset = week_index * 7 + random.randint(0, 4)
             created_at  = now - timedelta(days=(total_weeks * 7 - days_offset))
 
             base_scores = [random.choice(score_pool) for _ in range(6)]
 
-            # Apply arc modifier: nudge scores up or down based on week
             modifier = get_week_modifier(profile, week_index, total_weeks)
             adjusted = [max(1, min(5, round(s + modifier))) for s in base_scores]
 
@@ -167,12 +196,15 @@ def seed_feedbacks():
             )
             fb.overall_score = fb.calculate_overall_score()
 
-            sentiment = analyze_sentiment_text(comment)
+            sentiment = sentiment_cache.get(comment)
             if sentiment:
                 fb.compound = sentiment['compound']
                 fb.neg      = sentiment['neg']
                 fb.neu      = sentiment['neu']
                 fb.pos      = sentiment['pos']
+
+            fb.token_attributions_json = lime_cache.get(comment)
+            fb.shap_attributions_json  = shap_cache.get(comment)
 
             feedbacks_to_add.append(fb)
 

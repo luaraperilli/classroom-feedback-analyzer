@@ -1,9 +1,9 @@
 /**
- * Frontend-side word sentiment scoring used to produce inline colour
- * highlights on student comment text.  This is a lexicon heuristic — not
- * SHAP or LIME — intended as a visual proxy while the backend does not yet
- * expose token-level attributions.  Scores range from -1 (strongly negative)
- * to +1 (strongly positive).
+ * Word-level sentiment highlighting.
+ *
+ * When the backend provides LIME token_attributions (per-word weights derived
+ * from the actual model), those are used directly. For older feedbacks without
+ * attributions, a static Portuguese lexicon serves as fallback.
  */
 
 const LEXICON = {
@@ -21,10 +21,6 @@ const LEXICON = {
   nada: -0.55, nunca: -0.7, perdendo: -0.6, não: -0.45,
 };
 
-function scoreWord(word) {
-  return LEXICON[word.toLowerCase()] ?? null;
-}
-
 function buildHighlightStyle(score) {
   const intensity = Math.min(Math.abs(score), 1);
   const alpha = +(0.2 + intensity * 0.55).toFixed(2);
@@ -34,13 +30,19 @@ function buildHighlightStyle(score) {
 }
 
 const WORD_RE = /[\wáàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]+|[^\wáàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]+/g;
+const WORD_ONLY_RE = /^[\wáàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]+$/u;
 
-export function tokenizeAndScore(text) {
+export function tokenizeAndScore(text, backendAttributions = null) {
   const tokens = text.match(WORD_RE) || [];
+
   return tokens.map((token) => {
-    const isWord = /^[\wáàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]+$/u.test(token);
-    if (!isWord) return { token, style: null };
-    const score = scoreWord(token);
+    if (!WORD_ONLY_RE.test(token)) return { token, style: null };
+
+    const lower = token.toLowerCase();
+    const score = backendAttributions
+      ? (backendAttributions[lower] ?? backendAttributions[token] ?? null)
+      : (LEXICON[lower] ?? null);
+
     return { token, style: score !== null ? buildHighlightStyle(score) : null };
   });
 }
