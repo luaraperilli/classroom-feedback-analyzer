@@ -50,7 +50,7 @@ SQLite database (instance/feedback.db)
 
 - **Authentication**: JWT access tokens (1-hour expiry) + refresh tokens (30-day expiry), issued by Flask-JWT-Extended. The frontend stores tokens in `localStorage` and refreshes them transparently. The `/refresh` endpoint includes `username` and `role` in the new token's claims.
 - **NLP**: `pysentimiento` runs as a singleton inside the Flask process. The `pt` (Portuguese) sentiment model returns `POS`, `NEG`, and `NEU` probabilities; compound is derived as `POS - NEG`.
-- **Explainability**: LIME generates 300 text perturbations and fits a local linear model; SHAP computes Shapley values with up to 500 model evaluations. Both run as post-hoc explainers over pysentimiento via a shared `_predict_proba` wrapper.
+- **Explainability**: LIME generates 5000 text perturbations and fits a local linear model (default per Ribeiro et al., 2016, validated for text by Mardaoui & Garreau, 2021); SHAP computes Shapley values with `max_evals='auto'`, dynamically scaled to text length per the official sentiment analysis tutorial (Lundberg & Lee, 2017). Both run as post-hoc explainers over pysentimiento via a shared `_predict_proba` wrapper.
 - **Database**: SQLite via SQLAlchemy. On first run the schema is created automatically and seed data is loaded (including pre-computed LIME/SHAP attributions).
 - **Configuration**: `API_BASE_URL` is centralized in `frontend/src/config.js` (single source of truth).
 
@@ -272,11 +272,11 @@ The `overall_score` field (0-1) is the normalized mean of the six Likert respons
 
 ### LIME (Local Explanations)
 
-LIME (Ribeiro et al., 2016) generates **300 perturbations** of the original text by randomly removing words. Each perturbation is classified by pysentimiento, and a local linear model is fitted to identify which words most influenced the prediction. The result is a dictionary `{word: weight}` stored in `token_attributions_json`.
+LIME (Ribeiro et al., 2016) generates **5000 perturbations** of the original text by randomly removing words. Each perturbation is classified by pysentimiento, and a local linear model is fitted to identify which words most influenced the prediction. The number of perturbations follows the library default (Ribeiro et al., 2016) and the convergence regime for text data demonstrated by Mardaoui & Garreau (2021); reducing it compromises explanation stability (Visani et al., 2022; Zhao et al., 2021). The result is a dictionary `{word: weight}` stored in `token_attributions_json`.
 
 ### SHAP (Local Explanations)
 
-SHAP (Lundberg & Lee, 2017) computes Shapley values by evaluating the model with up to **500 combinations** of masked/unmasked words. Each word receives a value representing its marginal contribution to the prediction, satisfying the properties of efficiency, symmetry, dummy, and additivity. The result is stored in `shap_attributions_json`.
+SHAP (Lundberg & Lee, 2017) computes Shapley values by evaluating the model on combinations of masked/unmasked words. The `max_evals` parameter is left at its default `'auto'` value, which dynamically scales the number of evaluations to the text length, following the official sentiment analysis tutorial of the SHAP library. Each word receives a value representing its marginal contribution to the prediction, satisfying the properties of efficiency, symmetry, dummy, and additivity. The result is stored in `shap_attributions_json`.
 
 ### SHAP (Global Analysis)
 
