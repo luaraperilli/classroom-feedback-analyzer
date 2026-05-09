@@ -54,12 +54,17 @@ def explain_sentiment_lime(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
         return {}
 
+    # Parâmetros do LIME: num_samples=5000 segue o padrão da biblioteca
+    # (Ribeiro et al., 2016) e o regime de convergência teórica para texto
+    # demonstrado por Mardaoui & Garreau (2021, AISTATS); reduzir esse valor
+    # compromete a estabilidade das explicações (Visani et al., 2022; Zhao et al., 2021).
+    # num_features=10 segue K=10 dos experimentos originais com texto em Ribeiro et al. (2016).
     exp = lime_explainer.explain_instance(
         text,
         _predict_proba,
         labels=[POS_IDX],
-        num_features=30,
-        num_samples=300,
+        num_features=10,
+        num_samples=5000,
     )
 
     return {word.lower(): round(weight, 4) for word, weight in exp.as_list(label=POS_IDX)}
@@ -68,7 +73,10 @@ def explain_sentiment_shap(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
         return {}
 
-    shap_values = shap_explainer([text], max_evals=500)
+    # max_evals padrão ('auto') ajusta dinamicamente o número de avaliações
+    # ao tamanho do texto, conforme tutorial oficial da biblioteca em
+    # sentiment analysis com Transformers (Lundberg & Lee, 2017).
+    shap_values = shap_explainer([text])
 
     values = shap_values.values[0, :, POS_IDX]
     tokens = shap_values.data[0]

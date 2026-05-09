@@ -1,4 +1,4 @@
-# Classroom Feedback Analyzer
+# Voz Discente
 
 A web application for collecting structured student feedback, performing sentiment analysis with **pysentimiento**, and providing explainability through **SHAP** and **LIME** techniques. Professors and coordinators can monitor student well-being, identify at-risk students, and understand which words systematically influence sentiment classifications.
 
@@ -21,7 +21,7 @@ A web application for collecting structured student feedback, performing sentime
 
 ## Project Overview
 
-Classroom Feedback Analyzer lets **students** submit weekly engagement feedback about their classes through a structured form. Each submission includes six Likert-scale questions covering behavioral, emotional, and cognitive dimensions, plus a free-text comment. The free-text comment is analyzed automatically using **pysentimiento**, a Portuguese-language NLP model, to produce a sentiment score.
+Voz Discente lets **students** submit engagement feedback about their classes through a structured form, applied at the end of each didactic unit. Each submission includes six Likert-scale questions covering behavioral, emotional, and cognitive dimensions, plus a free-text comment. The free-text comment is analyzed automatically using **pysentimiento**, a Portuguese-language NLP model, to produce a sentiment score.
 
 After classification, the system applies two explainability techniques — **LIME** (Local Interpretable Model-agnostic Explanations) and **SHAP** (SHapley Additive exPlanations) — to identify which words most influenced the sentiment classification. Students can visualize the highlighted words and toggle between both methods to compare their interpretations.
 
