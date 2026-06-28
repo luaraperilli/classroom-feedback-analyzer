@@ -14,22 +14,20 @@ import {
 import { getWeekLabel } from '../utils/sentiment';
 
 const groupFeedbacks = (feedbackList, groupBy) => {
+  const isWeek = groupBy === 'week';
   const groups = feedbackList.reduce((acc, fb) => {
-    const isWeek = groupBy === 'week';
-    const key    = isWeek
-      ? getWeekLabel(fb.created_at)
-      : new Date(fb.created_at).toISOString().split('T')[0];
-    const label  = isWeek
-      ? key
-      : new Date(fb.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    if (!acc[key]) acc[key] = { label, scores: [] };
+    const d   = new Date(fb.created_at);
+    const key = isWeek ? getWeekLabel(fb.created_at) : d.toISOString().split('T')[0];
+    if (!acc[key]) acc[key] = { date: d, scores: [] };
+    if (d < acc[key].date) acc[key].date = d;
     acc[key].scores.push(fb.compound);
     return acc;
   }, {});
 
-  const keys = groupBy === 'week' ? Object.keys(groups) : Object.keys(groups).sort();
+  // ordena cronologicamente e rotula cada ponto pela data (DD/MM), em vez de "Sem. N"
+  const keys = Object.keys(groups).sort((a, b) => groups[a].date - groups[b].date);
   return keys.map((key) => ({
-    label: groups[key].label,
+    label: groups[key].date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
     avg: parseFloat(
       (groups[key].scores.reduce((s, v) => s + v, 0) / groups[key].scores.length).toFixed(3)
     ),
@@ -43,9 +41,9 @@ const getSentimentBand = (value) => {
 };
 
 const getSentimentBandColor = (value) => {
-  if (value >= 0.05) return '#16a34a';
+  if (value >= 0.05) return '#059669';
   if (value <= -0.05) return '#dc2626';
-  return '#6b7280';
+  return '#64748b';
 };
 
 function CustomTooltip({ active, payload, label }) {
@@ -106,11 +104,11 @@ function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
 
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
 
-        <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 14, fill: '#475569' }} axisLine={false} tickLine={false} />
 
         <YAxis
           domain={[-1, 1]}
-          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          tick={{ fontSize: 14, fill: '#475569' }}
           axisLine={false}
           tickLine={false}
           tickCount={5}
@@ -120,12 +118,12 @@ function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
         <ReferenceLine
           y={0.9}
           stroke="transparent"
-          label={{ value: 'Positivo', position: 'insideTopRight', fill: '#16a34a', fontSize: 10, fontWeight: 600 }}
+          label={{ value: 'Positivo', position: 'insideTopRight', fill: '#059669', fontSize: 13, fontWeight: 600 }}
         />
         <ReferenceLine
           y={-0.9}
           stroke="transparent"
-          label={{ value: 'Negativo', position: 'insideBottomRight', fill: '#dc2626', fontSize: 10, fontWeight: 600 }}
+          label={{ value: 'Negativo', position: 'insideBottomRight', fill: '#dc2626', fontSize: 13, fontWeight: 600 }}
         />
 
         <Tooltip content={<CustomTooltip />} />

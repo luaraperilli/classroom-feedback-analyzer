@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getProfile, updateProfile } from '../../services/api';
+import Spinner from '../../components/Spinner';
 
 function ProfilePage() {
   const { accessToken, user, updateUser } = useAuth();
@@ -70,11 +71,11 @@ function ProfilePage() {
     : user?.display_name || user?.username || '';
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#cde0d9]">
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
 
         {/* ── Profile header card ─────────────────────────────────────────── */}
-        <div className="bg-primary rounded-2xl p-8 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-8 relative overflow-hidden">
           {/* Decorative shapes */}
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-8 -left-8  w-28 h-28 rounded-full bg-white/5" />
@@ -89,7 +90,7 @@ function ProfilePage() {
             <div className="text-center sm:text-left">
               <p className="text-xl font-bold text-white leading-tight">{displayName}</p>
               <p className="text-sm text-white/70 mt-0.5">@{user?.username}</p>
-              <span className="mt-2 inline-block text-xs font-medium px-3 py-1 rounded-full bg-white/20 text-white capitalize">
+              <span className="mt-2 inline-block text-sm font-medium px-3 py-1 rounded-full bg-white/20 text-white capitalize">
                 {user?.role}
               </span>
             </div>
@@ -100,7 +101,7 @@ function ProfilePage() {
         <form onSubmit={handleSubmit} className="space-y-5">
 
           {/* Personal info */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-4">
             <h2 className="text-base font-semibold text-[#1e293b]">Informações Pessoais</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -112,7 +113,7 @@ function ProfilePage() {
                   onChange={(e) => setFirstName(e.target.value)}
                   autoComplete="given-name"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                             placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                             placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                              focus:border-primary transition"
                   placeholder="Seu nome"
                 />
@@ -125,7 +126,7 @@ function ProfilePage() {
                   onChange={(e) => setLastName(e.target.value)}
                   autoComplete="family-name"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                             placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                             placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                              focus:border-primary transition"
                   placeholder="Seu sobrenome"
                 />
@@ -134,22 +135,22 @@ function ProfilePage() {
 
             <div>
               <label className="block text-sm font-medium text-[#1e293b] mb-1.5">
-                Usuário <span className="text-[#94a3b8] font-normal">(não pode ser alterado)</span>
+                Usuário <span className="text-[#64748b] font-normal">(não pode ser alterado)</span>
               </label>
               <input
                 type="text"
                 value={user?.username || ''}
                 disabled
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#94a3b8] text-sm bg-slate-50 cursor-not-allowed"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#64748b] text-sm bg-slate-50 cursor-not-allowed"
               />
             </div>
           </div>
 
           {/* Change password */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-4">
             <div>
               <h2 className="text-base font-semibold text-[#1e293b]">Alterar Senha</h2>
-              <p className="text-xs text-[#94a3b8] mt-0.5">Deixe em branco para manter a senha atual.</p>
+              <p className="text-sm text-[#64748b] mt-0.5">Deixe em branco para manter a senha atual.</p>
             </div>
 
             <div>
@@ -160,7 +161,7 @@ function ProfilePage() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 autoComplete="current-password"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                           placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                           placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                            focus:border-primary transition"
                 placeholder="••••••••"
               />
@@ -175,7 +176,7 @@ function ProfilePage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                             placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                             placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                              focus:border-primary transition"
                   placeholder="••••••••"
                 />
@@ -188,7 +189,7 @@ function ProfilePage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                             placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                             placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                              focus:border-primary transition"
                   placeholder="••••••••"
                 />
@@ -197,12 +198,12 @@ function ProfilePage() {
           </div>
 
           {error && (
-            <p className="text-sm text-negative bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+            <p className="text-sm text-[#dc2626] bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
               {error}
             </p>
           )}
           {successMsg && (
-            <p className="text-sm text-positive bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
+            <p className="text-sm text-[#059669] bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
               {successMsg}
             </p>
           )}
@@ -213,7 +214,9 @@ function ProfilePage() {
             className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold
                        hover:bg-primary-dark transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            {isSaving ? (
+              <span className="inline-flex items-center justify-center gap-2"><Spinner /> Salvando...</span>
+            ) : 'Salvar Alterações'}
           </button>
         </form>
 

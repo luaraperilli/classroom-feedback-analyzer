@@ -25,7 +25,7 @@ function buildHighlightStyle(score) {
   const intensity = Math.min(Math.abs(score), 1);
   const alpha = +(0.2 + intensity * 0.55).toFixed(2);
   return score > 0
-    ? { backgroundColor: `rgba(22,163,74,${alpha})`, borderRadius: '3px', padding: '0 2px' }
+    ? { backgroundColor: `rgba(5,150,105,${alpha})`, borderRadius: '3px', padding: '0 2px' }
     : { backgroundColor: `rgba(220,38,38,${alpha})`, borderRadius: '3px', padding: '0 2px' };
 }
 

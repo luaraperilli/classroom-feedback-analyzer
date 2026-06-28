@@ -16,7 +16,7 @@ import {
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const d = payload[0].payload;
-  const color = d.mean_shap >= 0 ? '#16a34a' : '#dc2626';
+  const color = d.mean_shap >= 0 ? '#059669' : '#dc2626';
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.10)] px-4 py-3 text-sm">
       <p className="font-semibold text-[#1e293b] mb-1">"{d.word}"</p>
@@ -26,7 +26,7 @@ function CustomTooltip({ active, payload }) {
           {d.mean_shap > 0 ? '+' : ''}{d.mean_shap.toFixed(4)}
         </span>
       </p>
-      <p className="text-slate-400 text-xs mt-0.5">
+      <p className="text-slate-400 text-sm mt-0.5">
         Presente em {d.count} feedback{d.count !== 1 ? 's' : ''}
       </p>
     </div>
@@ -35,7 +35,7 @@ function CustomTooltip({ active, payload }) {
 
 function SkeletonChart() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6 animate-pulse">
+    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 animate-pulse">
       <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
       <div className="h-3 bg-slate-100 rounded w-1/2 mb-6" />
       <div className="h-[400px] bg-slate-50 rounded-xl" />
@@ -78,7 +78,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
         <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
         </svg>
@@ -98,7 +98,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
     <div className="space-y-6">
       {/* Summary pills */}
       <div className="flex flex-wrap gap-3">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#0f766e]/10 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#0f766e]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -106,21 +106,21 @@ function GlobalShapAnalysis({ selectedSubject }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-[#0f766e]">{data.length}</p>
-            <p className="text-xs text-slate-500">Palavras analisadas</p>
+            <p className="text-sm text-slate-500">Palavras analisadas</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#16a34a]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+            <svg className="w-5 h-5 text-[#059669]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-[#16a34a]">{positiveCount}</p>
-            <p className="text-xs text-slate-500">Impacto positivo</p>
+            <p className="text-2xl font-bold text-[#059669]">{positiveCount}</p>
+            <p className="text-sm text-slate-500">Impacto positivo</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#dc2626]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
@@ -128,15 +128,15 @@ function GlobalShapAnalysis({ selectedSubject }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-[#dc2626]">{negativeCount}</p>
-            <p className="text-xs text-slate-500">Impacto negativo</p>
+            <p className="text-sm text-slate-500">Impacto negativo</p>
           </div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
         <h2 className="text-base font-semibold text-[#1e293b]">Palavras Mais Influentes (SHAP Global)</h2>
-        <p className="text-xs text-slate-400 mt-0.5 mb-6">
+        <p className="text-sm text-slate-400 mt-0.5 mb-6">
           Valor SHAP médio de cada palavra ao longo de todos os feedbacks. Valores positivos indicam contribuição para sentimento positivo, valores negativos para negativo.
         </p>
 
@@ -168,7 +168,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
               {top20.map((entry, idx) => (
                 <Cell
                   key={idx}
-                  fill={entry.mean_shap >= 0 ? '#16a34a' : '#dc2626'}
+                  fill={entry.mean_shap >= 0 ? '#059669' : '#dc2626'}
                   fillOpacity={0.8}
                 />
               ))}
@@ -178,12 +178,12 @@ function GlobalShapAnalysis({ selectedSubject }) {
       </div>
 
       {/* Word table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
         <h2 className="text-base font-semibold text-[#1e293b] mb-4">Detalhamento por Palavra</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
+              <tr className="text-sm text-slate-400 uppercase tracking-wide border-b border-[#cfe0da]">
                 <th className="text-left py-2.5 pr-4 font-medium">Palavra</th>
                 <th className="text-right py-2.5 px-4 font-medium">SHAP Médio</th>
                 <th className="text-right py-2.5 px-4 font-medium">Ocorrências</th>
@@ -192,7 +192,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
             </thead>
             <tbody>
               {data.map((d, idx) => {
-                const color = d.mean_shap >= 0 ? '#16a34a' : '#dc2626';
+                const color = d.mean_shap >= 0 ? '#059669' : '#dc2626';
                 const barWidth = Math.min(Math.abs(d.mean_shap) / (Math.abs(data[0]?.mean_shap) || 1) * 100, 100);
                 return (
                   <tr key={idx} className="border-b border-slate-50 last:border-0">

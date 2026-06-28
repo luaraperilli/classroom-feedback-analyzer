@@ -5,12 +5,12 @@ import { getSubjects, getProfessors, createSubject, assignSubjectToProfessor } f
 
 function SectionCard({ title, subtitle, children }) {
   return (
-    <div className="bg-surface rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-8 space-y-5">
+    <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-8 space-y-5">
       <div>
         <h2 className="text-base font-semibold text-[#1e293b]">{title}</h2>
-        {subtitle && <p className="text-xs text-[#94a3b8] mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-[#64748b] mt-0.5">{subtitle}</p>}
       </div>
-      <div className="border-t border-slate-100" />
+      <div className="border-t border-[#cfe0da]" />
       {children}
     </div>
   );
@@ -18,10 +18,10 @@ function SectionCard({ title, subtitle, children }) {
 
 function StatusMessage({ message, error }) {
   if (error) return (
-    <p className="text-sm text-negative bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{error}</p>
+    <p className="text-sm text-[#dc2626] bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{error}</p>
   );
   if (message) return (
-    <p className="text-sm text-positive bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">{message}</p>
+    <p className="text-sm text-[#059669] bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">{message}</p>
   );
   return null;
 }
@@ -115,13 +115,13 @@ function CoordinatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-[#cde0d9]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
 
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-[#1e293b]">Gestão</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">Área do Coordenador</p>
+          <p className="text-sm text-[#475569] mt-0.5">Área do Coordenador</p>
         </div>
 
         {/* Global status */}
@@ -142,7 +142,7 @@ function CoordinatorPage() {
                 placeholder="Nome da matéria"
                 required
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-[#1e293b]
-                           placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-primary/30
+                           placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
                            focus:border-primary transition"
               />
               <button
@@ -158,7 +158,7 @@ function CoordinatorPage() {
             {/* Subjects list */}
             {subjects.length > 0 && (
               <div className="space-y-2 pt-2">
-                <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">
+                <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide">
                   Matérias cadastradas ({subjects.length})
                 </p>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -221,7 +221,7 @@ function CoordinatorPage() {
             {/* Professors list */}
             {professors.length > 0 && (
               <div className="space-y-2 pt-2">
-                <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">
+                <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide">
                   Professores ({professors.length})
                 </p>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -231,13 +231,13 @@ function CoordinatorPage() {
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg text-sm text-[#1e293b]"
                     >
                       <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-bold text-primary">
+                        <span className="text-sm font-bold text-primary">
                           {(p.display_name || p.username)?.[0]?.toUpperCase()}
                         </span>
                       </div>
                       <span className="flex-1 min-w-0 truncate">{p.display_name || p.username}</span>
                       {p.subject_count === 0 && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex-shrink-0">
+                        <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex-shrink-0">
                           Sem matéria
                         </span>
                       )}

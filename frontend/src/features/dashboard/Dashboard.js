@@ -10,9 +10,9 @@ import { getSubjects } from '../../services/api';
 import { getSentimentColor } from '../../utils/sentiment';
 
 const getFeedbackBorderColor = (compound) => {
-  if (compound >= 0.05) return '#16a34a';
+  if (compound >= 0.05) return '#059669';
   if (compound <= -0.05) return '#dc2626';
-  return '#6b7280';
+  return '#64748b';
 };
 
 function FilterSelect({ id, label, value, onChange, children }) {
@@ -50,12 +50,12 @@ function DateRangeModal({ onApply, onCancel, initialStart = '', initialEnd = '' 
       <div ref={ref} className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-5">
         <div>
           <h3 className="text-base font-semibold text-[#1e293b]">Período Personalizado</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Selecione o intervalo de datas desejado.</p>
+          <p className="text-sm text-slate-400 mt-0.5">Selecione o intervalo de datas desejado.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-500">Data Inicial</label>
+            <label className="text-sm font-medium text-slate-500">Data Inicial</label>
             <input
               type="date"
               value={start}
@@ -66,7 +66,7 @@ function DateRangeModal({ onApply, onCancel, initialStart = '', initialEnd = '' 
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-slate-500">Data Final</label>
+            <label className="text-sm font-medium text-slate-500">Data Final</label>
             <input
               type="date"
               value={end}
@@ -107,7 +107,7 @@ function SkeletonFeedbackCards() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-5 animate-pulse"
+          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 animate-pulse"
         >
           <div className="flex justify-between mb-3">
             <div className="h-4 bg-slate-200 rounded w-1/4" />
@@ -122,7 +122,7 @@ function SkeletonFeedbackCards() {
 
 function MetricPill({ label, value }) {
   return (
-    <span className="px-2 py-1 rounded-lg bg-[#f8fafc] text-xs text-[#64748b]">
+    <span className="px-2 py-1 rounded-lg bg-[#f8fafc] text-sm text-[#475569]">
       {label}: {value}/5
     </span>
   );
@@ -133,11 +133,11 @@ function FeedbackCard({ fb }) {
   const compound     = fb.compound ?? null;
   const borderColor  = getFeedbackBorderColor(compound ?? 0);
   const overallScore = (fb.overall_score * 4 + 1).toFixed(1);
-  const sentimentColor = compound !== null ? getSentimentColor(compound) : '#6b7280';
+  const sentimentColor = compound !== null ? getSentimentColor(compound) : '#64748b';
 
   return (
     <div
-      className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.07)] border-l-4 overflow-hidden"
+      className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] border-l-4 overflow-hidden"
       style={{ borderLeftColor: borderColor }}
     >
       <button
@@ -148,9 +148,9 @@ function FeedbackCard({ fb }) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold text-[#1e293b] leading-tight">{fb.student_username}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{translateSubject(fb.subject)}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{translateSubject(fb.subject)}</p>
             </div>
-            <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+            <span className="text-sm text-slate-400 whitespace-nowrap shrink-0">
               {new Date(fb.created_at).toLocaleDateString('pt-BR', {
                 day: '2-digit', month: '2-digit', year: 'numeric',
               })}
@@ -182,7 +182,7 @@ function FeedbackCard({ fb }) {
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 border-t border-slate-100 pt-4 space-y-3">
+        <div className="px-5 pb-5 border-t border-[#cfe0da] pt-4 space-y-3">
           <div className="flex flex-wrap gap-1.5">
             <MetricPill label="Participação" value={fb.active_participation} />
             <MetricPill label="Tarefas"      value={fb.task_completion} />
@@ -285,7 +285,7 @@ function Dashboard() {
   const displayName = user?.display_name || user?.first_name || user?.username || '';
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#cde0d9]">
       {showDateModal && (
         <DateRangeModal
           initialStart={customStart}
@@ -297,11 +297,36 @@ function Dashboard() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#1e293b]">Dashboard</h1>
-            {displayName && <p className="text-sm text-[#64748b] mt-0.5">{displayName}</p>}
+        {/* Hero */}
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 sm:p-7 relative overflow-hidden shadow-[0_14px_30px_rgba(13,98,92,0.18)]">
+          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-white/5" />
+          <div className="absolute -bottom-12 -left-6 w-32 h-32 rounded-full bg-white/5" />
+          <div className="relative z-10">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Dashboard</h1>
+            <p className="text-white/80 text-sm mt-1.5">{displayName ? `${displayName} — ` : ''}visão geral da turma e dos sentimentos</p>
+          </div>
+        </div>
+
+        {/* Tabs + filtros */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-1 bg-white rounded-2xl border border-[#cfe0da] shadow-[0_2px_12px_rgba(0,0,0,0.05)] p-1 w-fit">
+            {[
+              { id: 'feedbacks', label: 'Feedbacks' },
+              { id: 'risk',      label: 'Análise de Risco' },
+              { id: 'shap',      label: 'Explicabilidade' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={
+                  activeTab === tab.id
+                    ? 'bg-[#0f766e] text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors'
+                    : 'text-[#475569] px-4 py-2 text-sm hover:text-[#0f766e] transition-colors rounded-xl'
+                }
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {/* Filters — switch based on active tab */}
@@ -324,7 +349,7 @@ function Dashboard() {
                 {period === 'custom' && (customStart || customEnd) && (
                   <button
                     onClick={() => setShowDateModal(true)}
-                    className="text-xs text-slate-500 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-primary/50 hover:text-primary transition"
+                    className="text-sm text-slate-500 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-primary/50 hover:text-primary transition"
                   >
                     {customStart && new Date(customStart + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     {' → '}
@@ -385,35 +410,14 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.05)] p-1 w-fit">
-          {[
-            { id: 'feedbacks', label: 'Feedbacks' },
-            { id: 'risk',      label: 'Análise de Risco' },
-            { id: 'shap',      label: 'Explicabilidade' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={
-                activeTab === tab.id
-                  ? 'bg-[#0f766e] text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors'
-                  : 'text-[#64748b] px-4 py-2 text-sm hover:text-[#0f766e] transition-colors rounded-xl'
-              }
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         {/* Feedbacks tab */}
         {activeTab === 'feedbacks' && (
           <div className="space-y-6">
             <SentimentSummary feedbacks={feedbacks} />
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-6">
+            <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
               <h2 className="text-base font-semibold text-[#1e293b]">Tendência de Sentimento</h2>
-              <p className="text-xs text-slate-400 mt-0.5 mb-5">
+              <p className="text-sm text-slate-400 mt-0.5 mb-5">
                 Média diária do sentimento dos feedbacks recebidos (-1 negativo, +1 positivo)
               </p>
               <SentimentTrendChart feedbacks={feedbacks} groupBy="day" />
@@ -431,7 +435,7 @@ function Dashboard() {
               )}
 
               {!isLoading && !error && feedbacks.length === 0 && (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+                <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
                   <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                   </svg>

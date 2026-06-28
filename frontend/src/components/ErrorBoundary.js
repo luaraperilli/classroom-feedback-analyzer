@@ -13,7 +13,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center px-4">
+        <div className="min-h-screen bg-[#cde0d9] flex items-center justify-center px-4">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto">
               <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-[#1e293b]">Algo deu errado</h1>
-            <p className="text-sm text-[#64748b]">Um erro inesperado ocorreu. Tente recarregar a página.</p>
+            <p className="text-sm text-[#475569]">Um erro inesperado ocorreu. Tente recarregar a página.</p>
             <button
               onClick={() => window.location.reload()}
               className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition"

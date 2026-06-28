@@ -11,21 +11,21 @@ const getAvgCompound = (feedbacks) => {
 
 function StatCard({ label, value, color, percentage, showBar, footer }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-5 flex flex-col gap-1 min-w-0">
+    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-5 flex flex-col gap-1 min-w-0">
       <span className="text-4xl font-bold leading-none" style={{ color }}>
         {value}
       </span>
       <span className="text-sm text-slate-500 mt-1">{label}</span>
 
       {footer && (
-        <span className="text-xs mt-1" style={{ color }}>
+        <span className="text-sm mt-1" style={{ color }}>
           {footer}
         </span>
       )}
 
       {showBar && (
         <div className="mt-3 space-y-1">
-          <span className="text-xs font-medium" style={{ color }}>
+          <span className="text-sm font-medium" style={{ color }}>
             {percentage}%
           </span>
           <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
@@ -63,14 +63,14 @@ function SentimentSummary({ feedbacks }) {
       <StatCard
         label="Positivos"
         value={positiveCount}
-        color="#16a34a"
+        color="#059669"
         percentage={getPercentage(positiveCount, total)}
         showBar
       />
       <StatCard
         label="Neutros"
         value={neutralCount}
-        color="#6b7280"
+        color="#64748b"
         percentage={getPercentage(neutralCount, total)}
         showBar
       />

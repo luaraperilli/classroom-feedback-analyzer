@@ -14,7 +14,7 @@ export const getSentimentClass = (compound) => {
 
 export const getSentimentColor = (compound) => {
   const label = getSentimentLabel(compound);
-  const colors = { positivo: '#28a745', neutro: '#6c757d', negativo: '#dc3545' };
+  const colors = { positivo: '#059669', neutro: '#64748b', negativo: '#dc2626' };
   return colors[label];
 };
 

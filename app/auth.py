@@ -9,8 +9,8 @@ auth = Blueprint("auth", __name__)
 @auth.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
     role = data.get("role", User.ALUNO)
     first_name = data.get("first_name", "").strip() or None
     last_name = data.get("last_name", "").strip() or None
@@ -18,7 +18,8 @@ def register():
     if not username or not password:
         return jsonify({"error": "Nome de usuário e senha são obrigatórios."}), 400
 
-    if User.query.filter_by(username=username).first():
+    # comparação sem diferenciar maiúsculas/minúsculas evita usuários duplicados (ex.: "Marina" e "marina")
+    if User.query.filter(db.func.lower(User.username) == username.lower()).first():
         return jsonify({"error": "Nome de usuário já existe."}), 409
 
     hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
@@ -33,10 +34,11 @@ def register():
 @auth.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
 
-    user = User.query.filter_by(username=username).first()
+    # login tolerante: ignora maiúsculas/minúsculas e espaços extras no nome de usuário
+    user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
 
     if not user or not check_password_hash(user.password, password):
         return jsonify({"error": "Credenciais inválidas."}), 401

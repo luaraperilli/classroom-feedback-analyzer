@@ -7,7 +7,7 @@ import { translateSubject } from '../../utils/translations';
 const RISK_CONFIG = {
   alto:  { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', label: 'Alto Risco' },
   medio: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: 'Risco Moderado' },
-  baixo: { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', label: 'Baixo Risco' },
+  baixo: { color: '#059669', bg: '#f0fdf4', border: '#bbf7d0', label: 'Baixo Risco' },
 };
 
 const getRiskLabel  = (level) => RISK_CONFIG[level]?.label  || 'Desconhecido';
@@ -25,7 +25,7 @@ function SkeletonCards() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-5 animate-pulse"
+          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 animate-pulse"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-slate-200 flex-shrink-0" />
@@ -54,13 +54,13 @@ function SummaryCard({ label, count, level }) {
       className="rounded-2xl border p-5 flex flex-col gap-2"
       style={{ backgroundColor: bg, borderColor: border }}
     >
-      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
+      <span className="text-sm font-semibold uppercase tracking-wide" style={{ color }}>
         {label}
       </span>
       <span className="text-3xl font-bold" style={{ color }}>
         {count}
       </span>
-      <span className="text-xs text-slate-500">
+      <span className="text-sm text-slate-500">
         {count === 1 ? 'aluno' : 'alunos'}
       </span>
     </div>
@@ -70,7 +70,7 @@ function SummaryCard({ label, count, level }) {
 function Metric({ label, value, color }) {
   return (
     <div className="bg-[#f8fafc] rounded-xl px-3 py-2.5">
-      <span className="block text-[10px] text-slate-400 uppercase tracking-wide mb-1">
+      <span className="block text-sm text-slate-400 uppercase tracking-wide mb-1">
         {label}
       </span>
       <span className="text-sm font-bold" style={{ color: color || '#1e293b' }}>
@@ -90,14 +90,14 @@ function StudentCard({ student }) {
       ? `${sentimentVal > 0 ? '+' : ''}${sentimentVal.toFixed(2)}`
       : '—';
   const sentimentColor =
-    sentimentVal >= 0.05  ? '#16a34a' :
-    sentimentVal <= -0.05 ? '#dc2626' : '#6b7280';
+    sentimentVal >= 0.05  ? '#059669' :
+    sentimentVal <= -0.05 ? '#dc2626' : '#64748b';
 
   const initials = getInitials(student.student_username);
 
   return (
     <div
-      className="bg-white rounded-2xl border shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-5 flex flex-col gap-3 border-l-4"
+      className="bg-white rounded-2xl border shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 flex flex-col gap-3 border-l-4"
       style={{ borderLeftColor: color, borderColor: border }}
     >
       {/* Header: avatar + name + subject */}
@@ -112,7 +112,7 @@ function StudentCard({ student }) {
           <p className="font-semibold text-[#1e293b] leading-tight truncate">
             {student.student_username}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5 truncate">
+          <p className="text-sm text-slate-500 mt-0.5 truncate">
             {translateSubject(student.subject_name)}
           </p>
         </div>
@@ -133,8 +133,8 @@ function StudentCard({ student }) {
       {/* Risk progress bar */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Pontuação de risco</span>
-          <span className="text-[10px] font-semibold" style={{ color }}>{riskPct}%</span>
+          <span className="text-sm text-slate-400 uppercase tracking-wide">Pontuação de risco</span>
+          <span className="text-sm font-semibold" style={{ color }}>{riskPct}%</span>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${color}20` }}>
           <div
@@ -205,7 +205,7 @@ function RiskAnalysis({ selectedSubject, minRiskLevel }) {
 
       {/* Empty state */}
       {!isLoading && !error && total === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.08)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
           <svg
             className="w-10 h-10 text-slate-300"
             fill="none"
@@ -248,7 +248,7 @@ function RiskAnalysis({ selectedSubject, minRiskLevel }) {
                     {getRiskLabel(level)}
                   </h3>
                   <span
-                    className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                    className="text-sm font-medium px-1.5 py-0.5 rounded-full"
                     style={{ backgroundColor: `${color}20`, color }}
                   >
                     {students.length}

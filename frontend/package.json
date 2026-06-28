@@ -25,7 +25,7 @@
     "eject": "react-scripts eject",
     "start-backend:win": "cd .. && venv\\Scripts\\flask --app run run --debug",
     "start-backend:unix": "cd .. && source venv/bin/activate && python run.py",
-    "dev": "concurrently \"npm start\" \"npm run start-backend:win\""
+    "dev": "concurrently \"npm start\" \"npm run start-backend:unix\""
   },
   "eslintConfig": {
     "extends": [

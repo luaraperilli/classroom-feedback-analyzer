@@ -28,3 +28,21 @@ body {
 .page-transition {
   animation: pageFadeIn 0.18s ease-out;
 }
+
+/* Barra de progresso indeterminada (modal "Analisando") */
+@keyframes indeterminate {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(360%); }
+}
+.animate-indeterminate {
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+/* Fade-up usado nas mensagens que se alternam */
+@keyframes stepFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-step {
+  animation: stepFade 0.35s ease-out;
+}
