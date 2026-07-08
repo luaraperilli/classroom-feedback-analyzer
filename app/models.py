@@ -17,9 +17,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), nullable=False, default='ALUNO')
+    role = db.Column(db.String(50), nullable=False, default=ALUNO)
     first_name = db.Column(db.String(80), nullable=True)
     last_name = db.Column(db.String(80), nullable=True)
+    # quando True, o aluno pré-cadastrado é obrigado a definir uma nova senha no 1º acesso
+    must_change_password = db.Column(db.Boolean, nullable=False, default=False)
 
     @property
     def display_name(self):
@@ -38,10 +40,24 @@ class Subject(db.Model):
     def to_dict(self):
         return {'id': self.id, 'name': self.name}
 
+
+class Tema(db.Model):
+    """Tema/assunto de uma aula, definido pelo professor por matéria. O aluno
+    associa cada feedback a um tema, para depois refletir por assunto."""
+    id = db.Column(db.Integer, primary_key=True)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    nome = db.Column(db.String(120), nullable=False)
+
+    subject = db.relationship('Subject', backref=db.backref('temas', lazy=True))
+
+    def to_dict(self):
+        return {'id': self.id, 'subject_id': self.subject_id, 'nome': self.nome}
+
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    tema_id = db.Column(db.Integer, db.ForeignKey('tema.id'), nullable=True)
     active_participation = db.Column(db.Integer, nullable=False)
     task_completion = db.Column(db.Integer, nullable=False)
     motivation_interest = db.Column(db.Integer, nullable=False)
@@ -79,6 +95,7 @@ class Feedback(db.Model):
         self.shap_attributions_json = json.dumps(value) if value else None
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
+    tema = db.relationship('Tema', backref=db.backref('feedbacks', lazy=True))
 
     def calculate_overall_score(self):
         scores = [
@@ -99,6 +116,8 @@ class Feedback(db.Model):
             'student_username': self.student.display_name if self.student else 'Unknown',
             'subject': self.subject.name,
             'subject_id': self.subject_id,
+            'tema_id': self.tema_id,
+            'tema': self.tema.nome if self.tema else None,
             'active_participation': self.active_participation,
             'task_completion': self.task_completion,
             'motivation_interest': self.motivation_interest,

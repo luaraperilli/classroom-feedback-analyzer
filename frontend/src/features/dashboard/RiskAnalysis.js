@@ -25,7 +25,7 @@ function SkeletonCards() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 animate-pulse"
+          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-5 animate-pulse"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-slate-200 flex-shrink-0" />
@@ -97,7 +97,7 @@ function StudentCard({ student }) {
 
   return (
     <div
-      className="bg-white rounded-2xl border shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 flex flex-col gap-3 border-l-4"
+      className="bg-white rounded-2xl border shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-5 flex flex-col gap-3 border-l-4"
       style={{ borderLeftColor: color, borderColor: border }}
     >
       {/* Header: avatar + name + subject */}
@@ -205,7 +205,7 @@ function RiskAnalysis({ selectedSubject, minRiskLevel }) {
 
       {/* Empty state */}
       {!isLoading && !error && total === 0 && (
-        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-6 py-12 flex flex-col items-center gap-3 text-center">
           <svg
             className="w-10 h-10 text-slate-300"
             fill="none"

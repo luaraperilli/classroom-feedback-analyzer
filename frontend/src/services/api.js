@@ -55,6 +55,24 @@ export const getProfile = (token) => request('/profile', { token });
 export const updateProfile = (data, token) =>
   request('/profile', { method: 'PUT', body: data, token });
 
+// Troca obrigatória de senha no 1º acesso do aluno pré-cadastrado.
+export const changeInitialPassword = (newPassword, token) =>
+  request('/change-initial-password', { body: { new_password: newPassword }, token });
+
+// Apaga um feedback do próprio aluno (ex.: enviado por engano).
+export const deleteMyFeedback = (feedbackId, token) =>
+  request(`/my-feedbacks/${feedbackId}`, { method: 'DELETE', token });
+
+// Temas da aula (definidos pelo professor por matéria).
+export const getThemes = (subjectId, token) =>
+  request(`/themes${subjectId ? `?subject_id=${subjectId}` : ''}`, { token });
+
+export const createTheme = (subjectId, nome, token) =>
+  request('/themes', { body: { subject_id: subjectId, nome }, token });
+
+export const deleteTheme = (temaId, token) =>
+  request(`/themes/${temaId}`, { method: 'DELETE', token });
+
 export const analyzeFeedback = (feedbackData, token) =>
   request('/analyze', { body: feedbackData, token });
 

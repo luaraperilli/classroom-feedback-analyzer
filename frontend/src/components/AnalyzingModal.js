@@ -5,11 +5,15 @@ import React, { useEffect, useState } from 'react';
 // em tom amigável, para engajar o aluno durante a espera.
 const STEPS = [
   'Lendo o seu comentário…',
+  'Entendendo o contexto da sua aula…',
   'Pensando sobre o que você escreveu…',
-  'Analisando o sentimento…',
+  'Analisando o sentimento do texto…',
+  'Comparando com milhares de exemplos…',
   'Identificando as palavras que mais pesaram…',
-  'Calculando a influência de cada palavra…',
-  'Montando o seu resultado…',
+  'Medindo a influência de cada palavra…',
+  'Cruzando com a sua avaliação geral…',
+  'Organizando os destaques do seu texto…',
+  'Quase lá — montando o seu resultado…',
 ];
 
 export default function AnalyzingModal() {

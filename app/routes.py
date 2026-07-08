@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
-from .models import db, Feedback, User, Subject, StudentRiskAnalysis
+from .models import db, Feedback, User, Subject, StudentRiskAnalysis, Tema
 from .services import create_feedback, get_students_at_risk, explain_sentiment_lime, explain_sentiment_shap
 from .decorators import requires_role
 
@@ -30,7 +30,10 @@ def validate_feedback_payload(data):
     
     if not data.get("additional_comment") or not data.get("additional_comment").strip():
         return False, "Campo 'additional_comment' é obrigatório e não pode estar vazio."
-    
+
+    if len(data.get("additional_comment").strip()) > 500:
+        return False, "O comentário deve ter no máximo 500 caracteres."
+
     rating_fields = required_fields[1:7]
     for field in rating_fields:
         value = data.get(field)
@@ -50,7 +53,14 @@ def analyze_and_save_feedback():
         return jsonify({"error": error_message}), 400
     
     subject_id = data["subject_id"]
+    tema_id = data.get("tema_id")  # opcional — tema da aula escolhido pelo aluno
     additional_comment = data.get("additional_comment", "").strip()
+
+    # se veio um tema, ele precisa existir e pertencer à mesma matéria
+    if tema_id is not None:
+        tema = db.session.get(Tema, tema_id)
+        if not tema or tema.subject_id != subject_id:
+            return jsonify({"error": "Tema inválido para esta matéria."}), 400
 
     # Prevent duplicate submissions for the same subject on the same day
     today = datetime.utcnow().date()
@@ -72,7 +82,7 @@ def analyze_and_save_feedback():
     }
     
     try:
-        feedback = create_feedback(student_id, subject_id, answers, additional_comment)
+        feedback = create_feedback(student_id, subject_id, answers, additional_comment, tema_id=tema_id)
 
         if additional_comment and additional_comment.strip():
             try:
@@ -251,6 +261,26 @@ def get_my_feedbacks():
     return jsonify([fb.to_dict() for fb in feedbacks]), 200
 
 
+@api.route("/my-feedbacks/<int:feedback_id>", methods=["DELETE"])
+@jwt_required()
+def delete_my_feedback(feedback_id):
+    """Permite ao aluno apagar um feedback SEU (ex.: enviado por engano).
+    Depois de apagar, o limite diário libera o reenvio para aquela matéria."""
+    student_id = get_jwt_identity()
+    feedback = db.session.get(Feedback, feedback_id)
+
+    if not feedback:
+        return jsonify({"error": "Feedback não encontrado."}), 404
+
+    # checagem de posse: só o dono do feedback pode apagá-lo (evita IDOR)
+    if feedback.student_id != int(student_id):
+        return jsonify({"error": "Você não tem permissão para apagar este feedback."}), 403
+
+    db.session.delete(feedback)
+    db.session.commit()
+    return jsonify({"message": "Feedback apagado com sucesso."}), 200
+
+
 @api.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
@@ -263,6 +293,7 @@ def get_profile():
         "first_name": user.first_name or "",
         "last_name": user.last_name or "",
         "display_name": user.display_name,
+        "must_change_password": user.must_change_password,
     }), 200
 
 
@@ -281,6 +312,11 @@ def update_profile():
     if new_password:
         if not current_password or not check_password_hash(user.password, current_password):
             return jsonify({"error": "Senha atual incorreta."}), 400
+        # aplica a mesma política de senha forte usada no cadastro / 1º acesso
+        from .auth import validate_password
+        pw_error = validate_password(new_password)
+        if pw_error:
+            return jsonify({"error": pw_error}), 400
         user.password = generate_password_hash(new_password, method="pbkdf2:sha256")
 
     user.first_name = first_name
@@ -294,6 +330,7 @@ def update_profile():
         "first_name": user.first_name or "",
         "last_name": user.last_name or "",
         "display_name": user.display_name,
+        "must_change_password": user.must_change_password,
     }), 200
 
 
@@ -311,3 +348,61 @@ def get_subjects():
         return jsonify({"error": "Role inválida"}), 403
     
     return jsonify([subject.to_dict() for subject in subjects]), 200
+
+
+@api.route("/themes", methods=["GET"])
+@jwt_required()
+def get_themes():
+    """Lista os temas de uma matéria (o aluno usa ao enviar; o professor, para gerenciar)."""
+    subject_id = request.args.get("subject_id")
+    query = Tema.query
+    if subject_id:
+        query = query.filter_by(subject_id=subject_id)
+    temas = query.order_by(Tema.id.asc()).all()
+    return jsonify([t.to_dict() for t in temas]), 200
+
+
+@api.route("/themes", methods=["POST"])
+@jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
+def create_theme():
+    user = _get_user(get_jwt_identity())
+    data = request.get_json() or {}
+    subject_id = data.get("subject_id")
+    nome = (data.get("nome") or "").strip()
+
+    if not subject_id or not nome:
+        return jsonify({"error": "Matéria e nome do tema são obrigatórios."}), 400
+
+    subject = db.session.get(Subject, subject_id)
+    if not subject:
+        return jsonify({"error": "Matéria não encontrada."}), 404
+
+    # professor só cria temas nas próprias matérias
+    if user.role == User.PROFESSOR and subject not in user.subjects:
+        return jsonify({"error": "Você não leciona esta matéria."}), 403
+
+    tema = Tema(subject_id=subject_id, nome=nome)
+    db.session.add(tema)
+    db.session.commit()
+    return jsonify(tema.to_dict()), 201
+
+
+@api.route("/themes/<int:tema_id>", methods=["DELETE"])
+@jwt_required()
+@requires_role(User.PROFESSOR, User.COORDENADOR)
+def delete_theme(tema_id):
+    user = _get_user(get_jwt_identity())
+    tema = db.session.get(Tema, tema_id)
+    if not tema:
+        return jsonify({"error": "Tema não encontrado."}), 404
+
+    if user.role == User.PROFESSOR and tema.subject not in user.subjects:
+        return jsonify({"error": "Você não leciona esta matéria."}), 403
+
+    # desvincula (mantém os feedbacks, só remove o rótulo do tema)
+    for fb in tema.feedbacks:
+        fb.tema_id = None
+    db.session.delete(tema)
+    db.session.commit()
+    return jsonify({"message": "Tema removido."}), 200

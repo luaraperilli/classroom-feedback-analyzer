@@ -93,14 +93,15 @@ def explain_sentiment_shap(text: str) -> dict:
             result[clean] = float(val)
     return {k: round(v, 4) for k, v in result.items()}
 
-def create_feedback(student_id, subject_id, answers, additional_comment=None):
+def create_feedback(student_id, subject_id, answers, additional_comment=None, tema_id=None):
     sentiment_scores = None
     if additional_comment and additional_comment.strip():
         sentiment_scores = analyze_sentiment_text(additional_comment)
-    
+
     new_feedback = Feedback(
         student_id=student_id,
         subject_id=subject_id,
+        tema_id=tema_id,
         active_participation=answers['active_participation'],
         task_completion=answers['task_completion'],
         motivation_interest=answers['motivation_interest'],

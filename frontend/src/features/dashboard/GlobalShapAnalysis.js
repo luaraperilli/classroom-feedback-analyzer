@@ -35,7 +35,7 @@ function CustomTooltip({ active, payload }) {
 
 function SkeletonChart() {
   return (
-    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 animate-pulse">
+    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6 animate-pulse">
       <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
       <div className="h-3 bg-slate-100 rounded w-1/2 mb-6" />
       <div className="h-[400px] bg-slate-50 rounded-xl" />
@@ -78,7 +78,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-6 py-12 flex flex-col items-center gap-3 text-center">
         <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
         </svg>
@@ -98,7 +98,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
     <div className="space-y-6">
       {/* Summary pills */}
       <div className="flex flex-wrap gap-3">
-        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#0f766e]/10 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#0f766e]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -109,7 +109,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
             <p className="text-sm text-slate-500">Palavras analisadas</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#059669]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
@@ -120,7 +120,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
             <p className="text-sm text-slate-500">Impacto positivo</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] px-5 py-4 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
             <svg className="w-5 h-5 text-[#dc2626]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
@@ -134,8 +134,11 @@ function GlobalShapAnalysis({ selectedSubject }) {
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
-        <h2 className="text-base font-semibold text-[#1e293b]">Palavras Mais Influentes (SHAP Global)</h2>
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
+        <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
+          <span className="w-1 h-5 rounded-full bg-primary" />
+          Palavras Mais Influentes (SHAP Global)
+        </h2>
         <p className="text-sm text-slate-400 mt-0.5 mb-6">
           Valor SHAP médio de cada palavra ao longo de todos os feedbacks. Valores positivos indicam contribuição para sentimento positivo, valores negativos para negativo.
         </p>
@@ -178,8 +181,11 @@ function GlobalShapAnalysis({ selectedSubject }) {
       </div>
 
       {/* Word table */}
-      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
-        <h2 className="text-base font-semibold text-[#1e293b] mb-4">Detalhamento por Palavra</h2>
+      <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
+        <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a] mb-4">
+          <span className="w-1 h-5 rounded-full bg-primary" />
+          Detalhamento por Palavra
+        </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

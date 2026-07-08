@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
-import { getSubjects, analyzeFeedback } from '../../services/api';
+import { getSubjects, analyzeFeedback, getThemes } from '../../services/api';
 import Spinner from '../../components/Spinner';
 import AnalyzingModal from '../../components/AnalyzingModal';
 
@@ -140,6 +140,8 @@ function FeedbackForm() {
   const [subjectId, setSubjectId] = useState('');
   const [subjects, setSubjects]   = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [themes, setThemes]       = useState([]);
+  const [temaId, setTemaId]       = useState('');
   const [ratings, setRatings]     = useState({});
   const [comment, setComment]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -159,9 +161,21 @@ function FeedbackForm() {
     return () => { cancelled = true; };
   }, [accessToken]);
 
+  // ao trocar de matéria, carrega os temas daquela matéria (definidos pelo professor)
+  useEffect(() => {
+    setTemaId('');
+    if (!accessToken || !subjectId) { setThemes([]); return; }
+    let cancelled = false;
+    getThemes(subjectId, accessToken)
+      .then((data) => { if (!cancelled) setThemes(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setThemes([]); });
+    return () => { cancelled = true; };
+  }, [subjectId, accessToken]);
+
   const answeredCount = QUESTIONS.filter((q) => ratings[q.id]).length;
   const allAnswered   = answeredCount === QUESTIONS.length;
-  const isValid       = !!subjectId && allAnswered && comment.trim() !== '';
+  const temaOk        = themes.length === 0 || !!temaId;   // se há temas, escolher um é obrigatório
+  const isValid       = !!subjectId && temaOk && allAnswered && comment.trim() !== '';
   const currentStep   = !subjectId ? 0 : !allAnswered ? 1 : 2;
 
   const displayName = user?.first_name || user?.username;
@@ -175,6 +189,7 @@ function FeedbackForm() {
 
     const payload = {
       subject_id:            parseInt(subjectId),
+      tema_id:               temaId ? parseInt(temaId) : null,
       active_participation:  ratings.active_participation,
       task_completion:       ratings.task_completion,
       motivation_interest:   ratings.motivation_interest,
@@ -257,6 +272,33 @@ function FeedbackForm() {
 
           {subjectId && (
             <>
+              {/* Tema da aula (se o professor cadastrou temas para a matéria) */}
+              {themes.length > 0 && (
+                <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
+                  <p className="text-sm font-semibold text-[#1e293b] mb-1">Qual foi o tema desta aula?</p>
+                  <p className="text-sm text-[#64748b] mb-3">Isso ajuda você, depois, a lembrar como se sentiu em cada assunto.</p>
+                  <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+                    {themes.map((t) => {
+                      const selected = String(temaId) === String(t.id);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => setTemaId(String(t.id))}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
+                            ${selected
+                              ? 'bg-primary border-primary text-white shadow-[0_4px_8px_-2px_rgba(15,118,110,0.30)]'
+                              : 'border-slate-200 text-[#475569] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/50 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
+                        >
+                          {t.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Step 2 — Likert (card único com todas as perguntas) */}
               <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
                 <h2 className="text-base font-semibold text-[#1e293b] mb-1">Como você se sentiu nesta aula?</h2>

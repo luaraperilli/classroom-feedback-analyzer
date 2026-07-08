@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { register as apiRegister } from '../../services/api';
 import AuthLeftPanel from './AuthLeftPanel';
 import Spinner from '../../components/Spinner';
-
-const MIN_PASSWORD_LENGTH = 6;
+import PasswordChecklist from '../../components/PasswordChecklist';
+import { validatePassword, firstPasswordError } from '../../utils/passwordPolicy';
 
 function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
   const [username, setUsername]   = useState('');
   const [password, setPassword]   = useState('');
-  const [role, setRole]           = useState('aluno');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError]         = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,14 +20,19 @@ function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+    if (firstPasswordError(password)) {
+      setError('A senha não atende a todos os requisitos de segurança.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.');
       return;
     }
 
     setIsLoading(true);
     try {
-      await apiRegister(username, password, role, firstName, lastName);
+      await apiRegister(username, password, 'aluno', firstName, lastName);
       navigate('/login');
     } catch (err) {
       setError(err.message || 'Não foi possível criar a conta. Tente novamente.');
@@ -36,7 +41,9 @@ function RegisterPage() {
     }
   };
 
-  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  const passwordValid     = validatePassword(password);
+  const passwordWeak      = password.length > 0 && !passwordValid;
+  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
     <div className="min-h-screen flex">
@@ -130,34 +137,35 @@ function RegisterPage() {
                   autoComplete="new-password"
                   className={`w-full px-4 py-2.5 rounded-xl border text-[#1e293b] text-sm
                              placeholder:text-[#64748b] focus:outline-none focus:ring-2 transition
-                             ${passwordTooShort
+                             ${passwordWeak
                                ? 'border-amber-300 focus:ring-amber-200 focus:border-amber-400'
                                : 'border-slate-200 focus:ring-primary/30 focus:border-primary'}`}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Crie uma senha forte"
                 />
-                {passwordTooShort && (
-                  <p className="text-sm text-amber-600 mt-1">
-                    Mínimo {MIN_PASSWORD_LENGTH} caracteres ({MIN_PASSWORD_LENGTH - password.length} restantes)
-                  </p>
-                )}
+                {password.length > 0 && <PasswordChecklist password={password} />}
               </div>
 
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-[#1e293b] mb-1.5">
-                  Perfil
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#1e293b] mb-1.5">
+                  Confirmar senha
                 </label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
-                             bg-white focus:outline-none focus:ring-2 focus:ring-primary/30
-                             focus:border-primary transition cursor-pointer"
-                >
-                  <option value="aluno">Aluno</option>
-                  <option value="professor">Professor</option>
-                  <option value="coordenador">Coordenador</option>
-                </select>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-[#1e293b] text-sm
+                             placeholder:text-[#64748b] focus:outline-none focus:ring-2 transition
+                             ${passwordsMismatch
+                               ? 'border-amber-300 focus:ring-amber-200 focus:border-amber-400'
+                               : 'border-slate-200 focus:ring-primary/30 focus:border-primary'}`}
+                  placeholder="Repita a senha"
+                />
+                {passwordsMismatch && (
+                  <p className="text-sm text-amber-600 mt-1">As senhas não coincidem.</p>
+                )}
               </div>
 
               {error && (
@@ -168,7 +176,7 @@ function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={isLoading || passwordTooShort}
+                disabled={isLoading || !passwordValid || passwordsMismatch}
                 className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold
                            hover:bg-primary-dark transition disabled:opacity-60 disabled:cursor-not-allowed"
               >

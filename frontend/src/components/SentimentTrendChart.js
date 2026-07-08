@@ -10,6 +10,7 @@ import {
   ReferenceLine,
   ReferenceArea,
   ResponsiveContainer,
+  LabelList,
 } from 'recharts';
 import { getWeekLabel } from '../utils/sentiment';
 
@@ -89,6 +90,9 @@ function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
   }
 
   const points = groupFeedbacks(validFeedbacks, groupBy);
+  // com poucos pontos (ex.: professor com só 2 marcos), mostramos o valor em cada
+  // ponto e afastamos das bordas para o gráfico não ficar "vazio"/feio.
+  const fewPoints = points.length <= 8;
 
   return (
     <ResponsiveContainer width="100%" height={260}>
@@ -104,7 +108,13 @@ function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
 
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
 
-        <XAxis dataKey="label" tick={{ fontSize: 14, fill: '#475569' }} axisLine={false} tickLine={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 14, fill: '#475569' }}
+          axisLine={false}
+          tickLine={false}
+          padding={{ left: 24, right: 24 }}
+        />
 
         <YAxis
           domain={[-1, 1]}
@@ -136,9 +146,19 @@ function SentimentTrendChart({ feedbacks, groupBy = 'day' }) {
           name="Sentimento Médio"
           stroke="#0f766e"
           strokeWidth={2.5}
-          dot={{ r: 3, fill: '#0f766e', strokeWidth: 0 }}
-          activeDot={{ r: 6, fill: '#0f766e', strokeWidth: 2, stroke: '#fff' }}
-        />
+          dot={{ r: fewPoints ? 5 : 3, fill: '#0f766e', strokeWidth: 2, stroke: '#fff' }}
+          activeDot={{ r: 7, fill: '#0f766e', strokeWidth: 2, stroke: '#fff' }}
+        >
+          {fewPoints && (
+            <LabelList
+              dataKey="avg"
+              position="top"
+              offset={12}
+              formatter={(v) => `${v > 0 ? '+' : ''}${Number(v).toFixed(2)}`}
+              style={{ fontSize: 12, fill: '#0f766e', fontWeight: 600 }}
+            />
+          )}
+        </Line>
       </ComposedChart>
     </ResponsiveContainer>
   );

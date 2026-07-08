@@ -4,6 +4,7 @@ import SentimentSummary from '../../components/SentimentSummary';
 import SentimentTrendChart from '../../components/SentimentTrendChart';
 import RiskAnalysis from './RiskAnalysis';
 import GlobalShapAnalysis from './GlobalShapAnalysis';
+import ThemeManager from './ThemeManager';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
@@ -107,7 +108,7 @@ function SkeletonFeedbackCards() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] p-5 animate-pulse"
+          className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-5 animate-pulse"
         >
           <div className="flex justify-between mb-3">
             <div className="h-4 bg-slate-200 rounded w-1/4" />
@@ -137,7 +138,7 @@ function FeedbackCard({ fb }) {
 
   return (
     <div
-      className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.11)] border-l-4 overflow-hidden"
+      className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] border-l-4 overflow-hidden"
       style={{ borderLeftColor: borderColor }}
     >
       <button
@@ -314,6 +315,7 @@ function Dashboard() {
               { id: 'feedbacks', label: 'Feedbacks' },
               { id: 'risk',      label: 'Análise de Risco' },
               { id: 'shap',      label: 'Explicabilidade' },
+              { id: 'temas',     label: 'Temas' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -394,7 +396,7 @@ function Dashboard() {
                   <option value="alto">Apenas alto risco</option>
                 </FilterSelect>
               </>
-            ) : (
+            ) : activeTab === 'shap' ? (
               <FilterSelect
                 id="shap-subject-filter"
                 label="Matéria"
@@ -406,7 +408,7 @@ function Dashboard() {
                   <option key={s.id} value={s.id}>{translateSubject(s.name)}</option>
                 ))}
               </FilterSelect>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -415,16 +417,22 @@ function Dashboard() {
           <div className="space-y-6">
             <SentimentSummary feedbacks={feedbacks} />
 
-            <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
-              <h2 className="text-base font-semibold text-[#1e293b]">Tendência de Sentimento</h2>
-              <p className="text-sm text-slate-400 mt-0.5 mb-5">
-                Média diária do sentimento dos feedbacks recebidos (-1 negativo, +1 positivo)
+            <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
+              <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
+                <span className="w-1 h-5 rounded-full bg-primary" />
+                Tendência de Sentimento
+              </h2>
+              <p className="text-sm text-[#64748b] mt-1 mb-5">
+                Sentimento dos feedbacks recebidos ao longo do tempo (−1 negativo, +1 positivo).
               </p>
               <SentimentTrendChart feedbacks={feedbacks} groupBy="day" />
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-[#1e293b]">Feedbacks Recentes</h2>
+              <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
+                <span className="w-1 h-5 rounded-full bg-primary" />
+                Feedbacks Recentes
+              </h2>
 
               {isLoading && <SkeletonFeedbackCards />}
 
@@ -435,7 +443,7 @@ function Dashboard() {
               )}
 
               {!isLoading && !error && feedbacks.length === 0 && (
-                <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] px-6 py-12 flex flex-col items-center gap-3 text-center">
+                <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-6 py-12 flex flex-col items-center gap-3 text-center">
                   <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                   </svg>
@@ -474,6 +482,9 @@ function Dashboard() {
         {activeTab === 'shap' && (
           <GlobalShapAnalysis selectedSubject={shapSubject} />
         )}
+
+        {/* Temas tab */}
+        {activeTab === 'temas' && <ThemeManager />}
 
       </div>
     </div>

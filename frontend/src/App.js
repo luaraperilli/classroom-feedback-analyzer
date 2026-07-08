@@ -10,6 +10,7 @@ import ProfilePage from './features/student/ProfilePage';
 import Dashboard from './features/dashboard/Dashboard';
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
+import ChangeInitialPassword from './features/auth/ChangeInitialPassword';
 import CoordinatorPage from './features/coordinator/CoordinatorPage';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
@@ -86,7 +87,7 @@ function Sidebar() {
         {isStudent && (
           <>
             <SidebarLink to="/" label="Feedback" icon={ICON.feedback} />
-            <SidebarLink to="/historico" label="Meu Progresso" icon={ICON.progress} />
+            <SidebarLink to="/historico" label="Minhas Avaliações" icon={ICON.progress} />
             <SidebarLink to="/perfil" label="Perfil" icon={ICON.profile} />
           </>
         )}
@@ -120,6 +121,14 @@ function Sidebar() {
 
 function AppContent() {
   const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+
+  // 1º acesso: enquanto o aluno pré-cadastrado não definir a própria senha,
+  // bloqueia todo o restante do app (sem menu lateral, sem rotas).
+  if (isAuthenticated && user?.must_change_password) {
+    return <ChangeInitialPassword />;
+  }
+
   return (
     <div className="App flex min-h-screen">
       <Sidebar />

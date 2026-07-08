@@ -111,6 +111,26 @@ def seed_users():
     print(f'Users created: coordinator, professor, {len(STUDENTS)} students.')
 
 
+def ensure_demo_pending_student():
+    """Garante (de forma idempotente) um aluno pré-cadastrado que precisa definir a senha
+    no 1º acesso. Demonstra o fluxo sem afetar os usuários existentes (marina etc. seguem
+    normais). Login inicial: aluno.novo / Entrar123"""
+    existing = User.query.filter(db.func.lower(User.username) == 'aluno.novo').first()
+    if existing:
+        return
+    demo = User(
+        username='aluno.novo',
+        password=generate_password_hash('Entrar123', method='pbkdf2:sha256'),
+        role=User.ALUNO,
+        first_name='Aluno',
+        last_name='Demonstração',
+        must_change_password=True,
+    )
+    db.session.add(demo)
+    db.session.commit()
+    print('Demo pending-password student ensured: aluno.novo / Entrar123')
+
+
 def seed_subjects():
     subjects = [Subject(name=name) for name in SUBJECT_NAMES]
     db.session.add_all(subjects)

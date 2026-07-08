@@ -11,7 +11,7 @@ const getAvgCompound = (feedbacks) => {
 
 function StatCard({ label, value, color, percentage, showBar, footer }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-5 flex flex-col gap-1 min-w-0">
+    <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-5 flex flex-col gap-1 min-w-0">
       <span className="text-4xl font-bold leading-none" style={{ color }}>
         {value}
       </span>

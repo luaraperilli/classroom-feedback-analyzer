@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getProfile, updateProfile } from '../../services/api';
 import Spinner from '../../components/Spinner';
+import PasswordChecklist from '../../components/PasswordChecklist';
+import { validatePassword } from '../../utils/passwordPolicy';
 
 function ProfilePage() {
   const { accessToken, user, updateUser } = useAuth();
@@ -28,6 +30,11 @@ function ProfilePage() {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
+
+    if (newPassword && !validatePassword(newPassword)) {
+      setError('A nova senha não atende aos requisitos de segurança.');
+      return;
+    }
 
     if (newPassword && newPassword !== confirmPassword) {
       setError('As senhas não coincidem.');
@@ -180,6 +187,7 @@ function ProfilePage() {
                              focus:border-primary transition"
                   placeholder="••••••••"
                 />
+                {newPassword.length > 0 && <PasswordChecklist password={newPassword} />}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1e293b] mb-1.5">Confirmar</label>
