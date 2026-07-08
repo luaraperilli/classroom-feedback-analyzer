@@ -6,7 +6,7 @@ comment's sentiment with **pysentimiento** (Portuguese NLP), and explaining it w
 they *felt* and how much they *understood*, per class theme. Professors and
 coordinators get an aggregated dashboard (sentiment trends, at-risk panel, global SHAP).
 
-## Tech stack
+## Tech Stack
 
 - **Backend:** Flask (REST API), SQLAlchemy + SQLite, Flask-JWT-Extended
 - **NLP:** pysentimiento (sentiment) · LIME + SHAP (explainability)
@@ -33,7 +33,7 @@ React SPA  ──HTTP/JSON (JWT Bearer)──▶  Flask REST API
 - Python 3.10–3.12
 - Node.js 18+ and npm
 
-### Run (development)
+### Run (Development)
 
 One command from `frontend/` starts **both** the backend and the frontend:
 
@@ -52,7 +52,7 @@ LIME/SHAP attributions for the sample comments (can take several minutes).
 > Manual alternative — backend: `source venv/bin/activate && python run.py` ·
 > frontend: `npm start`.
 
-### Demo credentials (development only)
+### Demo Credentials (Development Only)
 
 | User | Password | Role |
 |---|---|---|
@@ -62,7 +62,7 @@ LIME/SHAP attributions for the sample comments (can take several minutes).
 
 Login is case-insensitive. These accounts are seeded **only in development**.
 
-### Environment variables
+### Environment Variables
 
 Copy `.env.example` to `.env`. Not needed for local development (safe fallbacks);
 **required in production**.
@@ -88,7 +88,7 @@ Public sign-up (`/register`) always creates an **aluno** — professor/coordinat
 accounts are created through administration. Access is enforced by the
 `@requires_role` decorator and JWT claims.
 
-## How it works
+## How It Works
 
 ### Sentiment
 pysentimiento (`lang="pt"`) returns `pos`, `neg`, `neu`; `compound = pos − neg`
@@ -107,7 +107,7 @@ pysentimiento (`lang="pt"`) returns `pos`, `neg`, `neu`; `compound = pos − neg
 - In the student view, influential words are highlighted (green = positive,
   red = negative) in **plain language** — no technical jargon.
 
-### Risk model
+### Risk Model
 `StudentRiskAnalysis` combines engagement score, sentiment, and submission consistency
 into a 0–1 risk score (levels *baixo / medio / alto*). All weights and thresholds are
 named constants in `app/models.py`.
@@ -122,7 +122,7 @@ named constants in `app/models.py`.
 - In production, secrets are required from the environment, debug is off, and CORS is
   restricted to `CORS_ORIGINS`.
 
-## Project structure (top level)
+## Project Structure (Top Level)
 
 ```
 app/         Flask backend — models, routes, auth, admin, services, seeder
@@ -135,7 +135,7 @@ docs/        This README
 The authoritative list of API endpoints lives in `app/routes.py`, `app/auth.py`, and
 `app/admin.py` — refer to those files instead of duplicating them here.
 
-## Design principles
+## Design Principles
 
 Informed by Grimalt-Álvaro & Usart (2024) on student-centered feedback:
 
