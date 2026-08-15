@@ -116,6 +116,14 @@ export const updateProfile = (data, token) =>
 export const changeInitialPassword = (newPassword, token) =>
   request('/change-initial-password', { body: { new_password: newPassword }, token });
 
+export const getTermoConsentimento = () => request('/termo-consentimento', { semRetry: true });
+
+export const registrarConsentimento = (token) => request('/consentimento', { body: {}, token });
+
+// Direito de eliminação: retira o consentimento e apaga feedbacks e análises.
+export const apagarMeusDados = (token) =>
+  request('/meus-dados', { method: 'DELETE', token });
+
 // Apaga um feedback do próprio aluno (ex.: enviado por engano).
 export const deleteMyFeedback = (feedbackId, token) =>
   request(`/my-feedbacks/${feedbackId}`, { method: 'DELETE', token });

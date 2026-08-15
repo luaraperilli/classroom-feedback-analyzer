@@ -4,6 +4,7 @@ import { getProfile, updateProfile } from '../../services/api';
 import Spinner from '../../components/Spinner';
 import PasswordChecklist from '../../components/PasswordChecklist';
 import { validatePassword } from '../../utils/passwordPolicy';
+import RetirarConsentimento from './RetirarConsentimento';
 
 function ProfilePage() {
   const { accessToken, user, updateUser } = useAuth();
@@ -227,6 +228,8 @@ function ProfilePage() {
             ) : 'Salvar Alterações'}
           </button>
         </form>
+
+        {user?.role === 'aluno' && <RetirarConsentimento />}
 
       </div>
     </div>

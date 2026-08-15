@@ -12,6 +12,7 @@ import Dashboard from './features/dashboard/Dashboard';
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import ChangeInitialPassword from './features/auth/ChangeInitialPassword';
+import TermoConsentimento from './features/auth/TermoConsentimento';
 import CoordinatorPage from './features/coordinator/CoordinatorPage';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
@@ -173,6 +174,13 @@ function AppContent() {
   // bloqueia todo o restante do app (sem menu lateral, sem rotas).
   if (isAuthenticated && user?.must_change_password) {
     return <ChangeInitialPassword />;
+  }
+
+  // Consentimento vem depois da senha: primeiro a pessoa assume a conta, só
+  // então decide se participa. Bloqueia o app inteiro pelo mesmo motivo — não
+  // deve haver caminho lateral para usar a ferramenta sem ter respondido.
+  if (isAuthenticated && user?.consentimento_pendente) {
+    return <TermoConsentimento />;
   }
 
   return (

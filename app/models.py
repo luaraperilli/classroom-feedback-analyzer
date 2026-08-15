@@ -23,6 +23,18 @@ class User(db.Model):
     # quando True, o aluno pré-cadastrado é obrigado a definir uma nova senha no 1º acesso
     must_change_password = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Consentimento livre e esclarecido (TCLE) e base legal do tratamento (LGPD).
+    # A versão é registrada junto da data: consentimento vale para um tratamento
+    # específico, então se o termo mudar o aceite anterior deixa de servir e a
+    # pergunta é refeita.
+    consentimento_em = db.Column(db.DateTime, nullable=True)
+    consentimento_versao = db.Column(db.String(20), nullable=True)
+
+    @property
+    def consentimento_valido(self):
+        from .consentimento import VERSAO_DO_TERMO
+        return bool(self.consentimento_em) and self.consentimento_versao == VERSAO_DO_TERMO
+
     @property
     def display_name(self):
         if self.first_name:

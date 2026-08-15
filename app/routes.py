@@ -57,7 +57,13 @@ def validate_feedback_payload(data):
 def analyze_and_save_feedback():
     data = request.get_json()
     student_id = get_jwt_identity()
-    
+
+    # Verificado no servidor, não só na tela: sem consentimento válido não há
+    # base legal para tratar o comentário, e a tela é contornável.
+    autor = _get_user(student_id)
+    if autor.role == User.ALUNO and not autor.consentimento_valido:
+        return jsonify({"error": "É preciso aceitar o termo de participação antes de enviar."}), 403
+
     is_valid, error_message = validate_feedback_payload(data)
     if not is_valid:
         return jsonify({"error": error_message}), 400
@@ -308,12 +314,8 @@ def delete_my_feedback(feedback_id):
     return jsonify({"message": "Feedback apagado com sucesso."}), 200
 
 
-@api.route("/profile", methods=["GET"])
-@jwt_required()
-def get_profile():
-    user_id = get_jwt_identity()
-    user = _get_user(user_id)
-    return jsonify({
+def _perfil_json(user):
+    return {
         "id": user.id,
         "username": user.username,
         "role": user.role,
@@ -321,7 +323,66 @@ def get_profile():
         "last_name": user.last_name or "",
         "display_name": user.display_name,
         "must_change_password": user.must_change_password,
+        "consentimento_pendente": user.role == User.ALUNO and not user.consentimento_valido,
+        "consentimento_em": user.consentimento_em.isoformat() if user.consentimento_em else None,
+    }
+
+
+@api.route("/termo-consentimento", methods=["GET"])
+def get_termo_consentimento():
+    """Aberto de propósito: o participante precisa poder ler antes de decidir."""
+    from .consentimento import TERMO
+    return jsonify(TERMO), 200
+
+
+@api.route("/consentimento", methods=["POST"])
+@jwt_required()
+def registrar_consentimento():
+    from .consentimento import VERSAO_DO_TERMO
+
+    user = _get_user(get_jwt_identity())
+    user.consentimento_em = datetime.utcnow()
+    user.consentimento_versao = VERSAO_DO_TERMO
+    db.session.commit()
+
+    logger.info("Consentimento registrado: usuario=%s versao=%s", user.id, VERSAO_DO_TERMO)
+    return jsonify(_perfil_json(user)), 200
+
+
+@api.route("/meus-dados", methods=["DELETE"])
+@jwt_required()
+def apagar_meus_dados():
+    """Revoga o consentimento e apaga os dados do próprio titular.
+
+    Direito de eliminação da LGPD. O usuário em si permanece, sem consentimento
+    e sem feedback algum: apagar a conta inteira liberaria a matrícula para
+    recadastro e o aluno voltaria como participante novo, sem registro de que
+    havia recusado. O que a pesquisa não pode mais usar é o conteúdo, e é ele
+    que sai.
+    """
+    user = _get_user(get_jwt_identity())
+
+    feedbacks = Feedback.query.filter_by(student_id=user.id).count()
+    Feedback.query.filter_by(student_id=user.id).delete()
+    StudentRiskAnalysis.query.filter_by(student_id=user.id).delete()
+
+    user.consentimento_em = None
+    user.consentimento_versao = None
+    db.session.commit()
+
+    logger.info("Dados apagados a pedido do titular: usuario=%s feedbacks=%s", user.id, feedbacks)
+    return jsonify({
+        "message": "Seus dados foram apagados e seu consentimento foi retirado.",
+        "feedbacks_apagados": feedbacks,
     }), 200
+
+
+@api.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    user_id = get_jwt_identity()
+    user = _get_user(user_id)
+    return jsonify(_perfil_json(user)), 200
 
 
 @api.route("/profile", methods=["PUT"])
@@ -350,15 +411,7 @@ def update_profile():
     user.last_name = last_name
     db.session.commit()
 
-    return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "role": user.role,
-        "first_name": user.first_name or "",
-        "last_name": user.last_name or "",
-        "display_name": user.display_name,
-        "must_change_password": user.must_change_password,
-    }), 200
+    return jsonify(_perfil_json(user)), 200
 
 
 @api.route("/subjects", methods=["GET"])
