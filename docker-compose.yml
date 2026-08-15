@@ -1,0 +1,32 @@
+# Backend + proxy com HTTPS automático, para a VM da Oracle Cloud.
+#
+# O Caddy resolve o certificado sozinho junto ao Let's Encrypt. Isso não é
+# opcional: o frontend na Vercel é servido por HTTPS, e o navegador bloqueia
+# chamadas a uma API em HTTP puro (mixed content) sem mensagem de erro clara.
+
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8080"
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -107,6 +107,15 @@ def criar_professor(username, nome, sobrenome, senha, aleatoria):
     _anunciar(_criar_usuario(username, User.PROFESSOR, nome, sobrenome, senha), senha)
 
 
+@click.command('criar-aluno')
+@_opcoes_usuario
+@with_appcontext
+def criar_aluno(username, nome, sobrenome, senha, aleatoria):
+    """Cria uma conta de aluno. Para a turma inteira, use criar-alunos."""
+    senha = gerar_senha() if aleatoria else senha
+    _anunciar(_criar_usuario(username, User.ALUNO, nome, sobrenome, senha), senha)
+
+
 @click.command('criar-disciplina')
 @click.option('--nome', prompt=True, help='Nome da disciplina.')
 @click.option('--professor', default=None, help='Usuário do professor responsável.')
@@ -265,6 +274,6 @@ def calcular_explicacoes():
 
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
-                    criar_alunos, listar_usuarios, redefinir_senha,
+                    criar_aluno, criar_alunos, listar_usuarios, redefinir_senha,
                     calcular_explicacoes):
         app.cli.add_command(comando)

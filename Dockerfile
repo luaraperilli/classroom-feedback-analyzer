@@ -17,12 +17,15 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && apt-get purge -y build-essential \
     && apt-get autoremove -y
 
-COPY . .
-
 # Baixa os pesos do pysentimiento na build. Sem isso, o primeiro acesso depois de
 # cada deploy esperaria ~500 MB de download. É também o que congela a versão do
 # modelo entre a coleta e a defesa.
+#
+# Vem ANTES do COPY do código: assim a camada é reaproveitada entre deploys e uma
+# mudança em qualquer arquivo do projeto não dispara o download de novo.
 RUN python -c "from pysentimiento import create_analyzer; create_analyzer(task='sentiment', lang='pt')"
+
+COPY . .
 
 RUN useradd --create-home aplicacao && chown -R aplicacao:aplicacao /app /opt/modelo
 USER aplicacao

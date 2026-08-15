@@ -1,0 +1,17 @@
+{$DOMINIO} {
+	reverse_proxy api:8080 {
+		# O /analyze pode levar dezenas de segundos em CPU pura; o padrão do
+		# Caddy cortaria a resposta antes do gunicorn terminar.
+		transport http {
+			read_timeout 300s
+			write_timeout 300s
+		}
+	}
+
+	encode gzip
+
+	log {
+		output stdout
+		format console
+	}
+}

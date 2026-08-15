@@ -1,6 +1,14 @@
 .git
 .gitignore
+
+# Segredos: o Dockerfile faz COPY . ., e uma camada de imagem é permanente.
 .env
+cloudrun.env.yaml
+
+# Só servem para a hospedagem em VM, não entram na imagem do Cloud Run.
+docker-compose.yml
+Caddyfile
+
 venv
 __pycache__
 *.pyc
