@@ -7,7 +7,7 @@ import { translateSubject } from '../../utils/translations';
 const RISK_CONFIG = {
   alto:  { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', label: 'Alto Risco' },
   medio: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: 'Risco Moderado' },
-  baixo: { color: '#059669', bg: '#f0fdf4', border: '#bbf7d0', label: 'Baixo Risco' },
+  baixo: { color: '#0f766e', bg: '#e6f2f1', border: '#c5e0dd', label: 'Baixo Risco' },
 };
 
 const getRiskLabel  = (level) => RISK_CONFIG[level]?.label  || 'Desconhecido';
@@ -90,7 +90,7 @@ function StudentCard({ student }) {
       ? `${sentimentVal > 0 ? '+' : ''}${sentimentVal.toFixed(2)}`
       : '—';
   const sentimentColor =
-    sentimentVal >= 0.05  ? '#059669' :
+    sentimentVal >= 0.05  ? '#0f766e' :
     sentimentVal <= -0.05 ? '#dc2626' : '#64748b';
 
   const initials = getInitials(student.student_username);

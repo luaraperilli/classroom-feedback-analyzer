@@ -6,12 +6,12 @@ import { getSentimentLabel } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
 import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
 import Tooltip from '../../components/Tooltip';
-import SentimentTrendChart from '../../components/SentimentTrendChart';
+import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
 import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
 const SENTIMENT_META = {
-  positivo: { label: 'Positivo', color: '#059669', bg: 'bg-emerald-50', ring: 'ring-emerald-200', text: 'text-[#059669]', dot: 'bg-[#059669]' },
+  positivo: { label: 'Positivo', color: '#0f766e', bg: 'bg-[#e6f2f1]', ring: 'ring-[#c5e0dd]', text: 'text-[#0f766e]', dot: 'bg-[#0f766e]' },
   neutro:   { label: 'Neutro',   color: '#64748b', bg: 'bg-slate-50', ring: 'ring-slate-200', text: 'text-[#64748b]', dot: 'bg-[#64748b]' },
   negativo: { label: 'Negativo', color: '#dc2626', bg: 'bg-red-50',   ring: 'ring-red-200',   text: 'text-[#dc2626]', dot: 'bg-[#dc2626]' },
 };
@@ -54,8 +54,8 @@ function ExplainabilityModal({ onClose }) {
         </p>
         <div className="bg-bg rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(5,150,105,0.35)' }} />
-            <span className="text-[#475569]"><span className="font-medium text-[#059669]">Verde</span> — puxou o resultado para o lado positivo</span>
+            <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(15,118,110,0.35)' }} />
+            <span className="text-[#475569]"><span className="font-medium text-[#0f766e]">Verde</span> — puxou o resultado para o lado positivo</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(220,38,38,0.35)' }} />
@@ -86,7 +86,7 @@ function ExplainabilityLegend({ onInfo }) {
       <div className="flex items-center gap-4">
         <span className="flex items-center gap-1.5 text-sm text-[#475569]">
           <span className="w-14 h-3 rounded-sm inline-block" style={{
-            background: 'linear-gradient(to right, rgba(5,150,105,0.08), rgba(5,150,105,0.5))'
+            background: 'linear-gradient(to right, rgba(15,118,110,0.08), rgba(15,118,110,0.5))'
           }} />
           Positivo
         </span>
@@ -130,7 +130,7 @@ function SentimentBadge({ compound, showScore }) {
 
 function ScoreBar({ score }) {
   const pct = Math.round(score * 100);
-  const color = score >= 0.6 ? '#059669' : score >= 0.4 ? '#f59e0b' : '#dc2626';
+  const color = score >= 0.6 ? '#0f766e' : score >= 0.4 ? '#f59e0b' : '#dc2626';
   const display = (score * 4 + 1).toFixed(1);
   return (
     <div className="flex items-center gap-3">
@@ -165,14 +165,19 @@ function StatCard({ icon, tint, value, valueClass, label, hint }) {
   return (
     <div className="relative bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_12px_28px_rgba(13,98,92,0.10)] p-5 flex items-center gap-4 transition-transform hover:-translate-y-0.5">
       {hint && (
-        <span
-          title={hint}
-          aria-label={hint}
-          className="absolute top-3 right-3 text-[#94a3b8] hover:text-primary cursor-help transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
-          </svg>
+        // O wrapper externo posiciona; o Tooltip aplica `relative` em si mesmo
+        // e anularia um `absolute` passado por className.
+        <span className="absolute top-3 right-3">
+          <Tooltip texto={hint} posicao="left">
+            <span
+              aria-label={hint}
+              className="text-[#94a3b8] hover:text-primary cursor-help transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
+              </svg>
+            </span>
+          </Tooltip>
         </span>
       )}
       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${tint}`}>
@@ -200,24 +205,31 @@ function SummaryCard({ feedbacks }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <StatCard
-        tint="bg-primary/10"
+        tint="bg-slate-100"
         valueClass="text-primary"
         value={feedbacks.length}
         label="Feedbacks enviados"
         hint="Total de feedbacks que você já enviou (contando todas as matérias exibidas)."
         icon={
-          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 8.5h8M8 12h5" />
           </svg>
         }
       />
       <StatCard
-        tint={avgMeta ? avgMeta.bg : 'bg-slate-100'}
+        tint="bg-sky-50"
         valueClass={avgMeta ? avgMeta.text : 'text-[#64748b]'}
         value={avgMeta ? avgMeta.label : '--'}
         label="Sentimento médio"
         hint="Sentimento predominante calculado pela IA a partir dos comentários que você escreveu."
-        icon={<SentimentFace label={avgLabel || 'neutro'} className={`w-7 h-7 ${avgMeta ? avgMeta.text : 'text-[#64748b]'}`} />}
+        icon={
+          <svg className="w-6 h-6 text-sky-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 9.5h.01M15 9.5h.01" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 14.5c.9 1 2.1 1.5 3.5 1.5s2.6-.5 3.5-1.5" />
+          </svg>
+        }
       />
       <StatCard
         tint="bg-amber-50"
@@ -362,8 +374,17 @@ function StudentHistory() {
   const [showModal, setShowModal]             = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isDeleting, setIsDeleting]           = useState(false);
-  const [mostrarToast, setMostrarToast]       = useState(!!state?.latest);
   const [erroExclusao, setErroExclusao]       = useState(null);
+
+  // O resultado do envio é consumido uma vez e some do histórico do navegador.
+  // Enquanto vivia só no state da rota, um F5 restaurava a entrada e a tela
+  // reexibia o resultado de um envio já encerrado, como se fosse novo.
+  const [recemEnviado, setRecemEnviado] = useState(state?.latest ?? null);
+  const [mostrarToast, setMostrarToast] = useState(!!state?.latest);
+
+  useEffect(() => {
+    if (state?.latest) navigate('/historico', { replace: true, state: null });
+  }, [state?.latest, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -389,9 +410,9 @@ function StudentHistory() {
   // para o topo — assim a confirmação "enviado com sucesso" é a primeira coisa que a pessoa vê.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [state?.latest]);
+  }, [recemEnviado]);
 
-  const latestFeedback  = state?.latest ?? (feedbacks.length > 0 ? feedbacks[feedbacks.length - 1] : null);
+  const latestFeedback  = recemEnviado ?? (feedbacks.length > 0 ? feedbacks[feedbacks.length - 1] : null);
   const pointsWithData  = countPointsWithData(feedbacks);
 
   const displayName = user?.first_name
@@ -405,8 +426,8 @@ function StudentHistory() {
       await deleteMyFeedback(confirmDeleteId, accessToken);
       setFeedbacks((prev) => prev.filter((f) => f.id !== confirmDeleteId));
       // se o apagado for o feedback recém-enviado (mostrado no topo), remove o banner
-      if (state?.latest?.id === confirmDeleteId) {
-        navigate('/historico', { replace: true });
+      if (recemEnviado?.id === confirmDeleteId) {
+        setRecemEnviado(null);
       }
       setConfirmDeleteId(null);
     } catch (err) {
@@ -503,7 +524,7 @@ function StudentHistory() {
         )}
 
         {/* Resultado do feedback recém-enviado — fica no topo para ser a primeira coisa vista */}
-        {state?.latest && (
+        {recemEnviado && (
           <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
@@ -537,7 +558,7 @@ function StudentHistory() {
               className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#475569]
                          hover:bg-bg transition font-medium"
             >
-              Enviar Outro Feedback
+              Avaliar Novamente
             </button>
           </div>
         )}
@@ -576,13 +597,13 @@ function StudentHistory() {
             <div className="flex items-start justify-between gap-3 mb-0.5">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
                 <span className="w-1 h-5 rounded-full bg-primary" />
-                Como Você Tem Se Avaliado
+                Suas Avaliações
               </h2>
               <Tooltip
-                texto="Cada ponto é a média das seis respostas daquele feedback, na escala de 1 a 5. O gráfico segue as datas reais dos seus envios."
+                texto="Cada barra é um feedback que você enviou: a média das suas seis respostas daquele dia, na escala de 1 a 5."
                 posicao="left"
               >
-                <span aria-label="Como ler este gráfico" className="text-[#94a3b8] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5">
+                <span aria-label="Como ler esta comparação" className="text-[#94a3b8] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
                   </svg>
@@ -590,23 +611,11 @@ function StudentHistory() {
               </Tooltip>
             </div>
             <p className="text-sm text-[#64748b] mb-6">
-              {selectedSubject
-                ? 'Média das suas respostas nesta matéria, de 1 (discordo totalmente) a 5 (concordo totalmente).'
-                : 'Média das suas respostas ao longo do tempo, de 1 a 5. Filtre por matéria acima para acompanhar uma disciplina específica.'}
+              {pointsWithData < 2
+                ? 'Média das suas respostas, de 1 (discordo totalmente) a 5 (concordo totalmente).'
+                : 'Cada envio lado a lado, de 1 (discordo totalmente) a 5 (concordo totalmente).'}
             </p>
-            {pointsWithData < 2 ? (
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                  </svg>
-                </div>
-                <p className="text-sm text-[#475569] font-medium">Ainda não há dados suficientes para o gráfico</p>
-                <p className="text-sm text-[#64748b]">Envie pelo menos 2 feedbacks {selectedSubject ? 'nesta matéria ' : ''}para acompanhar a evolução.</p>
-              </div>
-            ) : (
-              <SentimentTrendChart feedbacks={feedbacks} groupBy="day" metrica="avaliacao" />
-            )}
+            <ComparacaoDeMarcos feedbacks={feedbacks} />
           </div>
         )}
 
@@ -627,7 +636,7 @@ function StudentHistory() {
               <FeedbackCard
                 key={fb.id}
                 fb={fb}
-                defaultOpen={idx === 0 && !state?.latest}
+                defaultOpen={idx === 0 && !recemEnviado}
                 onInfo={() => setShowModal(true)}
                 onRequestDelete={setConfirmDeleteId}
               />

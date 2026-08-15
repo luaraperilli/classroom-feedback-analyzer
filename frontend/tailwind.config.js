@@ -10,7 +10,7 @@ module.exports = {
           dark:    '#0d6460',
           light:   '#f0fdfc',
         },
-        positive: '#059669',   // esmeralda — harmoniza com o teal
+        positive: '#0f766e',   // teal da marca — positivo e marca compartilham a cor
         negative: '#dc2626',   // vermelho
         neutral:  '#64748b',   // slate-500
         surface:  '#ffffff',

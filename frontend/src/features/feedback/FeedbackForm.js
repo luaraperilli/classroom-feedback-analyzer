@@ -35,7 +35,7 @@ function StepIndicator({ current }) {
           <React.Fragment key={label}>
             <div className="flex flex-col items-center gap-1">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all
-                ${done   ? 'bg-[#059669] text-white' :
+                ${done   ? 'bg-[#0f766e] text-white' :
                   active ? 'bg-primary text-white ring-4 ring-primary/20' :
                            'bg-slate-100 text-[#475569]'}`}>
                 {done ? (
@@ -49,7 +49,7 @@ function StepIndicator({ current }) {
               </span>
             </div>
             {i < STEP_LABELS.length - 1 && (
-              <div className={`h-0.5 w-16 mb-4 mx-1 transition-colors ${done ? 'bg-[#059669]' : 'bg-slate-100'}`} />
+              <div className={`h-0.5 w-16 mb-4 mx-1 transition-colors ${done ? 'bg-[#0f766e]' : 'bg-slate-100'}`} />
             )}
           </React.Fragment>
         );

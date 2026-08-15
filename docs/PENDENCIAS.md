@@ -4,30 +4,31 @@ Detalhes em `AUDITORIA.md`, `CONSISTENCIA-ARTIGO-CODIGO.md` e `DECISOES-ORIENTAC
 
 ---
 
-## 1. Testar de verdade
+## 1. Validado em uso
 
-Nada foi executado com o modelo real. Todas as mudanças estão validadas por
-compilação, build e boot com o pysentimiento stubado — nenhuma por uso.
+O fluxo do aluno rodou de ponta a ponta com o modelo real: login, envio com
+comentário, destaque das palavras pelo LIME, cards de resumo e exclusão.
 
-Antes de qualquer outra coisa: subir local, entrar como aluno, enviar um feedback
-completo, conferir o destaque das palavras, o gráfico e a exclusão; depois entrar
-como professor e abrir o dashboard.
+## 2. Desempenho — resolvido
 
-## 2. Bloqueadores de deploy — corrigidos, falta validar
+O gargalo não era o LIME nem o `num_samples=5000`, era o invólucro do
+pysentimiento. Cada `sentiment_analyzer.predict()` constrói um `Dataset` do
+HuggingFace e roda `.map()`; esse custo fixo dominava, e lotear não adiantava
+porque o custo é por lote. As 5.000 perturbações levavam cerca de 99 minutos.
 
-Todos foram resolvidos: `load_dotenv` no topo do `config.py`, normalização da URI
-do Supabase, perfil padrão `production` com validação que falha o boot, migration
-leve restrita ao SQLite, gunicorn com `wsgi.py`, `/health`, Dockerfile com torch
-CPU-only, dependências fixas, `vercel.json` com rewrite de SPA e `.env.example`
-nos dois lados.
+O `_predict_proba` passou a chamar o tokenizador e o modelo diretamente, sob
+`torch.inference_mode()`. Mesmo modelo, mesmos pesos: a diferença máxima medida
+entre os dois caminhos foi 1,9e-09 — ruído de ponto flutuante. O LIME caiu para
+cerca de 9 segundos, ganho de 680x.
 
-Também voltou o processamento em lote do `_predict_proba`, que havia se perdido
-no revert: sem ele, as 5.000 perturbações do LIME viravam 5.000 chamadas
-sequenciais ao modelo, de 3 a 6 minutos por feedback — acima do timeout do
-gunicorn, do Cloud Run e do frontend. Em lotes de 32 são 157 chamadas.
+**Falta medir em CPU pura.** Esses 9 segundos são com MPS, a GPU do Mac. No
+Cloud Run (1 vCPU, sem aceleração) a estimativa é de 40 a 90 segundos, dentro do
+timeout de 300s — mas só o primeiro envio em produção confirma.
 
-**Falta medir o tempo real do `/analyze`** com o modelo de verdade. Se ficar
-acima de dois minutos, o envio precisa virar job assíncrono com polling.
+**Concorrência:** trinta alunos simultâneos numa instância de 1 vCPU se
+enfileiram. Subir com `--concurrency 2` e `--max-instances 10` faz o Cloud Run
+escalar em vez de empilhar. A conta cabe no free tier com folga: 30 alunos × 3
+aplicações × ~60s ≈ 5.400 vCPU-segundos, contra 180.000 mensais gratuitos.
 
 ## 3. Ajustes no texto
 
@@ -39,13 +40,25 @@ react-chartjs-2 → recharts na Seção 3.2. Tirar "LIME / SHAP" da caixa do alu
 Figura 1, que contradiz a própria Seção 3.5. O filtro por intervalos de marcos
 citado na 3.5 não existe. SQLite → Postgres na 3.2 e na figura, quando migrarmos.
 
+Na Seção 3.5, a fórmula de opacidade passa a ser **α = 0,2 + |score| × 0,50**,
+levando o impacto máximo a **α ≈ 0,70**. O coeficiente caiu de 0,55 junto com a
+troca do verde esmeralda pelo teal da marca: sendo mais escuro, em 0,55 o texto
+sobre o destaque ficava com contraste 4,34, abaixo do mínimo de 4,5 da WCAG AA.
+Em 0,50 volta a 4,76 — a justificativa da fórmula (preservar a legibilidade
+sobre fundo branco) é a mesma, só o número muda.
+
+Ainda na 3.5: o `SentimentTrendChart` agora é exclusivo do dashboard docente,
+como a 3.2 já dizia. A tela do discente passou a comparar os marcos lado a lado,
+sem linha temporal — ligar três pontos mensais por uma linha afirmaria uma
+trajetória contínua que não foi medida.
+
 Mais adiante: a subseção do TAM no Método, o TCLE como apêndice e os prints da
 Seção 3.5, que só podem ser feitos com o sistema congelado.
 
 ## 4. Infraestrutura
 
 Conectar o Supabase, publicar o backend no Cloud Run e o frontend na Vercel.
-Medir o tempo real do `/analyze` para decidir se precisa virar job assíncrono.
+Medir o `/analyze` em CPU pura no primeiro envio em produção.
 
 **Simular o piloto** com as duas disciplinas antes de levar para a turma. O
 Rodrigo foi direto: *"a hora que a gente levar isso pra sala de aula e não tem
@@ -75,3 +88,10 @@ SHAP registradas, com aviso de explicação indisponível. Tooltips próprios.
 Loader no cold start. Logout com revogação. Contador no modal de análise. Erro de
 exclusão isolado do resto da tela. Rastreabilidade do modelo via
 `/versao-modelo`. Comandos de linha para criar usuários e disciplinas.
+
+Predição direta ao modelo, 680x mais rápida que o invólucro do pysentimiento.
+Comparação de marcos no lugar da linha temporal na tela do aluno. Teal da marca
+como cor do positivo, com o coeficiente de opacidade recalculado para manter o
+contraste AA. Toast branco centrado na área de conteúdo, não na janela. Resultado
+do envio consumido uma vez, sem reaparecer no reload. Tooltips próprios também
+nos cards de resumo.

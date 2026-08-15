@@ -10,7 +10,7 @@ export default function PasswordChecklist({ password }) {
         return (
           <li
             key={rule.key}
-            className={`flex items-center gap-2 text-sm transition-colors ${ok ? 'text-[#059669]' : 'text-[#94a3b8]'}`}
+            className={`flex items-center gap-2 text-sm transition-colors ${ok ? 'text-[#0f766e]' : 'text-[#94a3b8]'}`}
           >
             {ok ? (
               <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">

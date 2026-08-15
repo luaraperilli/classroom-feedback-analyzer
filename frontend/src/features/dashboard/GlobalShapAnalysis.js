@@ -16,7 +16,7 @@ import {
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const d = payload[0].payload;
-  const color = d.mean_shap >= 0 ? '#059669' : '#dc2626';
+  const color = d.mean_shap >= 0 ? '#0f766e' : '#dc2626';
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.10)] px-4 py-3 text-sm">
       <p className="font-semibold text-[#1e293b] mb-1">"{d.word}"</p>
@@ -110,13 +110,13 @@ function GlobalShapAnalysis({ selectedSubject }) {
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] px-5 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#059669]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <div className="w-9 h-9 rounded-xl bg-[#e6f2f1] flex items-center justify-center">
+            <svg className="w-5 h-5 text-[#0f766e]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-[#059669]">{positiveCount}</p>
+            <p className="text-2xl font-bold text-[#0f766e]">{positiveCount}</p>
             <p className="text-sm text-slate-500">Impacto positivo</p>
           </div>
         </div>
@@ -171,7 +171,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
               {top20.map((entry, idx) => (
                 <Cell
                   key={idx}
-                  fill={entry.mean_shap >= 0 ? '#059669' : '#dc2626'}
+                  fill={entry.mean_shap >= 0 ? '#0f766e' : '#dc2626'}
                   fillOpacity={0.8}
                 />
               ))}
@@ -198,7 +198,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
             </thead>
             <tbody>
               {data.map((d, idx) => {
-                const color = d.mean_shap >= 0 ? '#059669' : '#dc2626';
+                const color = d.mean_shap >= 0 ? '#0f766e' : '#dc2626';
                 const barWidth = Math.min(Math.abs(d.mean_shap) / (Math.abs(data[0]?.mean_shap) || 1) * 100, 100);
                 return (
                   <tr key={idx} className="border-b border-slate-50 last:border-0">

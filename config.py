@@ -67,8 +67,9 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     # Fallbacks APENAS para desenvolvimento local — nunca usados em produção.
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-somente-local')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev-jwt-key-somente-local')
+    # 32+ bytes: abaixo disso o PyJWT emite InsecureKeyLengthWarning a cada token.
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-somente-local-nao-use-em-producao')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'dev-jwt-key-somente-local-nao-use-em-producao')
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000')
 
 

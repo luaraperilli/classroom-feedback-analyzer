@@ -211,7 +211,7 @@ function ProfilePage() {
             </p>
           )}
           {successMsg && (
-            <p className="text-sm text-[#059669] bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
+            <p className="text-sm text-[#0f766e] bg-[#e6f2f1] border border-[#c5e0dd] rounded-xl px-4 py-2.5">
               {successMsg}
             </p>
           )}

@@ -222,7 +222,49 @@ def redefinir_senha(username, senha):
     click.echo('A troca será exigida no próximo acesso.\n')
 
 
+@click.command('calcular-explicacoes')
+@with_appcontext
+def calcular_explicacoes():
+    """Calcula LIME e SHAP dos comentários que ficaram sem explicação.
+
+    Serve para os feedbacks cuja requisição caiu antes de as atribuições serem
+    gravadas: o comentário e o sentimento estão salvos, o destaque não.
+    """
+    import json
+
+    from .models import Feedback
+    from .services import explain_sentiment_lime, explain_sentiment_shap
+
+    pendentes = Feedback.query.filter(
+        Feedback.additional_comment.isnot(None),
+        Feedback.additional_comment != '',
+        Feedback.token_attributions_json.is_(None),
+    ).order_by(Feedback.id).all()
+
+    if not pendentes:
+        click.echo('Nenhum comentário pendente de explicação.')
+        return
+
+    click.echo(f'{len(pendentes)} comentário(s) sem explicação. Cada um leva alguns minutos.\n')
+
+    for posicao, feedback in enumerate(pendentes, 1):
+        trecho = feedback.additional_comment[:50]
+        click.echo(f'[{posicao}/{len(pendentes)}] {trecho}...', nl=False)
+
+        try:
+            feedback.token_attributions_json = json.dumps(explain_sentiment_lime(feedback.additional_comment))
+            feedback.shap_attributions_json = json.dumps(explain_sentiment_shap(feedback.additional_comment))
+            db.session.commit()
+            click.echo(' ok')
+        except Exception as erro:
+            db.session.rollback()
+            click.echo(f' falhou: {erro}')
+
+    click.echo('\nPronto. Recarregue "Minhas Avaliações".')
+
+
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
-                    criar_alunos, listar_usuarios, redefinir_senha):
+                    criar_alunos, listar_usuarios, redefinir_senha,
+                    calcular_explicacoes):
         app.cli.add_command(comando)

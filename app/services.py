@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import shap
+import torch
 from pysentimiento import create_analyzer
 from lime.lime_text import LimeTextExplainer
 from .models import db, Feedback, StudentRiskAnalysis
@@ -53,29 +54,54 @@ shap_masker = shap.maskers.Text(tokenizer=r"\W+")
 
 CLASSES = ('NEG', 'NEU', 'POS')
 
-# O LIME avalia 5.000 textos perturbados por comentário. Chamar o modelo uma vez
-# por texto levava minutos; em lotes o resultado é o mesmo e o tempo cai para
-# dezenas de segundos. O num_samples não muda — é ele que o artigo justifica.
-TAMANHO_DO_LOTE = int(os.environ.get('PREDICT_BATCH_SIZE', 32))
+TAMANHO_DO_LOTE = int(os.environ.get('PREDICT_BATCH_SIZE', 64))
+COMPRIMENTO_MAXIMO = 128
+
+_modelo = sentiment_analyzer.model
+_tokenizador = sentiment_analyzer.tokenizer
+_dispositivo = next(_modelo.parameters()).device
+
+# A ordem das colunas vem do próprio modelo, não de uma constante nossa: se os
+# pesos mudarem o mapeamento, o índice acompanha em vez de trocar positivo por
+# negativo em silêncio.
+_COLUNAS = [
+    next(i for i, rotulo in _modelo.config.id2label.items() if rotulo.upper().startswith(classe))
+    for classe in CLASSES
+]
 
 
+@torch.inference_mode()
 def _predict_proba(texts):
     """Probabilidades [NEG, NEU, POS] para uma lista de textos.
+
+    Chama o tokenizador e o modelo diretamente em vez de sentiment_analyzer
+    .predict(). O invólucro do pysentimiento constrói um Dataset e roda .map()
+    a cada chamada, e esse custo fixo domina: as 5.000 perturbações do LIME
+    levavam cerca de 99 minutos por comentário, contra 9 segundos por este
+    caminho — com diferença máxima de 1,9e-09 entre os dois, ruído de ponto
+    flutuante. Mesmo modelo, mesmos pesos, mesmas probabilidades.
 
     Uma falha do modelo propaga em vez de virar distribuição uniforme, que
     produzia explicações plausíveis e sem sentido, sem ninguém perceber.
     """
     textos = list(texts)
-    resultados = []
+    if not textos:
+        return np.empty((0, len(CLASSES)))
 
+    lotes = []
     for inicio in range(0, len(textos), TAMANHO_DO_LOTE):
-        lote = textos[inicio:inicio + TAMANHO_DO_LOTE]
-        predicoes = sentiment_analyzer.predict(lote)
-        if not isinstance(predicoes, list):
-            predicoes = [predicoes]
-        resultados.extend([p.probas.get(c, 0.0) for c in CLASSES] for p in predicoes)
+        entrada = _tokenizador(
+            textos[inicio:inicio + TAMANHO_DO_LOTE],
+            return_tensors='pt',
+            padding=True,
+            truncation=True,
+            max_length=COMPRIMENTO_MAXIMO,
+        ).to(_dispositivo)
 
-    return np.array(resultados)
+        logits = _modelo(**entrada).logits
+        lotes.append(torch.softmax(logits, dim=-1).float().cpu().numpy())
+
+    return np.vstack(lotes)[:, _COLUNAS]
 
 shap_explainer = shap.Explainer(
     _predict_proba,
@@ -87,15 +113,13 @@ def analyze_sentiment_text(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
         return None
 
-    result = sentiment_analyzer.predict(text)
-    probabilities = result.probas
-    compound_score = probabilities.get('POS', 0.0) - probabilities.get('NEG', 0.0)
+    neg, neu, pos = (float(v) for v in _predict_proba([text])[0])
 
     return {
-        'compound': round(compound_score, 4),
-        'neg': round(probabilities.get('NEG', 0.0), 4),
-        'neu': round(probabilities.get('NEU', 0.0), 4),
-        'pos': round(probabilities.get('POS', 0.0), 4)
+        'compound': round(pos - neg, 4),
+        'neg': round(neg, 4),
+        'neu': round(neu, 4),
+        'pos': round(pos, 4),
     }
 
 POS_IDX = 2

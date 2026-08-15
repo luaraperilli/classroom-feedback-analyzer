@@ -63,7 +63,7 @@ function SentimentSummary({ feedbacks }) {
       <StatCard
         label="Positivos"
         value={positiveCount}
-        color="#059669"
+        color="#0f766e"
         percentage={getPercentage(positiveCount, total)}
         showBar
       />

@@ -10,7 +10,7 @@ import { getSubjects } from '../../services/api';
 import { getSentimentColor } from '../../utils/sentiment';
 
 const getFeedbackBorderColor = (compound) => {
-  if (compound >= 0.05) return '#059669';
+  if (compound >= 0.05) return '#0f766e';
   if (compound <= -0.05) return '#dc2626';
   return '#64748b';
 };

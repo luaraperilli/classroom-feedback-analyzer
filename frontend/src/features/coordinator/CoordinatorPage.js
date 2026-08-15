@@ -21,7 +21,7 @@ function StatusMessage({ message, error }) {
     <p className="text-sm text-[#dc2626] bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{error}</p>
   );
   if (message) return (
-    <p className="text-sm text-[#059669] bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">{message}</p>
+    <p className="text-sm text-[#0f766e] bg-[#e6f2f1] border border-[#c5e0dd] rounded-xl px-4 py-2.5">{message}</p>
   );
   return null;
 }

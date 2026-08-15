@@ -6,12 +6,17 @@
  * explicabilidade. Sem atribuição, o texto vai sem destaque.
  */
 
-// α = 0,2 + |score| × 0,55 — o termo aditivo garante visibilidade mínima e o
+// α = 0,2 + |score| × 0,50 — o termo aditivo garante visibilidade mínima e o
 // multiplicador mantém o texto legível sobre fundo branco.
+//
+// O multiplicador caiu de 0,55 para 0,50 junto com a troca do verde esmeralda
+// pelo teal da marca, que é mais escuro: em 0,55 o texto sobre o destaque de
+// impacto máximo ficava com contraste 4,34, abaixo do mínimo de 4,5 da WCAG AA.
+// Em 0,50 volta a 4,76, preservando a legibilidade que justifica a fórmula.
 function estiloDeDestaque(score) {
   const intensidade = Math.min(Math.abs(score), 1);
-  const alpha = +(0.2 + intensidade * 0.55).toFixed(2);
-  const cor = score > 0 ? '5,150,105' : '220,38,38';
+  const alpha = +(0.2 + intensidade * 0.50).toFixed(2);
+  const cor = score > 0 ? '15,118,110' : '220,38,38';
   return { backgroundColor: `rgba(${cor},${alpha})`, borderRadius: '3px', padding: '0 2px' };
 }
 
