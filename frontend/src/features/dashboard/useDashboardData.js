@@ -6,43 +6,39 @@ export function useDashboardData(subjectId, dateRange) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { accessToken, logout, refreshAccessToken } = useAuth();
-  const isMountedRef = useRef(true);
+  const { accessToken } = useAuth();
+  const montadoRef = useRef(true);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
+    montadoRef.current = true;
+    return () => { montadoRef.current = false; };
   }, []);
 
-  const fetchData = useCallback(async (retry = false) => {
+  // A renovação do token e a repetição da requisição ficam na camada de API.
+  const buscar = useCallback(async () => {
     if (!accessToken) {
-      if (isMountedRef.current) setIsLoading(false);
+      if (montadoRef.current) setIsLoading(false);
       return;
     }
 
-    if (isMountedRef.current) { setIsLoading(true); setError(null); }
+    if (montadoRef.current) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
-      const data = await getFeedbacks(subjectId, dateRange, accessToken);
-      if (isMountedRef.current) setFeedbacks(Array.isArray(data) ? data : []);
+      const dados = await getFeedbacks(subjectId, dateRange, accessToken);
+      if (montadoRef.current) setFeedbacks(Array.isArray(dados) ? dados : []);
     } catch (err) {
-      if (!isMountedRef.current) return;
-      if (err.message.includes('401') && !retry) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) return fetchData(true);
-        logout();
-        setError('Sessão expirada. Por favor, faça login novamente.');
-      } else {
-        setError(err.message || 'Erro ao carregar os dados.');
-      }
+      if (montadoRef.current) setError(err.message || 'Erro ao carregar os dados.');
     } finally {
-      if (isMountedRef.current) setIsLoading(false);
+      if (montadoRef.current) setIsLoading(false);
     }
-  }, [accessToken, logout, refreshAccessToken, subjectId, dateRange]);
+  }, [accessToken, subjectId, dateRange]);
 
   useEffect(() => {
-    if (dateRange) fetchData();
-  }, [fetchData, dateRange]);
+    if (dateRange) buscar();
+  }, [buscar, dateRange]);
 
   return { feedbacks, isLoading, error };
 }

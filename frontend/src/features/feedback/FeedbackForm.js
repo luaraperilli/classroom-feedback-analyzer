@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
-import { getSubjects, analyzeFeedback, getThemes } from '../../services/api';
+import { getSubjects, analyzeFeedback } from '../../services/api';
 import Spinner from '../../components/Spinner';
 import AnalyzingModal from '../../components/AnalyzingModal';
 
 const MAX_COMMENT = 400;
 
+// Texto literal da Tabela 1 do artigo, baseada no modelo de engajamento de
+// Fredricks et al. (2004): duas afirmações por dimensão, na ordem
+// comportamental, emocional e cognitiva.
 const QUESTIONS = [
-  { id: 'active_participation',  label: 'Participo ativamente das aulas e atividades.'    },
-  { id: 'task_completion',       label: 'Cumpro as tarefas e prazos com regularidade.'    },
-  { id: 'motivation_interest',   label: 'Me sinto motivado pelos conteúdos da disciplina.' },
-  { id: 'welcoming_environment', label: 'O ambiente de aula é acolhedor e me estimula.'   },
-  { id: 'comprehension_effort',  label: 'Me dedico a entender os conceitos apresentados.' },
-  { id: 'content_connection',    label: 'Consigo conectar o conteúdo com a prática.'      },
+  { id: 'active_participation',  label: 'Participo ativamente das aulas e das atividades propostas pelo professor.' },
+  { id: 'task_completion',       label: 'Cumpro as tarefas e os prazos estabelecidos na disciplina com regularidade.' },
+  { id: 'motivation_interest',   label: 'Sinto-me motivado(a) e interessado(a) nos conteúdos abordados nesta disciplina.' },
+  { id: 'welcoming_environment', label: 'Sinto que o ambiente de aula é acolhedor e me estimula a continuar participando.' },
+  { id: 'comprehension_effort',  label: 'Dedico tempo e esforço para compreender os conceitos apresentados em aula.' },
+  { id: 'content_connection',    label: 'Consigo relacionar os conteúdos desta disciplina a situações práticas ou a outras matérias.' },
 ];
 
 const RATING_LABELS = ['', 'Discordo totalmente', 'Discordo', 'Neutro', 'Concordo', 'Concordo totalmente'];
@@ -140,14 +143,12 @@ function FeedbackForm() {
   const [subjectId, setSubjectId] = useState('');
   const [subjects, setSubjects]   = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
-  const [themes, setThemes]       = useState([]);
-  const [temaId, setTemaId]       = useState('');
   const [ratings, setRatings]     = useState({});
   const [comment, setComment]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]         = useState(null);
 
-  const { accessToken, user, logout, refreshAccessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -161,26 +162,14 @@ function FeedbackForm() {
     return () => { cancelled = true; };
   }, [accessToken]);
 
-  // ao trocar de matéria, carrega os temas daquela matéria (definidos pelo professor)
-  useEffect(() => {
-    setTemaId('');
-    if (!accessToken || !subjectId) { setThemes([]); return; }
-    let cancelled = false;
-    getThemes(subjectId, accessToken)
-      .then((data) => { if (!cancelled) setThemes(Array.isArray(data) ? data : []); })
-      .catch(() => { if (!cancelled) setThemes([]); });
-    return () => { cancelled = true; };
-  }, [subjectId, accessToken]);
-
   const answeredCount = QUESTIONS.filter((q) => ratings[q.id]).length;
   const allAnswered   = answeredCount === QUESTIONS.length;
-  const temaOk        = themes.length === 0 || !!temaId;   // se há temas, escolher um é obrigatório
-  const isValid       = !!subjectId && temaOk && allAnswered && comment.trim() !== '';
+  const isValid       = !!subjectId && allAnswered && comment.trim() !== '';
   const currentStep   = !subjectId ? 0 : !allAnswered ? 1 : 2;
 
   const displayName = user?.first_name || user?.username;
 
-  const handleSubmit = async (e, retry = false) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!isValid || !accessToken) return;
 
@@ -189,7 +178,6 @@ function FeedbackForm() {
 
     const payload = {
       subject_id:            parseInt(subjectId),
-      tema_id:               temaId ? parseInt(temaId) : null,
       active_participation:  ratings.active_participation,
       task_completion:       ratings.task_completion,
       motivation_interest:   ratings.motivation_interest,
@@ -203,14 +191,10 @@ function FeedbackForm() {
       const data = await analyzeFeedback(payload, accessToken);
       navigate('/historico', { state: { latest: data } });
     } catch (err) {
-      if (err.message.includes('401') && !retry) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) return handleSubmit(null, true);
-        logout();
-        setError('Sessão expirada. Por favor, faça login novamente.');
-      } else {
-        setError(err.message || 'Não foi possível enviar. Tente novamente.');
-      }
+      // A renovação do token e o reenvio ficam na camada de API; aqui só resta
+      // avisar o aluno, sem perder o que ele escreveu.
+      setError(err.message || 'Não foi possível enviar. Tente novamente.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
     }
@@ -227,6 +211,17 @@ function FeedbackForm() {
           <div className="relative z-10">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Olá, {displayName}!</h1>
             <p className="text-white/80 text-sm mt-1.5">Como foi a aula de hoje? Sua opinião ajuda a melhorar a disciplina.</p>
+
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-white/15 px-4 py-3">
+              <svg className="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <p className="text-white text-sm leading-relaxed">
+                <strong className="font-semibold">Sua resposta é anônima.</strong> O professor vê os comentários
+                da turma sem saber quem escreveu cada um. Seu login serve apenas para o acesso à disciplina e
+                para você acompanhar seu próprio histórico.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -272,33 +267,6 @@ function FeedbackForm() {
 
           {subjectId && (
             <>
-              {/* Tema da aula (se o professor cadastrou temas para a matéria) */}
-              {themes.length > 0 && (
-                <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
-                  <p className="text-sm font-semibold text-[#1e293b] mb-1">Qual foi o tema desta aula?</p>
-                  <p className="text-sm text-[#64748b] mb-3">Isso ajuda você, depois, a lembrar como se sentiu em cada assunto.</p>
-                  <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-                    {themes.map((t) => {
-                      const selected = String(temaId) === String(t.id);
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          disabled={isLoading}
-                          onClick={() => setTemaId(String(t.id))}
-                          className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
-                            ${selected
-                              ? 'bg-primary border-primary text-white shadow-[0_4px_8px_-2px_rgba(15,118,110,0.30)]'
-                              : 'border-slate-200 text-[#475569] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/50 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
-                        >
-                          {t.nome}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* Step 2 — Likert (card único com todas as perguntas) */}
               <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
                 <h2 className="text-base font-semibold text-[#1e293b] mb-1">Como você se sentiu nesta aula?</h2>

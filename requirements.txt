@@ -1,9 +1,23 @@
-Flask
-flask-cors
-flask-sqlalchemy
-Flask-Bcrypt
-Flask-JWT-Extended
-pysentimiento
-python-dotenv
-lime
-shap
+# O torch precisa vir do índice CPU-only: o wheel padrão traz CUDA, passa de 2 GB
+# e estoura o limite de build da maioria das hospedagens.
+#
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+Flask==3.1.3
+flask-cors==6.0.1
+flask-sqlalchemy==3.1.1
+Flask-JWT-Extended==4.7.1
+SQLAlchemy==2.0.44
+python-dotenv==1.2.1
+
+# Servidor de produção e driver do Postgres (Supabase).
+gunicorn==23.0.0
+psycopg2-binary==2.9.10
+
+# NLP e explicabilidade. numpy fica no 1.x: shap e lime ainda quebram no 2.x.
+numpy==1.26.4
+torch==2.4.1
+transformers==4.44.2
+pysentimiento==0.7.3
+lime==0.2.0.1
+shap==0.46.0

@@ -4,7 +4,6 @@ import SentimentSummary from '../../components/SentimentSummary';
 import SentimentTrendChart from '../../components/SentimentTrendChart';
 import RiskAnalysis from './RiskAnalysis';
 import GlobalShapAnalysis from './GlobalShapAnalysis';
-import ThemeManager from './ThemeManager';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
@@ -148,7 +147,9 @@ function FeedbackCard({ fb }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-semibold text-[#1e293b] leading-tight">{fb.student_username}</p>
+              <p className="font-semibold text-[#1e293b] leading-tight">
+                Feedback anônimo
+              </p>
               <p className="text-sm text-slate-500 mt-0.5">{translateSubject(fb.subject)}</p>
             </div>
             <span className="text-sm text-slate-400 whitespace-nowrap shrink-0">
@@ -315,7 +316,6 @@ function Dashboard() {
               { id: 'feedbacks', label: 'Feedbacks' },
               { id: 'risk',      label: 'Análise de Risco' },
               { id: 'shap',      label: 'Explicabilidade' },
-              { id: 'temas',     label: 'Temas' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -482,9 +482,6 @@ function Dashboard() {
         {activeTab === 'shap' && (
           <GlobalShapAnalysis selectedSubject={shapSubject} />
         )}
-
-        {/* Temas tab */}
-        {activeTab === 'temas' && <ThemeManager />}
 
       </div>
     </div>

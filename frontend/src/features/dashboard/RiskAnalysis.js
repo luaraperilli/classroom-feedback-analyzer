@@ -196,7 +196,7 @@ function RiskAnalysis({ selectedSubject, minRiskLevel }) {
       )}
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard label="Alto Risco"     count={grouped.alto.length}  level="alto" />
           <SummaryCard label="Risco Moderado" count={grouped.medio.length} level="medio" />
           <SummaryCard label="Baixo Risco"    count={grouped.baixo.length} level="baixo" />

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-// Etapas exibidas em sequência enquanto o backend processa
-// (pysentimiento + LIME + SHAP). Mensagens honestas com o que está acontecendo,
-// em tom amigável, para engajar o aluno durante a espera.
-const STEPS = [
+// Etapas exibidas enquanto o backend processa (pysentimiento + LIME + SHAP).
+const ETAPAS = [
   'Lendo o seu comentário…',
   'Entendendo o contexto da sua aula…',
   'Pensando sobre o que você escreveu…',
@@ -13,26 +11,38 @@ const STEPS = [
   'Medindo a influência de cada palavra…',
   'Cruzando com a sua avaliação geral…',
   'Organizando os destaques do seu texto…',
-  'Quase lá — montando o seu resultado…',
+  'Montando o seu resultado…',
 ];
 
+// Depois das etapas, a espera continua. Antes o modal congelava em "Quase lá"
+// e o aluno ficava sem saber se o sistema tinha travado; agora ele passa a
+// contar o tempo e a avisar que está demorando mais do que o normal.
+const SEGUNDOS_ATE_AVISO = 45;
+const INTERVALO_ETAPA = 2600;
+
 export default function AnalyzingModal() {
-  const [i, setI] = useState(0);
+  const [etapa, setEtapa] = useState(0);
+  const [segundos, setSegundos] = useState(0);
 
   useEffect(() => {
-    // avança as etapas; segura na última até o resultado chegar
-    const id = setInterval(() => {
-      setI((v) => (v < STEPS.length - 1 ? v + 1 : v));
-    }, 2600);
-    return () => clearInterval(id);
+    const passo = setInterval(
+      () => setEtapa((v) => (v < ETAPAS.length - 1 ? v + 1 : v)),
+      INTERVALO_ETAPA
+    );
+    const relogio = setInterval(() => setSegundos((s) => s + 1), 1000);
+
+    return () => {
+      clearInterval(passo);
+      clearInterval(relogio);
+    };
   }, []);
 
-  const step = STEPS[i];
+  const demorando = segundos >= SEGUNDOS_ATE_AVISO;
+  const terminouEtapas = etapa === ETAPAS.length - 1;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0a4f49]/40 backdrop-blur-sm flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
-        {/* Ícone pulsante da marca */}
         <div className="relative w-16 h-16 mx-auto mb-5">
           <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-ping" />
           <span className="absolute inset-0 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -44,27 +54,37 @@ export default function AnalyzingModal() {
 
         <h3 className="text-base font-semibold text-[#1e293b]">Analisando o seu feedback</h3>
 
-        {/* Mensagem da etapa atual — refaz a animação a cada troca (key) */}
-        <p key={i} className="animate-step text-sm text-[#475569] mt-2 min-h-[20px]">{step}</p>
+        <p key={etapa} className="animate-step text-sm text-[#475569] mt-2 min-h-[20px]">
+          {demorando ? 'Ainda processando — falta pouco…' : ETAPAS[etapa]}
+        </p>
 
-        {/* Barra de progresso indeterminada */}
         <div className="mt-5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div className="h-full w-1/3 bg-primary rounded-full animate-indeterminate" />
         </div>
 
-        {/* Indicadores de etapa */}
         <div className="flex items-center justify-center gap-1.5 mt-4">
-          {STEPS.map((_, idx) => (
+          {ETAPAS.map((_, idx) => (
             <span
               key={idx}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx <= i ? 'w-5 bg-primary' : 'w-1.5 bg-slate-200'
+                idx <= etapa ? 'w-5 bg-primary' : 'w-1.5 bg-slate-200'
               }`}
             />
           ))}
         </div>
 
-        <p className="text-sm text-[#94a3b8] mt-4">Isso pode levar alguns segundos — não feche a página.</p>
+        {demorando ? (
+          <p className="text-sm text-amber-600 mt-4 leading-snug">
+            Está demorando mais que o normal ({segundos}s). A análise continua rodando —
+            é só não fechar a página.
+          </p>
+        ) : (
+          <p className="text-sm text-[#94a3b8] mt-4">
+            {terminouEtapas
+              ? `Processando há ${segundos}s — não feche a página.`
+              : 'Isso pode levar alguns segundos — não feche a página.'}
+          </p>
+        )}
       </div>
     </div>
   );

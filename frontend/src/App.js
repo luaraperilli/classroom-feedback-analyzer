@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import ErrorBoundary from './components/ErrorBoundary';
+import PageLoader from './components/PageLoader';
 import NotFoundPage from './pages/NotFoundPage';
 
 import FeedbackForm from './features/feedback/FeedbackForm';
@@ -43,12 +44,13 @@ const ICON = {
   ),
 };
 
-function SidebarLink({ to, label, icon }) {
+function SidebarLink({ to, label, icon, onNavigate }) {
   const { pathname } = useLocation();
   const isActive = pathname === to;
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition mb-1
         ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:text-white hover:bg-white/10'}`}
     >
@@ -58,11 +60,9 @@ function SidebarLink({ to, label, icon }) {
   );
 }
 
-function Sidebar() {
-  const { isAuthenticated, user, logout } = useAuth();
+function MenuLateral({ onNavigate }) {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  if (!isAuthenticated) return null;
 
   const isStudent = user?.role === 'aluno';
   const isStaff   = user?.role === 'professor' || user?.role === 'coordenador';
@@ -73,7 +73,7 @@ function Sidebar() {
   const initial = (user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase();
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-gradient-to-b from-primary to-primary-dark flex flex-col p-5 sticky top-0 h-screen">
+    <div className="h-full bg-gradient-to-b from-primary to-primary-dark flex flex-col p-5">
       <div className="flex items-center gap-2.5 mb-9">
         <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -86,13 +86,15 @@ function Sidebar() {
       <nav className="flex-1">
         {isStudent && (
           <>
-            <SidebarLink to="/" label="Feedback" icon={ICON.feedback} />
-            <SidebarLink to="/historico" label="Minhas Avaliações" icon={ICON.progress} />
-            <SidebarLink to="/perfil" label="Perfil" icon={ICON.profile} />
+            <SidebarLink to="/" label="Feedback" icon={ICON.feedback} onNavigate={onNavigate} />
+            <SidebarLink to="/historico" label="Minhas Avaliações" icon={ICON.progress} onNavigate={onNavigate} />
+            <SidebarLink to="/perfil" label="Perfil" icon={ICON.profile} onNavigate={onNavigate} />
           </>
         )}
-        {isStaff && <SidebarLink to="/dashboard" label="Dashboard" icon={ICON.dashboard} />}
-        {user?.role === 'coordenador' && <SidebarLink to="/coordinator" label="Gestão" icon={ICON.gestao} />}
+        {isStaff && <SidebarLink to="/dashboard" label="Dashboard" icon={ICON.dashboard} onNavigate={onNavigate} />}
+        {user?.role === 'coordenador' && (
+          <SidebarLink to="/coordinator" label="Gestão" icon={ICON.gestao} onNavigate={onNavigate} />
+        )}
       </nav>
 
       <div className="pt-4 border-t border-white/15">
@@ -115,13 +117,57 @@ function Sidebar() {
           Sair
         </button>
       </div>
-    </aside>
+    </div>
+  );
+}
+
+// Em telas pequenas o menu vira gaveta: fixo, ele ocupava 240 dos 360 px do
+// celular, que é onde os alunos respondem.
+function Sidebar() {
+  const { isAuthenticated } = useAuth();
+  const { pathname } = useLocation();
+  const [aberta, setAberta] = useState(false);
+
+  useEffect(() => setAberta(false), [pathname]);
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <>
+      <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-primary text-white">
+        <button onClick={() => setAberta(true)} aria-label="Abrir menu" className="p-1.5 -ml-1.5">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+          </svg>
+        </button>
+        <span className="font-bold">Voz Discente</span>
+      </header>
+
+      <aside className="hidden lg:block w-60 flex-shrink-0 sticky top-0 h-screen">
+        <MenuLateral />
+      </aside>
+
+      {aberta && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="w-64 max-w-[80%] h-full shadow-xl">
+            <MenuLateral onNavigate={() => setAberta(false)} />
+          </div>
+          <button
+            className="flex-1 bg-black/40"
+            aria-label="Fechar menu"
+            onClick={() => setAberta(false)}
+          />
+        </div>
+      )}
+    </>
   );
 }
 
 function AppContent() {
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) return <PageLoader />;
 
   // 1º acesso: enquanto o aluno pré-cadastrado não definir a própria senha,
   // bloqueia todo o restante do app (sem menu lateral, sem rotas).
@@ -130,7 +176,7 @@ function AppContent() {
   }
 
   return (
-    <div className="App flex min-h-screen">
+    <div className="App lg:flex min-h-screen">
       <Sidebar />
       <div className="flex-1 min-w-0">
         <div key={location.pathname} className="page-transition">

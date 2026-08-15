@@ -1,4 +1,6 @@
+import logging
 import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -13,53 +15,82 @@ from .admin import admin_bp
 
 
 def run_lightweight_migrations():
-    """Adiciona colunas novas a bancos já existentes — o projeto não usa Flask-Migrate.
-    Idempotente: só altera a tabela se a coluna ainda não existir, então é seguro rodar
-    em todo boot sem perder os dados já gravados."""
+    """Adiciona colunas novas a bancos SQLite já existentes.
+
+    Só faz sentido em desenvolvimento: no Postgres o esquema nasce completo pelo
+    create_all(). Rodava em todo boot com `DEFAULT 0`, sintaxe inválida no
+    Postgres, e derrubava a aplicação lá.
+    """
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+
     inspector = sa_inspect(db.engine)
 
-    # user.must_change_password
     try:
-        user_cols = {c["name"] for c in inspector.get_columns("user")}
+        colunas = {c['name'] for c in inspector.get_columns('user')}
     except Exception:
-        user_cols = set()
-    if user_cols and "must_change_password" not in user_cols:
+        return
+
+    if colunas and 'must_change_password' not in colunas:
         db.session.execute(text(
             'ALTER TABLE "user" ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0'
         ))
         db.session.commit()
 
-    # feedback.tema_id (vínculo do feedback com o tema da aula)
-    try:
-        fb_cols = {c["name"] for c in inspector.get_columns("feedback")}
-    except Exception:
-        fb_cols = set()
-    if fb_cols and "tema_id" not in fb_cols:
-        db.session.execute(text('ALTER TABLE feedback ADD COLUMN tema_id INTEGER'))
-        db.session.commit()
+
+def _validar_producao(app):
+    """Falha o boot em vez de subir inseguro ou com o frontend bloqueado."""
+    faltando = [
+        nome for nome in ('SECRET_KEY', 'JWT_SECRET_KEY', 'CORS_ORIGINS')
+        if not app.config.get(nome)
+    ]
+    if faltando:
+        raise RuntimeError(
+            'Variáveis obrigatórias em produção não definidas: ' + ', '.join(faltando)
+        )
+
+    if app.config['SECRET_KEY'] == app.config['JWT_SECRET_KEY']:
+        raise RuntimeError('SECRET_KEY e JWT_SECRET_KEY devem ser diferentes.')
+
+    if app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        raise RuntimeError(
+            'Em produção é necessário um Postgres — defina DATABASE_URL. '
+            'O SQLite não sobrevive a redeploys em hospedagem com disco efêmero.'
+        )
+
 
 def create_app(config_name=None):
-    config_name = config_name or os.environ.get('FLASK_CONFIG', 'development')
-    app = Flask(__name__)
-
-    app.config.from_object(config_by_name[config_name])
-
-    # Em produção as chaves são obrigatórias — falha cedo se faltarem.
-    if config_name == 'production' and not (app.config.get('SECRET_KEY') and app.config.get('JWT_SECRET_KEY')):
+    # Padrão 'production': esquecer a variável no host não pode ligar o DEBUG,
+    # expor o console do Werkzeug nem semear contas de demonstração.
+    config_name = config_name or os.environ.get('FLASK_CONFIG', 'production')
+    if config_name not in config_by_name:
         raise RuntimeError(
-            "SECRET_KEY e JWT_SECRET_KEY são obrigatórios em produção. "
-            "Defina-os nas variáveis de ambiente (ex.: arquivo .env)."
+            f'FLASK_CONFIG inválido: {config_name!r}. Use um de: {", ".join(config_by_name)}.'
         )
+
+    app = Flask(__name__)
+    app.config.from_object(config_by_name[config_name])
+    app.config['CONFIG_NAME'] = config_name
+
+    logging.basicConfig(
+        level=logging.DEBUG if app.config.get('DEBUG') else logging.INFO,
+        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+    )
+
+    if config_name == 'production':
+        _validar_producao(app)
 
     register_extensions(app)
     register_blueprints(app)
+    register_health(app)
     register_error_handlers(app)
-    
+    register_cli(app)
+
     with app.app_context():
         db.create_all()
         run_lightweight_migrations()
-        # Só popula dados de demonstração (contas com senha simples) em desenvolvimento.
-        if app.config.get('DEBUG'):
+        # Dados de demonstração (senhas simples) só em desenvolvimento.
+        if config_name == 'development':
             seed_all()
             ensure_demo_pending_student()
 
@@ -87,6 +118,13 @@ def register_extensions(app):
             'status': 401
         }), 401
         
+    # Sem este loader o revoked_token_loader abaixo nunca disparava: nada
+    # informava ao JWT quais tokens haviam sido revogados.
+    @jwt.token_in_blocklist_loader
+    def token_revogado(jwt_header, jwt_payload):
+        from .models import TokenRevogado
+        return TokenRevogado.esta_revogado(jwt_payload['jti'])
+
     @jwt.revoked_token_loader
     def revoked_token_response(jwt_header, jwt_payload):
         return jsonify({'message': 'O token foi revogado.', 'status': 401}), 401
@@ -99,6 +137,19 @@ def register_blueprints(app):
     app.register_blueprint(api)
     app.register_blueprint(auth)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+
+def register_health(app):
+    @app.route('/health')
+    def health():
+        """Usado pelo healthcheck da hospedagem. Não toca o banco nem carrega o
+        modelo, para responder rápido durante o cold start."""
+        return jsonify({'status': 'ok'}), 200
+
+
+def register_cli(app):
+    from .cli import register_commands
+    register_commands(app)
+
 
 def register_error_handlers(app):
     @app.errorhandler(404)

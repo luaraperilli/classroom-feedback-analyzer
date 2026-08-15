@@ -1,10 +1,48 @@
+import logging
+import os
+
 import numpy as np
 import shap
 from pysentimiento import create_analyzer
 from lime.lime_text import LimeTextExplainer
 from .models import db, Feedback, StudentRiskAnalysis
 
+logger = logging.getLogger(__name__)
+
 sentiment_analyzer = create_analyzer(task="sentiment", lang="pt")
+
+
+def descrever_modelo():
+    """Identificação do modelo e das bibliotecas efetivamente carregados.
+
+    O pysentimiento não permite fixar a revisão dos pesos, então registramos o
+    que foi carregado de fato — é isso que garante rastreabilidade entre a
+    coleta e a defesa. Em produção, a imagem Docker baixa os pesos na build e
+    os congela; aqui fica o registro de qual versão está em uso.
+    """
+    from importlib.metadata import version
+
+    try:
+        modelo = sentiment_analyzer.model.config._name_or_path
+    except Exception:
+        modelo = 'desconhecido'
+
+    def _versao(pacote):
+        try:
+            return version(pacote)
+        except Exception:
+            return 'desconhecida'
+
+    return {
+        'modelo': modelo,
+        'pysentimiento': _versao('pysentimiento'),
+        'transformers': _versao('transformers'),
+        'lime': _versao('lime'),
+        'shap': _versao('shap'),
+    }
+
+
+logger.info("Modelo de sentimento carregado: %s", descrever_modelo())
 
 lime_explainer = LimeTextExplainer(
     class_names=['NEG', 'NEU', 'POS'],
@@ -13,19 +51,31 @@ lime_explainer = LimeTextExplainer(
 
 shap_masker = shap.maskers.Text(tokenizer=r"\W+")
 
+CLASSES = ('NEG', 'NEU', 'POS')
+
+# O LIME avalia 5.000 textos perturbados por comentário. Chamar o modelo uma vez
+# por texto levava minutos; em lotes o resultado é o mesmo e o tempo cai para
+# dezenas de segundos. O num_samples não muda — é ele que o artigo justifica.
+TAMANHO_DO_LOTE = int(os.environ.get('PREDICT_BATCH_SIZE', 32))
+
+
 def _predict_proba(texts):
-    results = []
-    for text in texts:
-        try:
-            pred = sentiment_analyzer.predict(text)
-            results.append([
-                pred.probas.get('NEG', 0.0),
-                pred.probas.get('NEU', 0.0),
-                pred.probas.get('POS', 0.0),
-            ])
-        except Exception:
-            results.append([0.33, 0.34, 0.33])
-    return np.array(results)
+    """Probabilidades [NEG, NEU, POS] para uma lista de textos.
+
+    Uma falha do modelo propaga em vez de virar distribuição uniforme, que
+    produzia explicações plausíveis e sem sentido, sem ninguém perceber.
+    """
+    textos = list(texts)
+    resultados = []
+
+    for inicio in range(0, len(textos), TAMANHO_DO_LOTE):
+        lote = textos[inicio:inicio + TAMANHO_DO_LOTE]
+        predicoes = sentiment_analyzer.predict(lote)
+        if not isinstance(predicoes, list):
+            predicoes = [predicoes]
+        resultados.extend([p.probas.get(c, 0.0) for c in CLASSES] for p in predicoes)
+
+    return np.array(resultados)
 
 shap_explainer = shap.Explainer(
     _predict_proba,
@@ -67,7 +117,16 @@ def explain_sentiment_lime(text: str) -> dict:
         num_samples=5000,
     )
 
-    return {word.lower(): round(weight, 4) for word, weight in exp.as_list(label=POS_IDX)}
+    pesos = exp.as_list(label=POS_IDX)
+    if not pesos:
+        return {}
+
+    # Normaliza pelo maior peso absoluto do comentário: os coeficientes da
+    # regressão local ficam em [-1, 1] sem mudar ranking nem sinal. É o que
+    # permite ao destaque na tela usar toda a faixa de intensidade da cor.
+    maior = max(abs(peso) for _, peso in pesos) or 1.0
+
+    return {palavra.lower(): round(peso / maior, 4) for palavra, peso in pesos}
 
 def explain_sentiment_shap(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
@@ -93,7 +152,7 @@ def explain_sentiment_shap(text: str) -> dict:
             result[clean] = float(val)
     return {k: round(v, 4) for k, v in result.items()}
 
-def create_feedback(student_id, subject_id, answers, additional_comment=None, tema_id=None):
+def create_feedback(student_id, subject_id, answers, additional_comment=None):
     sentiment_scores = None
     if additional_comment and additional_comment.strip():
         sentiment_scores = analyze_sentiment_text(additional_comment)
@@ -101,7 +160,6 @@ def create_feedback(student_id, subject_id, answers, additional_comment=None, te
     new_feedback = Feedback(
         student_id=student_id,
         subject_id=subject_id,
-        tema_id=tema_id,
         active_participation=answers['active_participation'],
         task_completion=answers['task_completion'],
         motivation_interest=answers['motivation_interest'],

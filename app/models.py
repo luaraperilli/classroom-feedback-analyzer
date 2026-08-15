@@ -33,6 +33,32 @@ class User(db.Model):
         backref=db.backref('professors', lazy=True))
     feedbacks = db.relationship('Feedback', backref='student', lazy=True)
 
+class TokenRevogado(db.Model):
+    """Tokens invalidados no logout.
+
+    Sem isto o logout era só apagar o localStorage: um token copiado antes
+    continuava valendo até expirar — uma hora no acesso, sete dias no refresh.
+    """
+    __tablename__ = 'token_revogado'
+
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    expira_em = db.Column(db.DateTime, nullable=False)
+
+    @classmethod
+    def revogar(cls, jti, expira_em):
+        if not cls.query.filter_by(jti=jti).first():
+            db.session.add(cls(jti=jti, expira_em=expira_em))
+
+    @classmethod
+    def esta_revogado(cls, jti):
+        return cls.query.filter_by(jti=jti).first() is not None
+
+    @classmethod
+    def limpar_expirados(cls):
+        cls.query.filter(cls.expira_em < datetime.datetime.utcnow()).delete()
+
+
 class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
@@ -41,23 +67,10 @@ class Subject(db.Model):
         return {'id': self.id, 'name': self.name}
 
 
-class Tema(db.Model):
-    """Tema/assunto de uma aula, definido pelo professor por matéria. O aluno
-    associa cada feedback a um tema, para depois refletir por assunto."""
-    id = db.Column(db.Integer, primary_key=True)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    nome = db.Column(db.String(120), nullable=False)
-
-    subject = db.relationship('Subject', backref=db.backref('temas', lazy=True))
-
-    def to_dict(self):
-        return {'id': self.id, 'subject_id': self.subject_id, 'nome': self.nome}
-
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    tema_id = db.Column(db.Integer, db.ForeignKey('tema.id'), nullable=True)
     active_participation = db.Column(db.Integer, nullable=False)
     task_completion = db.Column(db.Integer, nullable=False)
     motivation_interest = db.Column(db.Integer, nullable=False)
@@ -95,7 +108,6 @@ class Feedback(db.Model):
         self.shap_attributions_json = json.dumps(value) if value else None
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
-    tema = db.relationship('Tema', backref=db.backref('feedbacks', lazy=True))
 
     def calculate_overall_score(self):
         scores = [
@@ -109,15 +121,14 @@ class Feedback(db.Model):
         average = sum(scores) / len(scores)
         return (average - 1) / 4
 
-    def to_dict(self):
-        return {
+    def to_dict(self, incluir_identificacao=False):
+        """Anônimo por padrão: na visão do docente o comentário é dissociado do
+        aluno (Seções 3.1.1 e 3.2 do artigo). A identificação só aparece na visão
+        do próprio aluno e no painel de risco."""
+        data = {
             'id': self.id,
-            'student_id': self.student_id,
-            'student_username': self.student.display_name if self.student else 'Unknown',
             'subject': self.subject.name,
             'subject_id': self.subject_id,
-            'tema_id': self.tema_id,
-            'tema': self.tema.nome if self.tema else None,
             'active_participation': self.active_participation,
             'task_completion': self.task_completion,
             'motivation_interest': self.motivation_interest,
@@ -132,8 +143,14 @@ class Feedback(db.Model):
             'overall_score': self.overall_score,
             'token_attributions': self.token_attributions,
             'shap_attributions': self.shap_attributions,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat(),
         }
+
+        if incluir_identificacao:
+            data['student_id'] = self.student_id
+            data['student_username'] = self.student.display_name if self.student else None
+
+        return data
 
 class StudentRiskAnalysis(db.Model):
     id = db.Column(db.Integer, primary_key=True)

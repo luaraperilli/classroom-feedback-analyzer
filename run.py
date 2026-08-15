@@ -1,13 +1,15 @@
+"""Entrada de desenvolvimento. Em produção o servidor é o gunicorn (ver wsgi.py).
+
+O .env é carregado no import do config.py, antes de qualquer leitura do ambiente.
+"""
+
 import os
-from dotenv import load_dotenv
+
 from app import create_app
 
-load_dotenv()
-
-app = create_app()
+app = create_app(os.environ.get('FLASK_CONFIG', 'development'))
 
 if __name__ == '__main__':
-    # debug segue o perfil (True só em desenvolvimento); porta/host configuráveis p/ deploy.
     app.run(
         debug=app.config.get('DEBUG', False),
         port=int(os.environ.get('PORT', 5001)),

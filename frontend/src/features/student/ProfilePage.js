@@ -79,10 +79,10 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#cde0d9]">
-      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-6">
 
         {/* ── Profile header card ─────────────────────────────────────────── */}
-        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-8 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 sm:p-8 relative overflow-hidden">
           {/* Decorative shapes */}
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-8 -left-8  w-28 h-28 rounded-full bg-white/5" />

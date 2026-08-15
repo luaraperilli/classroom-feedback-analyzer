@@ -4,9 +4,11 @@ import { useAuth } from '../auth/AuthContext';
 import { getMyFeedbacks, getSubjects, deleteMyFeedback } from '../../services/api';
 import { getSentimentLabel } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
-import { tokenizeAndScore } from '../../utils/wordHighlight';
+import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
+import Tooltip from '../../components/Tooltip';
 import SentimentTrendChart from '../../components/SentimentTrendChart';
 import Spinner from '../../components/Spinner';
+import Toast from '../../components/Toast';
 
 const SENTIMENT_META = {
   positivo: { label: 'Positivo', color: '#059669', bg: 'bg-emerald-50', ring: 'ring-emerald-200', text: 'text-[#059669]', dot: 'bg-[#059669]' },
@@ -98,7 +100,6 @@ function ExplainabilityLegend({ onInfo }) {
       <button
         onClick={onInfo}
         className="ml-auto flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition"
-        title="Entender como funciona"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
@@ -136,11 +137,11 @@ function ScoreBar({ score }) {
       <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span
-        className="text-sm font-semibold min-w-[3rem] text-right cursor-help"
-        style={{ color }}
-        title="Esta nota é a média das suas respostas às 6 perguntas objetivas da avaliação, convertida para a escala de 1 a 5."
-      >{display}/5</span>
+      <Tooltip texto="Média das suas respostas às seis perguntas, na mesma escala de 1 a 5 do questionário.">
+        <span className="text-sm font-semibold min-w-[3rem] text-right cursor-help" style={{ color }}>
+          {display}/5
+        </span>
+      </Tooltip>
     </div>
   );
 }
@@ -266,7 +267,7 @@ function Skeleton() {
 // a evolução — de forma agnóstica ao ritmo do professor (por marco, semanal, mensal…),
 // já que cada disciplina define seu próprio ritmo de coleta.
 function countPointsWithData(feedbacks) {
-  return feedbacks.filter((fb) => fb.compound !== null && fb.compound !== undefined).length;
+  return feedbacks.filter((fb) => fb.overall_score !== null && fb.overall_score !== undefined).length;
 }
 
 function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
@@ -291,17 +292,11 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
           </span>
           <span className="text-sm font-semibold text-[#1e293b]">{translateSubject(fb.subject)}</span>
           <SentimentBadge compound={fb.compound} />
-          {fb.tema && (
-            <span className="inline-flex items-center text-sm font-medium text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
-              {fb.tema}
-            </span>
-          )}
         </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-sm text-[#64748b] mr-1 hidden sm:inline">{date}</span>
           <button
             onClick={() => onRequestDelete(fb.id)}
-            title="Apagar este feedback"
             aria-label="Apagar este feedback"
             className="p-1.5 rounded-lg text-[#94a3b8] hover:text-[#dc2626] hover:bg-red-50 transition"
           >
@@ -335,7 +330,13 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
               <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-white rounded-xl px-4 py-3 border border-[#cfe0da]">
                 <HighlightedText text={fb.additional_comment} tokenAttributions={attributions} />
               </blockquote>
-              <ExplainabilityLegend onInfo={onInfo} />
+              {temAtribuicoes(attributions) ? (
+                <ExplainabilityLegend onInfo={onInfo} />
+              ) : (
+                <p className="text-sm text-[#64748b] mt-3">
+                  A explicação deste comentário não está disponível.
+                </p>
+              )}
             </div>
           )}
           <div>
@@ -344,95 +345,6 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// Agrupa os feedbacks por tema e calcula, por tema, a compreensão média (1-5) e o
-// sentimento médio (-1..1). Combina os dois num "score" 0..1 para ordenar do pior ao melhor.
-function buildThemeReflection(feedbacks) {
-  const byTheme = {};
-  feedbacks.forEach((fb) => {
-    if (!fb.tema) return;
-    if (!byTheme[fb.tema]) byTheme[fb.tema] = { tema: fb.tema, comps: [], sents: [], count: 0 };
-    const t = byTheme[fb.tema];
-    t.count += 1;
-    if (typeof fb.comprehension_effort === 'number') t.comps.push(fb.comprehension_effort);
-    if (fb.compound !== null && fb.compound !== undefined) t.sents.push(fb.compound);
-  });
-
-  const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
-
-  return Object.values(byTheme).map((t) => {
-    const avgComp = avg(t.comps);          // 1..5
-    const avgSent = avg(t.sents);          // -1..1
-    const compNorm = avgComp !== null ? (avgComp - 1) / 4 : null;   // 0..1
-    const sentNorm = avgSent !== null ? (avgSent + 1) / 2 : null;   // 0..1
-    let score = null;
-    if (compNorm !== null && sentNorm !== null) score = 0.5 * compNorm + 0.5 * sentNorm;
-    else score = compNorm ?? sentNorm;
-    return { ...t, avgComp, avgSent, score };
-  }).sort((a, b) => (a.score ?? 1) - (b.score ?? 1));   // piores primeiro
-}
-
-function ThemeReflection({ feedbacks }) {
-  const themes = buildThemeReflection(feedbacks);
-  if (themes.length === 0) return null;
-  const toReview = themes.filter((t) => t.score !== null && t.score < 0.5);
-
-  return (
-    <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
-      <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a] mb-1">
-        <span className="w-1 h-5 rounded-full bg-primary" />
-        Seus Temas
-      </h2>
-      <p className="text-sm text-[#64748b] mb-4">
-        Como você se sentiu e o quanto compreendeu em cada tema. Os temas em destaque podem valer uma revisada.
-      </p>
-
-      <div className="space-y-2">
-        {themes.map((t) => {
-          const review    = t.score !== null && t.score < 0.5;
-          const sentLabel = t.avgSent !== null ? getSentimentLabel(t.avgSent) : 'neutro';
-          const meta      = SENTIMENT_META[sentLabel];
-          const comp      = t.avgComp !== null ? t.avgComp.toFixed(1) : '—';
-          return (
-            <div
-              key={t.tema}
-              className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3
-                ${review ? 'border-amber-200 bg-amber-50' : 'border-[#cfe0da] bg-white'}`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 ${meta.bg} ${meta.ring}`}>
-                  <SentimentFace label={sentLabel} className={`w-5 h-5 ${meta.text}`} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#1e293b] truncate">{t.tema}</p>
-                  <p className="text-sm text-[#64748b]">Compreensão {comp}/5 · {t.count} feedback{t.count !== 1 ? 's' : ''}</p>
-                </div>
-              </div>
-              {review ? (
-                <span className="flex-shrink-0 text-sm font-semibold text-amber-700 bg-amber-100 rounded-full px-3 py-1">
-                  Revisar
-                </span>
-              ) : (
-                <span className="flex-shrink-0 text-sm font-medium text-[#059669]">Indo bem</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {toReview.length > 0 && (
-        <div className="flex items-start gap-2 text-sm text-[#475569] mt-4 bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
-          <svg className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-          </svg>
-          <span>
-            Você teve mais dificuldade em <strong className="font-semibold text-[#1e293b]">{toReview.map((t) => t.tema).join(', ')}</strong>. Que tal revisar {toReview.length > 1 ? 'esses temas' : 'esse tema'}?
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -450,6 +362,8 @@ function StudentHistory() {
   const [showModal, setShowModal]             = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isDeleting, setIsDeleting]           = useState(false);
+  const [mostrarToast, setMostrarToast]       = useState(!!state?.latest);
+  const [erroExclusao, setErroExclusao]       = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -496,7 +410,9 @@ function StudentHistory() {
       }
       setConfirmDeleteId(null);
     } catch (err) {
-      setError(err.message || 'Não foi possível apagar o feedback.');
+      // Erro de exclusão não pode usar o mesmo estado do erro de carregamento:
+      // todo o conteúdo da tela fica sob `!error` e sumia junto.
+      setErroExclusao(err.message || 'Não foi possível apagar o feedback.');
       setConfirmDeleteId(null);
     } finally {
       setIsDeleting(false);
@@ -570,15 +486,25 @@ function StudentHistory() {
           </div>
         </div>
 
-        {/* Confirmação do feedback recém-enviado — fica no topo para ser a primeira coisa vista */}
+        {mostrarToast && (
+          <Toast mensagem="Feedback enviado com sucesso!" onFechar={() => setMostrarToast(false)} />
+        )}
+
+        {erroExclusao && (
+          <div role="alert" className="flex items-start gap-3 text-sm text-[#dc2626] bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <span className="flex-1 font-medium">{erroExclusao}</span>
+            <button onClick={() => setErroExclusao(null)} aria-label="Fechar aviso" className="text-[#dc2626]/60 hover:text-[#dc2626]">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Resultado do feedback recém-enviado — fica no topo para ser a primeira coisa vista */}
         {state?.latest && (
           <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-[#059669] bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Feedback enviado com sucesso!
-            </div>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
                 <span className="w-1 h-5 rounded-full bg-primary" />
@@ -594,7 +520,13 @@ function StudentHistory() {
                   tokenAttributions={latestFeedback.token_attributions || latestFeedback.shap_attributions}
                 />
               </blockquote>
-              <ExplainabilityLegend onInfo={() => setShowModal(true)} />
+              {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
+                <ExplainabilityLegend onInfo={() => setShowModal(true)} />
+              ) : (
+                <p className="text-sm text-[#64748b] mt-3">
+                  A explicação deste comentário não está disponível.
+                </p>
+              )}
             </div>
             <div>
               <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide mb-2">Avaliação Geral da Aula</p>
@@ -638,32 +570,29 @@ function StudentHistory() {
           <SummaryCard feedbacks={feedbacks} />
         )}
 
-        {!isLoading && !error && feedbacks.length > 0 && (
-          <ThemeReflection feedbacks={feedbacks} />
-        )}
-
         {/* Chart */}
         {!isLoading && !error && (
           <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6">
             <div className="flex items-start justify-between gap-3 mb-0.5">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
                 <span className="w-1 h-5 rounded-full bg-primary" />
-                Evolução do Sentimento
+                Como Você Tem Se Avaliado
               </h2>
-              <span
-                title="O gráfico segue as datas reais em que você enviou feedback — funciona para qualquer ritmo definido pelo professor (por marco, semanal, mensal…). Use o filtro de matéria no topo para ver uma disciplina específica."
-                aria-label="Como ler este gráfico"
-                className="text-[#94a3b8] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5"
+              <Tooltip
+                texto="Cada ponto é a média das seis respostas daquele feedback, na escala de 1 a 5. O gráfico segue as datas reais dos seus envios."
+                posicao="left"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
-                </svg>
-              </span>
+                <span aria-label="Como ler este gráfico" className="text-[#94a3b8] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
+                  </svg>
+                </span>
+              </Tooltip>
             </div>
             <p className="text-sm text-[#64748b] mb-6">
               {selectedSubject
-                ? 'Sentimento dos seus comentários nesta matéria, na data de cada feedback (−1 negativo, +1 positivo).'
-                : 'Sentimento dos seus comentários ao longo do tempo. Filtre por matéria acima para acompanhar uma disciplina específica.'}
+                ? 'Média das suas respostas nesta matéria, de 1 (discordo totalmente) a 5 (concordo totalmente).'
+                : 'Média das suas respostas ao longo do tempo, de 1 a 5. Filtre por matéria acima para acompanhar uma disciplina específica.'}
             </p>
             {pointsWithData < 2 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -676,7 +605,7 @@ function StudentHistory() {
                 <p className="text-sm text-[#64748b]">Envie pelo menos 2 feedbacks {selectedSubject ? 'nesta matéria ' : ''}para acompanhar a evolução.</p>
               </div>
             ) : (
-              <SentimentTrendChart feedbacks={feedbacks} groupBy="day" />
+              <SentimentTrendChart feedbacks={feedbacks} groupBy="day" metrica="avaliacao" />
             )}
           </div>
         )}

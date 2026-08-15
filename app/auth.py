@@ -1,9 +1,19 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
-from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 import re
 
-from .models import User, db
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_jwt,
+    get_jwt_identity,
+    jwt_required,
+)
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from . import rate_limit
+from .models import TokenRevogado, User, db
 
 auth = Blueprint("auth", __name__)
 
@@ -56,15 +66,26 @@ def register():
 
 @auth.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+
+    espera = rate_limit.verificar(username.lower(), ip)
+    if espera:
+        minutos = max(1, espera // 60)
+        return jsonify({
+            "error": f"Muitas tentativas de login. Tente novamente em {minutos} minuto(s)."
+        }), 429
 
     # login tolerante: ignora maiúsculas/minúsculas e espaços extras no nome de usuário
     user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
 
     if not user or not check_password_hash(user.password, password):
+        rate_limit.registrar_falha(username.lower(), ip)
         return jsonify({"error": "Credenciais inválidas."}), 401
+
+    rate_limit.limpar(username.lower())
 
     identity = str(user.id)
     additional_claims = {"username": user.username, "role": user.role}
@@ -83,6 +104,27 @@ def login():
     }
 
     return jsonify(access_token=access_token, refresh_token=refresh_token, user=user_data), 200
+
+@auth.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    """Revoga o token de acesso e, se enviado no corpo, também o de refresh."""
+    TokenRevogado.limpar_expirados()
+
+    jwt_atual = get_jwt()
+    TokenRevogado.revogar(jwt_atual["jti"], datetime.utcfromtimestamp(jwt_atual["exp"]))
+
+    refresh_token = (request.get_json(silent=True) or {}).get("refresh_token")
+    if refresh_token:
+        try:
+            dados = decode_token(refresh_token)
+            TokenRevogado.revogar(dados["jti"], datetime.utcfromtimestamp(dados["exp"]))
+        except Exception:
+            pass  # token ilegível já não serve para nada
+
+    db.session.commit()
+    return jsonify({"message": "Sessão encerrada."}), 200
+
 
 @auth.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
