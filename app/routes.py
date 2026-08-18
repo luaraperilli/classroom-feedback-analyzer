@@ -125,7 +125,9 @@ def gerar_explicacao(feedback_id):
     if not (feedback.additional_comment or '').strip():
         return jsonify({"error": "Este feedback não tem comentário para explicar."}), 400
 
-    if feedback.token_attributions or feedback.shap_attributions:
+    # Basta ter sido tentada: se o cálculo rodou e não rendeu palavra nenhuma,
+    # repetir daria o mesmo resultado e custaria o mesmo tempo.
+    if feedback.explicacao_calculada:
         return jsonify(feedback.to_dict(incluir_identificacao=True)), 200
 
     comentario = feedback.additional_comment
@@ -152,7 +154,7 @@ def gerar_explicacao(feedback_id):
         logger.exception("Erro ao gravar as explicações do feedback %s", feedback.id)
         return jsonify({"error": "Não foi possível gravar a explicação."}), 500
 
-    if houve_falha and not (feedback.token_attributions or feedback.shap_attributions):
+    if houve_falha and not feedback.explicacao_calculada:
         return jsonify({"error": "Não foi possível gerar a explicação deste comentário."}), 500
 
     return jsonify(feedback.to_dict(incluir_identificacao=True)), 200

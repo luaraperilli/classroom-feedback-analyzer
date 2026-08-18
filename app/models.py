@@ -99,25 +99,34 @@ class Feedback(db.Model):
 
     overall_score = db.Column(db.Float, nullable=False)
 
+    # NULL e {} significam coisas diferentes: nulo é "ainda não foi calculado",
+    # dicionário vazio é "calculado e não rendeu nenhuma palavra". Guardar os
+    # dois como NULL faria a explicação ser recalculada para sempre, já que nada
+    # registraria que a tentativa aconteceu.
     @property
     def token_attributions(self):
-        if self.token_attributions_json:
-            return json.loads(self.token_attributions_json)
-        return None
+        if self.token_attributions_json is None:
+            return None
+        return json.loads(self.token_attributions_json)
 
     @token_attributions.setter
     def token_attributions(self, value):
-        self.token_attributions_json = json.dumps(value) if value else None
+        self.token_attributions_json = None if value is None else json.dumps(value)
 
     @property
     def shap_attributions(self):
-        if self.shap_attributions_json:
-            return json.loads(self.shap_attributions_json)
-        return None
+        if self.shap_attributions_json is None:
+            return None
+        return json.loads(self.shap_attributions_json)
 
     @shap_attributions.setter
     def shap_attributions(self, value):
-        self.shap_attributions_json = json.dumps(value) if value else None
+        self.shap_attributions_json = None if value is None else json.dumps(value)
+
+    @property
+    def explicacao_calculada(self):
+        """Se a explicação já foi tentada, com ou sem resultado."""
+        return self.token_attributions_json is not None or self.shap_attributions_json is not None
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
 

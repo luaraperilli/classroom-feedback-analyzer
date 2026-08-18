@@ -383,6 +383,11 @@ function StudentHistory() {
   const [mostrarToast, setMostrarToast] = useState(!!state?.latest);
 
   const [explicando, setExplicando] = useState(false);
+  // Trava local: um feedback é explicado uma vez por sessão, aconteça o que
+  // acontecer com o resultado. Sem isso, um cálculo que não rendesse palavra
+  // nenhuma deixaria a condição de saída sempre falsa e o efeito se repetiria
+  // indefinidamente, cada repetição custando minutos de servidor.
+  const explicacoesTentadas = useRef(new Set());
 
   useEffect(() => {
     if (state?.latest) navigate('/historico', { replace: true, state: null });
@@ -396,6 +401,9 @@ function StudentHistory() {
     if (!recemEnviado || !accessToken) return;
     if (!(recemEnviado.additional_comment || '').trim()) return;
     if (temAtribuicoes(recemEnviado.token_attributions || recemEnviado.shap_attributions)) return;
+    if (explicacoesTentadas.current.has(recemEnviado.id)) return;
+
+    explicacoesTentadas.current.add(recemEnviado.id);
 
     let cancelado = false;
     setExplicando(true);
