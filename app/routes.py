@@ -90,6 +90,10 @@ def analyze_and_save_feedback():
         'content_connection': data['content_connection']
     }
     
+    # Só a análise de sentimento entra aqui, porque ela custa milissegundos. LIME
+    # e SHAP ficam para POST /feedbacks/<id>/explicacao: o custo deles cresce com
+    # o tamanho do comentário, e prender o envio a esse tempo fazia o aluno ver
+    # erro por um feedback que, na verdade, já estava salvo.
     try:
         feedback = create_feedback(student_id, subject_id, answers, additional_comment)
     except Exception:
@@ -97,18 +101,48 @@ def analyze_and_save_feedback():
         logger.exception("Erro ao salvar feedback")
         return jsonify({"error": "Erro ao salvar feedback."}), 500
 
-    # As explicações vêm depois do feedback já gravado. Se falharem, o feedback
-    # continua válido — mas a falha é registrada em vez de silenciada, e a
-    # interface mostra "explicação indisponível" em vez de um texto sem destaque
-    # que o aluno interpretaria como "nenhuma palavra influenciou".
+    return jsonify(feedback.to_dict(incluir_identificacao=True)), 201
+
+
+@api.route("/feedbacks/<int:feedback_id>/explicacao", methods=["POST"])
+@jwt_required()
+def gerar_explicacao(feedback_id):
+    """Calcula LIME e SHAP de um feedback já gravado.
+
+    Idempotente: se as atribuições já existem, devolve as que estão no banco em
+    vez de recalcular. Isso torna a chamada segura para repetir — a tela pode
+    tentar de novo, e o comando `calcular-explicacoes` pode varrer o que sobrou.
+    """
+    feedback = db.session.get(Feedback, feedback_id)
+    if feedback is None:
+        return jsonify({"error": "Feedback não encontrado."}), 404
+
+    # O aluno só explica o próprio comentário; o docente não passa por aqui,
+    # porque na visão dele o feedback é dissociado de quem escreveu.
+    if feedback.student_id != int(get_jwt_identity()):
+        return jsonify({"error": "Feedback não encontrado."}), 404
+
+    if not (feedback.additional_comment or '').strip():
+        return jsonify({"error": "Este feedback não tem comentário para explicar."}), 400
+
+    if feedback.token_attributions or feedback.shap_attributions:
+        return jsonify(feedback.to_dict(incluir_identificacao=True)), 200
+
+    comentario = feedback.additional_comment
+    houve_falha = False
+
+    # As duas técnicas são independentes: se uma falhar, a outra ainda serve para
+    # destacar as palavras, e a tela não fica sem explicação nenhuma.
     try:
-        feedback.token_attributions = explain_sentiment_lime(additional_comment)
+        feedback.token_attributions = explain_sentiment_lime(comentario)
     except Exception:
+        houve_falha = True
         logger.exception("LIME falhou para o feedback %s", feedback.id)
 
     try:
-        feedback.shap_attributions = explain_sentiment_shap(additional_comment)
+        feedback.shap_attributions = explain_sentiment_shap(comentario)
     except Exception:
+        houve_falha = True
         logger.exception("SHAP falhou para o feedback %s", feedback.id)
 
     try:
@@ -116,8 +150,12 @@ def analyze_and_save_feedback():
     except Exception:
         db.session.rollback()
         logger.exception("Erro ao gravar as explicações do feedback %s", feedback.id)
+        return jsonify({"error": "Não foi possível gravar a explicação."}), 500
 
-    return jsonify(feedback.to_dict(incluir_identificacao=True)), 201
+    if houve_falha and not (feedback.token_attributions or feedback.shap_attributions):
+        return jsonify({"error": "Não foi possível gerar a explicação deste comentário."}), 500
+
+    return jsonify(feedback.to_dict(incluir_identificacao=True)), 200
 
 @api.route("/versao-modelo", methods=["GET"])
 @jwt_required()

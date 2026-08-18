@@ -1,8 +1,12 @@
 import API_BASE_URL from '../config';
 
 const TIMEOUT_PADRAO = 30000;
-// O LIME avalia 5.000 perturbações do texto; a espera é de dezenas de segundos.
-const TIMEOUT_ANALISE = 180000;
+// Cobre o cold start do Cloud Run no primeiro envio do dia.
+const TIMEOUT_ENVIO = 120000;
+// O LIME avalia 5.000 perturbações do texto e o SHAP ajusta o número de
+// avaliações ao tamanho dele. Fica logo abaixo do teto de 300s do Cloud Run,
+// para o erro chegar como mensagem nossa e não como corte da plataforma.
+const TIMEOUT_EXPLICACAO = 290000;
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -128,8 +132,21 @@ export const apagarMeusDados = (token) =>
 export const deleteMyFeedback = (feedbackId, token) =>
   request(`/my-feedbacks/${feedbackId}`, { method: 'DELETE', token });
 
+// Envio: grava as respostas e o sentimento. Responde em segundos com o servidor
+// quente, mas o primeiro acesso do dia paga o cold start — subir o contêiner e
+// carregar o modelo leva perto de um minuto. Sem esta folga, justamente o
+// primeiro aluno da turma veria erro por um feedback que seria gravado.
 export const analyzeFeedback = (feedbackData, token) =>
-  request('/analyze', { body: feedbackData, token, timeoutMs: TIMEOUT_ANALISE });
+  request('/analyze', { body: feedbackData, token, timeoutMs: TIMEOUT_ENVIO });
+
+// Segunda etapa: LIME e SHAP do comentário já gravado. É a parte cara, e o
+// tempo cresce com o tamanho do texto — daí o limite generoso.
+export const gerarExplicacao = (feedbackId, token) =>
+  request(`/feedbacks/${feedbackId}/explicacao`, {
+    body: {},
+    token,
+    timeoutMs: TIMEOUT_EXPLICACAO,
+  });
 
 export const getFeedbacks = (subjectId, dateRange, token) =>
   request(

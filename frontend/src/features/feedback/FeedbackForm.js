@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
-import { getSubjects, analyzeFeedback } from '../../services/api';
+import { getSubjects, analyzeFeedback, getMyFeedbacks } from '../../services/api';
 import Spinner from '../../components/Spinner';
 import AnalyzingModal from '../../components/AnalyzingModal';
 
@@ -190,13 +190,40 @@ function FeedbackForm() {
     try {
       const data = await analyzeFeedback(payload, accessToken);
       navigate('/historico', { state: { latest: data } });
+      return;
     } catch (err) {
+      // 409 significa que já existe feedback desta matéria hoje — e o caso mais
+      // provável é que o envio anterior tenha sido gravado e a resposta se
+      // perdido no caminho. Mostrar o resultado que existe é mais verdadeiro do
+      // que acusar erro por algo que deu certo.
+      if (err.status === 409) {
+        const recuperado = await buscarEnvioDeHoje(payload.subject_id);
+        if (recuperado) {
+          navigate('/historico', { state: { latest: recuperado } });
+          return;
+        }
+      }
+
       // A renovação do token e o reenvio ficam na camada de API; aqui só resta
       // avisar o aluno, sem perder o que ele escreveu.
       setError(err.message || 'Não foi possível enviar. Tente novamente.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Procura o feedback desta matéria enviado hoje. Se a busca falhar, devolve
+  // null e o fluxo cai no aviso de erro comum.
+  const buscarEnvioDeHoje = async (subjectId) => {
+    try {
+      const meus = await getMyFeedbacks(subjectId, accessToken);
+      const hoje = new Date().toDateString();
+      return [...meus]
+        .reverse()
+        .find((fb) => new Date(fb.created_at).toDateString() === hoje) || null;
+    } catch {
+      return null;
     }
   };
 

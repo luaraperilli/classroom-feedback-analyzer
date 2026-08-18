@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getMyFeedbacks, getSubjects, deleteMyFeedback } from '../../services/api';
+import { getMyFeedbacks, getSubjects, deleteMyFeedback, gerarExplicacao } from '../../services/api';
 import { getSentimentLabel } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
 import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
@@ -382,9 +382,42 @@ function StudentHistory() {
   const [recemEnviado, setRecemEnviado] = useState(state?.latest ?? null);
   const [mostrarToast, setMostrarToast] = useState(!!state?.latest);
 
+  const [explicando, setExplicando] = useState(false);
+
   useEffect(() => {
     if (state?.latest) navigate('/historico', { replace: true, state: null });
   }, [state?.latest, navigate]);
+
+  // Segunda etapa do envio: o feedback já está salvo e o aluno já vê a nota e o
+  // sentimento; aqui buscamos o destaque por palavra, que é a parte cara. Ele
+  // permanece na tela enquanto isso, então a explicação chega a tempo de servir
+  // à reflexão — que é o ponto do trabalho.
+  useEffect(() => {
+    if (!recemEnviado || !accessToken) return;
+    if (!(recemEnviado.additional_comment || '').trim()) return;
+    if (temAtribuicoes(recemEnviado.token_attributions || recemEnviado.shap_attributions)) return;
+
+    let cancelado = false;
+    setExplicando(true);
+
+    gerarExplicacao(recemEnviado.id, accessToken)
+      .then((atualizado) => {
+        if (cancelado) return;
+        setRecemEnviado(atualizado);
+        setFeedbacks((anteriores) =>
+          anteriores.map((fb) => (fb.id === atualizado.id ? atualizado : fb))
+        );
+      })
+      .catch(() => {
+        // Sem alarde: o feedback está salvo e a tela mostra "explicação
+        // indisponível". O comando calcular-explicacoes preenche depois.
+      })
+      .finally(() => {
+        if (!cancelado) setExplicando(false);
+      });
+
+    return () => { cancelado = true; };
+  }, [recemEnviado, accessToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -543,6 +576,11 @@ function StudentHistory() {
               </blockquote>
               {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
                 <ExplainabilityLegend onInfo={() => setShowModal(true)} />
+              ) : explicando ? (
+                <p className="flex items-center gap-2 text-sm text-[#475569] mt-3">
+                  <Spinner />
+                  Analisando quais palavras mais pesaram no resultado...
+                </p>
               ) : (
                 <p className="text-sm text-[#64748b] mt-3">
                   A explicação deste comentário não está disponível.
