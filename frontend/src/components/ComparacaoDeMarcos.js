@@ -12,6 +12,8 @@
  * anteriores; a leitura de "melhorou ou piorou" fica com a frase, não com a cor.
  */
 
+import { numeroPtBr } from '../utils/numeroPtBr';
+
 const ESCALA_MIN = 1;
 const ESCALA_MAX = 5;
 
@@ -45,7 +47,7 @@ function Comparativo({ marcos }) {
 
   return (
     <p className={`text-sm mt-5 ${subiu ? 'text-[#0f766e]' : 'text-[#475569]'}`}>
-      Sua última avaliação foi {modulo.toFixed(1)} ponto{modulo >= 2 ? 's' : ''}{' '}
+      Sua última avaliação foi {numeroPtBr(modulo, 1)} ponto{modulo >= 2 ? 's' : ''}{' '}
       {subiu ? 'maior' : 'menor'} que a anterior.
     </p>
   );
@@ -93,7 +95,7 @@ function ComparacaoDeMarcos({ feedbacks }) {
                   atual ? 'font-semibold text-[#0f766e]' : 'text-[#94a3b8]'
                 }`}
               >
-                {marco.nota.toFixed(1)}/5
+                {numeroPtBr(marco.nota, 1)}/5
               </span>
             </li>
           );

@@ -5,6 +5,7 @@ import { getMyFeedbacks, getSubjects, deleteMyFeedback, gerarExplicacao } from '
 import { getSentimentLabel } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
 import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
+import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 import Tooltip from '../../components/Tooltip';
 import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
 import Spinner from '../../components/Spinner';
@@ -121,7 +122,7 @@ function SentimentBadge({ compound, showScore }) {
       </span>
       {showScore && compound !== null && compound !== undefined && (
         <span className="text-sm font-mono text-[#64748b]">
-          {compound > 0 ? '+' : ''}{compound.toFixed(2)}
+          {numeroComSinal(compound, 2)}
         </span>
       )}
     </div>
@@ -131,7 +132,7 @@ function SentimentBadge({ compound, showScore }) {
 function ScoreBar({ score }) {
   const pct = Math.round(score * 100);
   const color = score >= 0.6 ? '#0f766e' : score >= 0.4 ? '#f59e0b' : '#dc2626';
-  const display = (score * 4 + 1).toFixed(1);
+  const display = numeroPtBr(score * 4 + 1, 1);
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -234,7 +235,7 @@ function SummaryCard({ feedbacks }) {
       <StatCard
         tint="bg-amber-50"
         valueClass="text-[#0f172a]"
-        value={(avgScore * 4 + 1).toFixed(1)}
+        value={numeroPtBr(avgScore * 4 + 1, 1)}
         label="Nota média"
         hint="Média das suas avaliações gerais da aula, na escala de 1 a 5 (a partir das perguntas objetivas que você respondeu)."
         icon={

@@ -12,6 +12,7 @@ import {
   Cell,
   ReferenceLine,
 } from 'recharts';
+import { numeroComSinal } from '../../utils/numeroPtBr';
 
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
@@ -23,7 +24,7 @@ function CustomTooltip({ active, payload }) {
       <p>
         SHAP médio:{' '}
         <span className="font-semibold" style={{ color }}>
-          {d.mean_shap > 0 ? '+' : ''}{d.mean_shap.toFixed(4)}
+          {numeroComSinal(d.mean_shap, 4)}
         </span>
       </p>
       <p className="text-slate-400 text-sm mt-0.5">
@@ -204,7 +205,7 @@ function GlobalShapAnalysis({ selectedSubject }) {
                   <tr key={idx} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 pr-4 font-medium text-[#1e293b]">{d.word}</td>
                     <td className="py-2.5 px-4 text-right font-mono" style={{ color }}>
-                      {d.mean_shap > 0 ? '+' : ''}{d.mean_shap.toFixed(4)}
+                      {numeroComSinal(d.mean_shap, 4)}
                     </td>
                     <td className="py-2.5 px-4 text-right text-slate-500">{d.count}</td>
                     <td className="py-2.5 pl-4 w-32">

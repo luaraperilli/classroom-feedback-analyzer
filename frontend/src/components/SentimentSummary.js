@@ -1,7 +1,8 @@
 import React from 'react';
+import { numeroPtBr, numeroComSinal } from '../utils/numeroPtBr';
 
 const getPercentage = (count, total) =>
-  total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+  total > 0 ? numeroPtBr((count / total) * 100, 1) : '0,0';
 
 const getAvgCompound = (feedbacks) => {
   const valid = feedbacks.filter((fb) => fb.compound !== null && fb.compound !== undefined);
@@ -48,7 +49,7 @@ function SentimentSummary({ feedbacks }) {
 
   const avg = getAvgCompound(feedbacks);
   const avgLabel = avg !== null
-    ? `Média: ${avg > 0 ? '+' : ''}${avg.toFixed(2)}`
+    ? `Média: ${numeroComSinal(avg, 2)}`
     : null;
 
   return (

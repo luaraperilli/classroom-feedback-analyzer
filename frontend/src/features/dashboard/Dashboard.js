@@ -8,6 +8,7 @@ import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
 import { getSentimentColor } from '../../utils/sentiment';
+import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 
 const getFeedbackBorderColor = (compound) => {
   if (compound >= 0.05) return '#0f766e';
@@ -132,7 +133,7 @@ function FeedbackCard({ fb }) {
   const [expanded, setExpanded] = useState(false);
   const compound     = fb.compound ?? null;
   const borderColor  = getFeedbackBorderColor(compound ?? 0);
-  const overallScore = (fb.overall_score * 4 + 1).toFixed(1);
+  const overallScore = numeroPtBr(fb.overall_score * 4 + 1, 1);
   const sentimentColor = compound !== null ? getSentimentColor(compound) : '#64748b';
 
   return (
@@ -168,7 +169,7 @@ function FeedbackCard({ fb }) {
               <span className="text-sm text-slate-600">
                 Sentimento:{' '}
                 <span className="font-semibold" style={{ color: sentimentColor }}>
-                  {compound > 0 ? '+' : ''}{compound.toFixed(2)}
+                  {numeroComSinal(compound, 2)}
                 </span>
               </span>
             )}

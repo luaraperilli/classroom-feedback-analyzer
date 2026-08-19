@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getStudentsAtRisk } from '../../services/api';
 import { translateSubject } from '../../utils/translations';
+import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 
 
 const RISK_CONFIG = {
@@ -83,11 +84,11 @@ function Metric({ label, value, color }) {
 function StudentCard({ student }) {
   const { color, bg, border } = RISK_CONFIG[student.risk_level] || {};
   const riskPct       = Math.round((student.risk_score ?? 0) * 100);
-  const scoreDisplay  = (student.average_score * 4 + 1).toFixed(1);
+  const scoreDisplay  = numeroPtBr(student.average_score * 4 + 1, 1);
   const sentimentVal  = student.average_sentiment;
   const sentimentDisplay =
     sentimentVal !== null && sentimentVal !== undefined
-      ? `${sentimentVal > 0 ? '+' : ''}${sentimentVal.toFixed(2)}`
+      ? numeroComSinal(sentimentVal, 2)
       : '—';
   const sentimentColor =
     sentimentVal >= 0.05  ? '#0f766e' :

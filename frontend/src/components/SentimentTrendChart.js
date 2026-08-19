@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
+import { numeroPtBr, numeroComSinal } from '../utils/numeroPtBr';
 
 // Duas métricas, para dois públicos.
 //
@@ -26,7 +27,7 @@ const METRICAS = {
     valor: (fb) => fb.compound,
     dominio: [-1, 1],
     rotulo: 'Sentimento',
-    formata: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`,
+    formata: (v) => numeroComSinal(v, 2),
     faixa: (v) => (v >= 0.05 ? 'Positivo' : v <= -0.05 ? 'Negativo' : 'Neutro'),
     cor: (v) => (v >= 0.05 ? '#0f766e' : v <= -0.05 ? '#dc2626' : '#64748b'),
     neutro: [-0.05, 0.05],
@@ -39,7 +40,7 @@ const METRICAS = {
     valor: (fb) => (fb.overall_score * 4 + 1),
     dominio: [1, 5],
     rotulo: 'Sua avaliação',
-    formata: (v) => `${v.toFixed(1)}`,
+    formata: (v) => numeroPtBr(v, 1),
     faixa: (v) => (v >= 3.5 ? 'Concordo' : v <= 2.5 ? 'Discordo' : 'Neutro'),
     cor: (v) => (v >= 3.5 ? '#0f766e' : v <= 2.5 ? '#dc2626' : '#64748b'),
     neutro: [2.5, 3.5],
