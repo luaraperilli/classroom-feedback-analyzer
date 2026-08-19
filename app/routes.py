@@ -131,6 +131,38 @@ def gerar_explicacao(feedback_id):
     if feedback.explicacao_calculada:
         return jsonify(feedback.to_dict(incluir_identificacao=True)), 200
 
+    # Reserva do cálculo, em uma única instrução, para que dois pedidos
+    # simultâneos não façam o mesmo trabalho duas vezes.
+    #
+    # Ler o estado e depois gravar deixaria uma janela entre as duas operações, e
+    # foi exatamente ela que apareceu em produção: dois pedidos para o mesmo
+    # feedback, com 51 segundos de diferença, ambos concluíram que faltava
+    # calcular e ambos calcularam. Aqui, o banco decide quem reserva — quem
+    # atualizar a linha segue, quem não atualizar sabe que outro já está com ela.
+    #
+    # A condição de idade permite retomar um cálculo cuja instância morreu no
+    # meio, o que o Cloud Run pode fazer a qualquer momento.
+    agora = datetime.utcnow()
+    reservado = (
+        Feedback.query
+        .filter(Feedback.id == feedback.id)
+        .filter(db.or_(
+            Feedback.explicacao_iniciada_em.is_(None),
+            Feedback.explicacao_iniciada_em < agora - Feedback.LIMITE_DE_CALCULO,
+        ))
+        .update({'explicacao_iniciada_em': agora}, synchronize_session=False)
+    )
+    db.session.commit()
+
+    if not reservado:
+        logger.info(
+            "explicacao feedback=%s ja em curso, pedido devolvido sem recalcular",
+            feedback.id,
+        )
+        corpo = feedback.to_dict(incluir_identificacao=True)
+        corpo['explicacao_em_processamento'] = True
+        return jsonify(corpo), 202
+
     comentario = feedback.additional_comment
     houve_falha = False
 
@@ -159,6 +191,12 @@ def gerar_explicacao(feedback_id):
         "explicacao feedback=%s caracteres=%s lime=%.1fs shap=%.1fs total=%.1fs",
         feedback.id, len(comentario), tempo_lime, tempo_shap, tempo_lime + tempo_shap,
     )
+
+    # Nada foi calculado, então a reserva é devolvida. Mantê-la faria a próxima
+    # tentativa receber "em processamento" por quinze minutos, escondendo do
+    # aluno um cálculo que não está acontecendo.
+    if houve_falha and not feedback.explicacao_calculada:
+        feedback.explicacao_iniciada_em = None
 
     try:
         db.session.commit()

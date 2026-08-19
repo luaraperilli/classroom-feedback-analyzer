@@ -97,6 +97,13 @@ class Feedback(db.Model):
     token_attributions_json = db.Column(db.Text, nullable=True)
     shap_attributions_json  = db.Column(db.Text, nullable=True)
 
+    # Instante em que o cálculo da explicação começou. Serve para reconhecer um
+    # cálculo em curso: sem isso, um segundo pedido para o mesmo feedback vê que
+    # nada foi gravado ainda, conclui que falta calcular e refaz o trabalho
+    # inteiro. Foi o que aconteceu no teste de 19 de agosto, com o mesmo
+    # comentário processado duas vezes em paralelo.
+    explicacao_iniciada_em = db.Column(db.DateTime, nullable=True)
+
     overall_score = db.Column(db.Float, nullable=False)
 
     # NULL e {} significam coisas diferentes: nulo é "ainda não foi calculado",
@@ -127,6 +134,21 @@ class Feedback(db.Model):
     def explicacao_calculada(self):
         """Se a explicação já foi tentada, com ou sem resultado."""
         return self.token_attributions_json is not None or self.shap_attributions_json is not None
+
+    # Teto para considerar um cálculo ainda em curso. Acima disso, presume-se que
+    # a instância morreu no meio — o Cloud Run pode encerrar um contêiner a
+    # qualquer momento — e um novo pedido tem permissão para recomeçar. Sem esse
+    # teto, um cálculo interrompido travaria a explicação daquele feedback para
+    # sempre.
+    LIMITE_DE_CALCULO = datetime.timedelta(minutes=15)
+
+    @property
+    def explicacao_em_curso(self):
+        """Se há um cálculo iniciado há pouco e ainda sem resultado gravado."""
+        if self.explicacao_calculada or self.explicacao_iniciada_em is None:
+            return False
+        idade = datetime.datetime.utcnow() - self.explicacao_iniciada_em
+        return idade < self.LIMITE_DE_CALCULO
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     subject = db.relationship('Subject', backref=db.backref('feedbacks', lazy=True))
 

@@ -11,6 +11,14 @@ import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
 import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
+// Acompanhamento do cálculo da explicação. Dez segundos entre consultas é curto
+// o bastante para o destaque aparecer logo depois de pronto e leve o bastante
+// para não pesar: cada consulta é uma leitura, não um cálculo. O teto de sessenta
+// tentativas dá dez minutos, bem acima dos quatro minutos do pior caso medido,
+// para que a desistência só aconteça quando algo realmente deu errado.
+const INTERVALO_DE_CONSULTA = 10000;
+const MAXIMO_DE_CONSULTAS = 60;
+
 const SENTIMENT_META = {
   positivo: { label: 'Positivo', color: '#0f766e', bg: 'bg-[#e6f2f1]', ring: 'ring-[#c5e0dd]', text: 'text-[#0f766e]', dot: 'bg-[#0f766e]' },
   neutro:   { label: 'Neutro',   color: '#64748b', bg: 'bg-slate-50', ring: 'ring-slate-200', text: 'text-[#64748b]', dot: 'bg-[#64748b]' },
@@ -416,35 +424,84 @@ function StudentHistory() {
 
     explicacoesTentadas.current.add(recemEnviado.id);
 
+    const id = recemEnviado.id;
     let cancelado = false;
+    let relogio = null;
+
     setExplicando(true);
     setErroExplicacao(null);
 
-    gerarExplicacao(recemEnviado.id, accessToken)
-      .then((atualizado) => {
+    const registrar = (atualizado) => {
+      setRecemEnviado(atualizado);
+      setFeedbacks((anteriores) =>
+        anteriores.map((fb) => (fb.id === atualizado.id ? atualizado : fb))
+      );
+    };
+
+    // Consulta o resultado de tempos em tempos, em vez de manter uma requisição
+    // aberta por minutos à espera da resposta.
+    //
+    // No celular, uma espera longa quase nunca chega ao fim: bloquear a tela ou
+    // trocar de aplicativo suspende a requisição, e o aluno via erro embora o
+    // servidor tivesse concluído. Consultando, o cálculo continua do lado do
+    // servidor e a tela apenas pergunta se já terminou, o que sobrevive a queda
+    // de conexão e a recarregamento da página.
+    const consultar = async (tentativa) => {
+      if (cancelado) return;
+
+      if (tentativa > MAXIMO_DE_CONSULTAS) {
+        setErroExplicacao('A análise demorou mais que o esperado.');
+        setExplicando(false);
+        return;
+      }
+
+      try {
+        const lista = await getMyFeedbacks(accessToken);
         if (cancelado) return;
-        setRecemEnviado(atualizado);
-        setFeedbacks((anteriores) =>
-          anteriores.map((fb) => (fb.id === atualizado.id ? atualizado : fb))
-        );
+
+        const atual = lista.find((fb) => fb.id === id);
+        if (atual && temAtribuicoes(atual.token_attributions || atual.shap_attributions)) {
+          registrar(atual);
+          setExplicando(false);
+          return;
+        }
+      } catch (erro) {
+        // Falha de rede numa consulta não é motivo para desistir: a próxima
+        // tentativa acontece de qualquer forma, e o cálculo segue no servidor.
+        console.error('[Voz Discente] falha ao consultar a explicação:', erro);
+      }
+
+      relogio = setTimeout(() => consultar(tentativa + 1), INTERVALO_DE_CONSULTA);
+    };
+
+    gerarExplicacao(id, accessToken)
+      .then((resposta) => {
+        if (cancelado) return;
+
+        // O servidor avisa quando outro pedido já está calculando este mesmo
+        // feedback. Nesse caso não há resultado ainda, e só resta acompanhar.
+        if (resposta?.explicacao_em_processamento) {
+          consultar(1);
+          return;
+        }
+
+        registrar(resposta);
+        setExplicando(false);
       })
       .catch((erro) => {
         if (cancelado) return;
-        // A falha era engolida em silêncio, e "explicação indisponível" tanto
-        // podia significar sem resultado quanto erro de servidor. Sem distinguir
-        // os dois, não há como diagnosticar nem oferecer nova tentativa.
         console.error('[Voz Discente] falha ao gerar a explicação:', erro);
-        setErroExplicacao(
-          erro?.status === 0
-            ? 'A análise demorou mais que o esperado.'
-            : erro?.message || 'Não foi possível gerar a explicação.'
-        );
-      })
-      .finally(() => {
-        if (!cancelado) setExplicando(false);
+
+        // Perder a resposta não significa que o cálculo falhou. O servidor
+        // costuma concluir e gravar mesmo quando a conexão do celular cai no
+        // meio, então vale acompanhar antes de declarar erro ao aluno.
+        consultar(1);
       });
 
-    return () => { cancelado = true; };
+    return () => {
+      cancelado = true;
+      if (relogio) clearTimeout(relogio);
+    };
   }, [recemEnviado, accessToken]);
 
   useEffect(() => {

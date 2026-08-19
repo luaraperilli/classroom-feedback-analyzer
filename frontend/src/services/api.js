@@ -3,10 +3,14 @@ import API_BASE_URL from '../config';
 const TIMEOUT_PADRAO = 30000;
 // Cobre o cold start do Cloud Run no primeiro envio do dia.
 const TIMEOUT_ENVIO = 120000;
-// O LIME avalia 5.000 perturbações do texto e o SHAP ajusta o número de
-// avaliações ao tamanho dele. Fica logo abaixo do teto de 300s do Cloud Run,
-// para o erro chegar como mensagem nossa e não como corte da plataforma.
-const TIMEOUT_EXPLICACAO = 290000;
+// Primeira tentativa de obter a explicação. Não precisa cobrir o cálculo
+// inteiro: se a resposta não chegar a tempo, a tela passa a consultar o
+// resultado periodicamente, e o servidor conclui e grava de qualquer forma.
+//
+// Vale mais desistir cedo do que segurar a conexão. No celular, uma requisição
+// aberta por minutos é interrompida por qualquer troca de aplicativo ou bloqueio
+// de tela, e era isso que fazia o aluno ver erro em um cálculo bem-sucedido.
+const TIMEOUT_EXPLICACAO = 120000;
 
 export class ApiError extends Error {
   constructor(message, status) {
