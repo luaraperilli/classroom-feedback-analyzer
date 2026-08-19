@@ -93,6 +93,11 @@ def login():
     access_token = create_access_token(identity=identity, additional_claims=additional_claims)
     refresh_token = create_refresh_token(identity=identity)
 
+    # consentimento_pendente precisa vir já no login. Sem ele, a interface só
+    # descobre que falta consentir na primeira consulta a /profile, que só
+    # acontece ao recarregar a página — e até lá o aluno navega até o
+    # formulário, preenche, envia e recebe 403. O dado não era coletado sem
+    # base legal, mas a pessoa via um erro no lugar do termo.
     user_data = {
         "id": user.id,
         "username": user.username,
@@ -101,6 +106,8 @@ def login():
         "last_name": user.last_name or "",
         "display_name": user.display_name,
         "must_change_password": user.must_change_password,
+        "consentimento_pendente": user.role == User.ALUNO and not user.consentimento_valido,
+        "consentimento_em": user.consentimento_em.isoformat() if user.consentimento_em else None,
     }
 
     return jsonify(access_token=access_token, refresh_token=refresh_token, user=user_data), 200
