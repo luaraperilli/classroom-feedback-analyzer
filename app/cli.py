@@ -280,6 +280,28 @@ def redefinir_senha(username, senha, definitiva):
         click.echo('A troca será exigida no próximo acesso.\n')
 
 
+@click.command('resetar-consentimento')
+@click.option('--username', prompt=True, help='Usuário que voltará a ver o termo.')
+@with_appcontext
+def resetar_consentimento(username):
+    """Faz o termo ser apresentado de novo no próximo acesso.
+
+    Serve para recapturar a tela do termo, que só aparece a quem ainda não
+    manifestou. Não apaga feedback nenhum — diferente da retirada de
+    consentimento feita pelo próprio titular no Perfil.
+    """
+    usuario = _buscar_usuario(username)
+    if not usuario:
+        raise click.ClickException(f'Usuário {username!r} não encontrado.')
+
+    usuario.consentimento_em = None
+    usuario.consentimento_versao = None
+    db.session.commit()
+
+    click.echo(f'\nO termo será apresentado de novo para {usuario.username} no próximo acesso.')
+    click.echo('Os feedbacks dele(a) foram preservados.\n')
+
+
 @click.command('calcular-explicacoes')
 @with_appcontext
 def calcular_explicacoes():
@@ -323,6 +345,6 @@ def calcular_explicacoes():
 
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
-                    criar_aluno, criar_alunos, listar_usuarios, redefinir_senha,
-                    calcular_explicacoes):
+                    criar_aluno, criar_alunos, vincular_professor, listar_usuarios,
+                    redefinir_senha, resetar_consentimento, calcular_explicacoes):
         app.cli.add_command(comando)
