@@ -91,8 +91,6 @@ function TermoConsentimento() {
           ))}
         </div>
 
-        <p className="text-sm text-[#64748b] mt-6 pt-5 border-t border-[#cfe0da]">{termo.contato}</p>
-
         <label className="flex items-start gap-3 mt-6 bg-primary/5 border border-primary/10 rounded-xl px-4 py-3 cursor-pointer">
           <input
             type="checkbox"

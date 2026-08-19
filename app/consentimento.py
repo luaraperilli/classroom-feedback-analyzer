@@ -22,10 +22,15 @@ VERSAO_DO_TERMO = '2.0'
 TERMO = {
     'versao': VERSAO_DO_TERMO,
     'titulo': 'Termo de Consentimento do Uso de Dados',
+    # Primeiro parágrafo, e único lugar onde os responsáveis aparecem: quem
+    # conduz, sob qual orientação e em que curso. A seção que repetia isso no
+    # rodapé foi removida a pedido do orientador — a informação precisa chegar
+    # antes de a pessoa decidir, não depois.
     'resumo': (
-        'O Voz Discente faz parte de um trabalho de conclusão de curso na UNIFEI, '
-        'realizado pela aluna Luara do Val Perilli, sob a orientação do professor '
-        'Dr. Rodrigo Duarte Seabra, do Instituto de Matemática e Computação.'
+        'O Voz Discente faz parte de um trabalho de conclusão de curso de graduação em '
+        'Sistemas de Informação na UNIFEI, realizado pela aluna Luara do Val Perilli, sob '
+        'a orientação do Prof. Dr. Rodrigo Duarte Seabra, do Instituto de Matemática e '
+        'Computação.'
     ),
     'secoes': [
         {
@@ -73,7 +78,8 @@ TERMO = {
                 'Todas as informações obtidas são mantidas em sigilo e usadas apenas nesta '
                 'pesquisa. Nenhum nome ou informação que identifique você aparecerá em '
                 'artigos ou publicações originadas deste trabalho. Os dados ficam em '
-                'servidor de acesso restrito.'
+                'servidor de acesso restrito e são guardados até a conclusão e a defesa da '
+                'pesquisa.'
             ),
         },
         {
@@ -90,17 +96,14 @@ TERMO = {
             'texto': (
                 'Sua participação é voluntária e pode ser interrompida quando você quiser. '
                 'Participar ou não participar não tem qualquer efeito sobre a sua avaliação '
-                'ou a sua nota na disciplina. Se recusar agora, você pode mudar de ideia '
-                'depois — é só entrar de novo.'
+                'ou a sua nota na disciplina, e você não receberá reembolso financeiro por '
+                'participar. Se recusar agora, pode mudar de ideia depois — é só entrar de '
+                'novo.'
             ),
         },
     ],
     'aceite': (
         'Li e entendi as informações acima. Concordo em participar voluntariamente, '
         'ciente de que posso retirar meu consentimento a qualquer momento.'
-    ),
-    'contato': (
-        'Dúvidas sobre a pesquisa podem ser encaminhadas à pesquisadora responsável, '
-        'Luara do Val Perilli, ou ao orientador, Prof. Dr. Rodrigo Duarte Seabra.'
     ),
 }
