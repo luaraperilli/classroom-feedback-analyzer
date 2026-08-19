@@ -101,10 +101,21 @@ def _predict_proba(texts):
     if not textos:
         return np.empty((0, len(CLASSES)))
 
-    lotes = []
-    for inicio in range(0, len(textos), TAMANHO_DO_LOTE):
+    # Agrupa textos de comprimento parecido antes de formar os lotes. O padding
+    # leva todo o lote ao tamanho do maior elemento, e as perturbações do LIME
+    # vão de poucas palavras até o comentário inteiro. Em ordem aleatória quase
+    # todo lote contém uma perturbação longa, então até os textos curtos pagam o
+    # comprimento máximo. Ordenados, cada lote paga o próprio tamanho. A conta do
+    # modelo não muda: as posições de padding já eram anuladas pela máscara de
+    # atenção, e o resultado volta na ordem original em que os textos chegaram.
+    ordem = sorted(range(len(textos)), key=lambda i: len(textos[i]))
+
+    saida = np.empty((len(textos), len(CLASSES)))
+    for inicio in range(0, len(ordem), TAMANHO_DO_LOTE):
+        indices = ordem[inicio:inicio + TAMANHO_DO_LOTE]
+
         entrada = _tokenizador(
-            textos[inicio:inicio + TAMANHO_DO_LOTE],
+            [textos[i] for i in indices],
             return_tensors='pt',
             padding=True,
             truncation=True,
@@ -112,9 +123,10 @@ def _predict_proba(texts):
         ).to(_dispositivo)
 
         logits = _modelo(**entrada).logits
-        lotes.append(torch.softmax(logits, dim=-1).float().cpu().numpy())
+        probabilidades = torch.softmax(logits, dim=-1).float().cpu().numpy()
+        saida[indices] = probabilidades[:, _COLUNAS]
 
-    return np.vstack(lotes)[:, _COLUNAS]
+    return saida
 
 shap_explainer = shap.Explainer(
     _predict_proba,

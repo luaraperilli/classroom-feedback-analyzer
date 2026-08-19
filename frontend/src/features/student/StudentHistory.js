@@ -624,8 +624,8 @@ function StudentHistory() {
                     Analisando quais palavras mais pesaram no resultado...
                   </p>
                   <p className="text-sm text-[#94a3b8] pl-6">
-                    Pode levar até dois minutos. O seu feedback já foi registrado — é só
-                    aguardar nesta tela que o destaque aparece aqui.
+                    Comentários mais longos levam alguns minutos. O seu feedback já foi
+                    registrado — é só aguardar nesta tela que o destaque aparece aqui.
                   </p>
                 </div>
               ) : erroExplicacao ? (
