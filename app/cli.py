@@ -140,6 +140,46 @@ def criar_disciplina(nome, professor):
     click.echo(f'Disciplina {nome!r} criada{vinculo}.')
 
 
+@click.command('vincular-professor')
+@click.option('--username', prompt=True, help='Usuário do professor.')
+@click.option(
+    '--disciplina',
+    default=None,
+    help='Nome da disciplina. Sem esta opção, vincula a todas as existentes.',
+)
+@with_appcontext
+def vincular_professor(username, disciplina):
+    """Vincula um professor a disciplinas já criadas.
+
+    O criar-disciplina só vincula no momento da criação. Este comando cobre o
+    caso das disciplinas que já existiam quando o professor foi cadastrado.
+    """
+    docente = _buscar_usuario(username)
+    if not docente or docente.role != User.PROFESSOR:
+        raise click.ClickException(f'Professor {username!r} não encontrado.')
+
+    if disciplina:
+        alvo = Subject.query.filter(db.func.lower(Subject.name) == disciplina.strip().lower()).first()
+        if not alvo:
+            raise click.ClickException(f'Disciplina {disciplina!r} não encontrada.')
+        disciplinas = [alvo]
+    else:
+        disciplinas = Subject.query.order_by(Subject.name).all()
+
+    vinculadas = []
+    for materia in disciplinas:
+        if materia not in docente.subjects:
+            docente.subjects.append(materia)
+            vinculadas.append(materia.name)
+
+    db.session.commit()
+
+    if vinculadas:
+        click.echo(f'\n{docente.username} vinculado a: {", ".join(vinculadas)}\n')
+    else:
+        click.echo('\nNenhum vínculo novo: já estava vinculado a todas.\n')
+
+
 @click.command('criar-alunos')
 @click.option(
     '--arquivo',
@@ -216,19 +256,28 @@ def listar_usuarios():
 @click.command('redefinir-senha')
 @click.option('--username', prompt=True, help='Usuário que terá a senha redefinida.')
 @click.option('--senha', default=SENHA_PROVISORIA_PADRAO, show_default=True)
+@click.option(
+    '--definitiva',
+    is_flag=True,
+    help='Dispensa a troca no próximo acesso. Use quando a pessoa não conseguir passar '
+         'pela tela de definição de senha e for preciso desbloqueá-la.',
+)
 @with_appcontext
-def redefinir_senha(username, senha):
+def redefinir_senha(username, senha, definitiva):
     """Redefine a senha de um usuário — substitui o 'esqueci minha senha'."""
     usuario = _buscar_usuario(username)
     if not usuario:
         raise click.ClickException(f'Usuário {username!r} não encontrado.')
 
     usuario.password = _hash(senha)
-    usuario.must_change_password = True
+    usuario.must_change_password = not definitiva
     db.session.commit()
 
     click.echo(f'\nSenha de {usuario.username} redefinida para: {senha}')
-    click.echo('A troca será exigida no próximo acesso.\n')
+    if definitiva:
+        click.echo('A troca NÃO será exigida — a pessoa entra direto com esta senha.\n')
+    else:
+        click.echo('A troca será exigida no próximo acesso.\n')
 
 
 @click.command('calcular-explicacoes')

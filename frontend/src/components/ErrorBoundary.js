@@ -3,11 +3,18 @@ import React from 'react';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, mensagem: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(erro) {
+    return { hasError: true, mensagem: erro?.message || String(erro) };
+  }
+
+  // Sem isto o erro era engolido por completo: a tela dizia "algo deu errado" e
+  // não sobrava rastro nenhum, nem no console. Durante a coleta, com alunos
+  // usando sozinhos, é a diferença entre diagnosticar e adivinhar.
+  componentDidCatch(erro, info) {
+    console.error('[Voz Discente] erro na interface:', erro, info?.componentStack);
   }
 
   render() {
@@ -22,6 +29,11 @@ class ErrorBoundary extends React.Component {
             </div>
             <h1 className="text-xl font-bold text-[#1e293b]">Algo deu errado</h1>
             <p className="text-sm text-[#475569]">Um erro inesperado ocorreu. Tente recarregar a página.</p>
+            {this.state.mensagem && (
+              <p className="text-sm text-[#94a3b8] font-mono break-words max-w-md mx-auto">
+                {this.state.mensagem}
+              </p>
+            )}
             <button
               onClick={() => window.location.reload()}
               className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition"

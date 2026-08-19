@@ -164,6 +164,8 @@ function Sidebar() {
   );
 }
 
+const ROTAS_DE_AUTENTICACAO = ['/login', '/register'];
+
 function AppContent() {
   const location = useLocation();
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -183,9 +185,14 @@ function AppContent() {
     return <TermoConsentimento />;
   }
 
+  // Telas de autenticação não têm menu: não há sessão a navegar, e o menu
+  // preenchido com os dados de quem usou o navegador antes dá a impressão de
+  // que a pessoa já está dentro do sistema.
+  const emTelaDeAutenticacao = ROTAS_DE_AUTENTICACAO.includes(location.pathname);
+
   return (
     <div className="App lg:flex min-h-screen">
-      <Sidebar />
+      {!emTelaDeAutenticacao && <Sidebar />}
       <div className="flex-1 min-w-0">
         <div key={location.pathname} className="page-transition">
           <Routes>
