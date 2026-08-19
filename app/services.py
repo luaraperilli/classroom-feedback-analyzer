@@ -57,9 +57,22 @@ CLASSES = ('NEG', 'NEU', 'POS')
 TAMANHO_DO_LOTE = int(os.environ.get('PREDICT_BATCH_SIZE', 64))
 COMPRIMENTO_MAXIMO = 128
 
+# O torch escolhe o número de threads olhando o host, não o contêiner. No Cloud
+# Run isso costuma resultar em uma única thread mesmo com vários vCPUs
+# disponíveis, e o LIME, que faz 5.000 passagens pelo modelo, executa em série.
+# Fixar explicitamente é o que garante o paralelismo pelo qual já estamos
+# pagando.
+_NUCLEOS = int(os.environ.get('TORCH_THREADS', os.cpu_count() or 1))
+torch.set_num_threads(_NUCLEOS)
+
 _modelo = sentiment_analyzer.model
 _tokenizador = sentiment_analyzer.tokenizer
 _dispositivo = next(_modelo.parameters()).device
+
+logger.info(
+    'Inferência: %s núcleos visíveis, %s threads no torch, lote de %s, dispositivo %s',
+    os.cpu_count(), torch.get_num_threads(), TAMANHO_DO_LOTE, _dispositivo,
+)
 
 # A ordem das colunas vem do próprio modelo, não de uma constante nossa: se os
 # pesos mudarem o mapeamento, o índice acompanha em vez de trocar positivo por

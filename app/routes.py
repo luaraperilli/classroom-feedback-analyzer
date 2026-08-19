@@ -1,4 +1,5 @@
 import logging
+import time
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
@@ -135,17 +136,29 @@ def gerar_explicacao(feedback_id):
 
     # As duas técnicas são independentes: se uma falhar, a outra ainda serve para
     # destacar as palavras, e a tela não fica sem explicação nenhuma.
+    #
+    # Os tempos vão para o log porque é a única forma de saber, em produção, qual
+    # das duas domina o custo e como cada uma cresce com o tamanho do texto.
+    inicio = time.perf_counter()
     try:
         feedback.token_attributions = explain_sentiment_lime(comentario)
     except Exception:
         houve_falha = True
         logger.exception("LIME falhou para o feedback %s", feedback.id)
+    tempo_lime = time.perf_counter() - inicio
 
+    inicio = time.perf_counter()
     try:
         feedback.shap_attributions = explain_sentiment_shap(comentario)
     except Exception:
         houve_falha = True
         logger.exception("SHAP falhou para o feedback %s", feedback.id)
+    tempo_shap = time.perf_counter() - inicio
+
+    logger.info(
+        "explicacao feedback=%s caracteres=%s lime=%.1fs shap=%.1fs total=%.1fs",
+        feedback.id, len(comentario), tempo_lime, tempo_shap, tempo_lime + tempo_shap,
+    )
 
     try:
         db.session.commit()
