@@ -577,7 +577,13 @@ function StudentHistory() {
             <div className="rounded-2xl bg-gradient-to-br from-primary/[0.05] to-transparent border border-primary/10 p-4">
               <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">Como suas palavras foram percebidas</p>
               <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-white rounded-xl px-4 py-3 border border-[#cfe0da]">
+                {/* A chave muda quando o destaque chega, forçando o React a
+                    trocar a subárvore inteira em vez de remendá-la palavra a
+                    palavra. Reduz a chance de conflito com extensões que
+                    reescrevem o texto da página, como tradutores. */}
                 <HighlightedText
+                  key={temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions)
+                    ? 'com-destaque' : 'sem-destaque'}
                   text={latestFeedback.additional_comment}
                   tokenAttributions={latestFeedback.token_attributions || latestFeedback.shap_attributions}
                 />
@@ -585,10 +591,16 @@ function StudentHistory() {
               {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
                 <ExplainabilityLegend onInfo={() => setShowModal(true)} />
               ) : explicando ? (
-                <p className="flex items-center gap-2 text-sm text-[#475569] mt-3">
-                  <Spinner />
-                  Analisando quais palavras mais pesaram no resultado...
-                </p>
+                <div className="mt-3 space-y-1">
+                  <p className="flex items-center gap-2 text-sm text-[#475569]">
+                    <Spinner />
+                    Analisando quais palavras mais pesaram no resultado...
+                  </p>
+                  <p className="text-sm text-[#94a3b8] pl-6">
+                    Pode levar até dois minutos. O seu feedback já foi registrado — é só
+                    aguardar nesta tela que o destaque aparece aqui.
+                  </p>
+                </div>
               ) : (
                 <p className="text-sm text-[#64748b] mt-3">
                   A explicação deste comentário não está disponível.
