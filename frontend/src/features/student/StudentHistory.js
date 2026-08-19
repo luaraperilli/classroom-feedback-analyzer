@@ -388,10 +388,20 @@ function StudentHistory() {
   // nenhuma deixaria a condição de saída sempre falsa e o efeito se repetiria
   // indefinidamente, cada repetição custando minutos de servidor.
   const explicacoesTentadas = useRef(new Set());
+  const [erroExplicacao, setErroExplicacao] = useState(null);
 
   useEffect(() => {
     if (state?.latest) navigate('/historico', { replace: true, state: null });
   }, [state?.latest, navigate]);
+
+  // Nova tentativa a pedido do aluno. Limpa a trava para este feedback, já que
+  // agora quem decide repetir é ele, e não o efeito.
+  const tentarExplicarDeNovo = () => {
+    if (!recemEnviado) return;
+    explicacoesTentadas.current.delete(recemEnviado.id);
+    setErroExplicacao(null);
+    setRecemEnviado({ ...recemEnviado });
+  };
 
   // Segunda etapa do envio: o feedback já está salvo e o aluno já vê a nota e o
   // sentimento; aqui buscamos o destaque por palavra, que é a parte cara. Ele
@@ -407,6 +417,7 @@ function StudentHistory() {
 
     let cancelado = false;
     setExplicando(true);
+    setErroExplicacao(null);
 
     gerarExplicacao(recemEnviado.id, accessToken)
       .then((atualizado) => {
@@ -416,9 +427,17 @@ function StudentHistory() {
           anteriores.map((fb) => (fb.id === atualizado.id ? atualizado : fb))
         );
       })
-      .catch(() => {
-        // Sem alarde: o feedback está salvo e a tela mostra "explicação
-        // indisponível". O comando calcular-explicacoes preenche depois.
+      .catch((erro) => {
+        if (cancelado) return;
+        // A falha era engolida em silêncio, e "explicação indisponível" tanto
+        // podia significar sem resultado quanto erro de servidor. Sem distinguir
+        // os dois, não há como diagnosticar nem oferecer nova tentativa.
+        console.error('[Voz Discente] falha ao gerar a explicação:', erro);
+        setErroExplicacao(
+          erro?.status === 0
+            ? 'A análise demorou mais que o esperado.'
+            : erro?.message || 'Não foi possível gerar a explicação.'
+        );
       })
       .finally(() => {
         if (!cancelado) setExplicando(false);
@@ -454,6 +473,14 @@ function StudentHistory() {
   }, [recemEnviado]);
 
   const latestFeedback  = recemEnviado ?? (feedbacks.length > 0 ? feedbacks[feedbacks.length - 1] : null);
+
+  // O envio recém-feito já aparece inteiro no cartão de resultado, no topo.
+  // Repeti-lo no histórico logo abaixo mostrava o mesmo comentário duas vezes,
+  // e a segunda ainda dizia "explicação indisponível" enquanto a primeira
+  // estava calculando — duas versões do mesmo feedback se contradizendo.
+  const historico = [...feedbacks]
+    .reverse()
+    .filter((fb) => fb.id !== recemEnviado?.id);
   const pointsWithData  = countPointsWithData(feedbacks);
 
   const displayName = user?.first_name
@@ -601,6 +628,19 @@ function StudentHistory() {
                     aguardar nesta tela que o destaque aparece aqui.
                   </p>
                 </div>
+              ) : erroExplicacao ? (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-[#475569]">
+                    {erroExplicacao} O seu feedback está salvo — só o destaque das
+                    palavras não pôde ser gerado agora.
+                  </p>
+                  <button
+                    onClick={tentarExplicarDeNovo}
+                    className="text-sm font-semibold text-primary hover:text-primary-dark transition"
+                  >
+                    Tentar de novo
+                  </button>
+                </div>
               ) : (
                 <p className="text-sm text-[#64748b] mt-3">
                   A explicação deste comentário não está disponível.
@@ -678,7 +718,7 @@ function StudentHistory() {
         )}
 
         {/* History list */}
-        {!isLoading && !error && feedbacks.length > 0 && (
+        {!isLoading && !error && historico.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
@@ -690,7 +730,7 @@ function StudentHistory() {
             <p className="text-sm text-[#64748b]">
               Toque em um feedback para ver quais palavras do seu comentário mais pesaram no resultado.
             </p>
-            {[...feedbacks].reverse().map((fb, idx) => (
+            {historico.map((fb, idx) => (
               <FeedbackCard
                 key={fb.id}
                 fb={fb}
