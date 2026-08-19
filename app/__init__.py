@@ -1,6 +1,16 @@
 import logging
 import os
 
+# A configuração de log precisa vir antes dos imports abaixo, e não de dentro do
+# create_app(). O services.py escreve o diagnóstico do modelo no momento em que é
+# importado, e sem handler configurado o nível padrão do Python é WARNING — tudo
+# que é info some em silêncio. Foi por isso que os logs da aplicação nunca
+# apareceram no Cloud Run, só os de acesso do gunicorn.
+logging.basicConfig(
+    level=logging.DEBUG if os.environ.get('FLASK_CONFIG') == 'development' else logging.INFO,
+    format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+)
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -86,10 +96,10 @@ def create_app(config_name=None):
     app.config.from_object(config_by_name[config_name])
     app.config['CONFIG_NAME'] = config_name
 
-    logging.basicConfig(
-        level=logging.DEBUG if app.config.get('DEBUG') else logging.INFO,
-        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
-    )
+    # Os handlers já foram criados no topo do módulo, então basicConfig aqui não
+    # teria efeito nenhum. Ajustar o nível é o que ainda faz sentido, para o caso
+    # de create_app('development') ser chamado sem a variável de ambiente.
+    logging.getLogger().setLevel(logging.DEBUG if app.config.get('DEBUG') else logging.INFO)
 
     if config_name == 'production':
         _validar_producao(app)
