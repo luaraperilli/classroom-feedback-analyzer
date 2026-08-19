@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <!--
+      A página estava declarada como lang="en", então o Chrome a tomava por
+      inglês e oferecia tradução automática para português. Ao traduzir, ele
+      reescreve os nós de texto por baixo do React, e a reconciliação seguinte
+      falha com NotFoundError — a tela quebrava ao digitar, no momento em que
+      um trecho condicional era reexibido. O conteúdo já é em português, então
+      a tradução não traz benefício algum e é desativada.
+    -->
+    <meta name="google" content="notranslate" />
     <meta
       name="description"
       content="Voz Discente — sistema de análise de sentimentos de feedback estudantil com explicabilidade"
