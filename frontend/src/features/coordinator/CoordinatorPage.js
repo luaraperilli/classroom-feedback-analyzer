@@ -89,7 +89,7 @@ function CoordinatorPage() {
     setIsCreating(true);
     try {
       const data = await createSubject(subjectName, accessToken);
-      showFeedback(`Matéria "${data.name}" criada com sucesso.`);
+      showFeedback(`Disciplina "${data.name}" criada com sucesso.`);
       setSubjectName('');
       fetchInitialData();
     } catch (err) {
@@ -131,7 +131,7 @@ function CoordinatorPage() {
 
           {/* ── Create subject ─────────────────────────────────────────────── */}
           <SectionCard
-            title="Cadastrar Matéria"
+            title="Cadastrar Disciplina"
             subtitle="Adicione uma nova disciplina ao sistema."
           >
             <form onSubmit={handleCreateSubject} className="space-y-4">
@@ -139,7 +139,7 @@ function CoordinatorPage() {
                 type="text"
                 value={subjectName}
                 onChange={(e) => setSubjectName(e.target.value)}
-                placeholder="Nome da matéria"
+                placeholder="Nome da disciplina"
                 required
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-[#1e293b]
                            placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
@@ -151,7 +151,7 @@ function CoordinatorPage() {
                 className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold
                            hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isCreating ? 'Criando...' : 'Criar Matéria'}
+                {isCreating ? 'Criando...' : 'Criar Disciplina'}
               </button>
             </form>
 
@@ -159,7 +159,7 @@ function CoordinatorPage() {
             {subjects.length > 0 && (
               <div className="space-y-2 pt-2">
                 <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide">
-                  Matérias cadastradas ({subjects.length})
+                  Disciplinas cadastradas ({subjects.length})
                 </p>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                   {subjects.map((s) => (
@@ -178,7 +178,7 @@ function CoordinatorPage() {
 
           {/* ── Assign professor ───────────────────────────────────────────── */}
           <SectionCard
-            title="Vincular Professor à Matéria"
+            title="Vincular Professor à Disciplina"
             subtitle="Atribua um professor a uma disciplina específica."
           >
             <form onSubmit={handleAssignSubject} className="space-y-4">
@@ -199,7 +199,7 @@ function CoordinatorPage() {
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 required
-                placeholder="Selecione uma matéria"
+                placeholder="Selecione uma disciplina"
               >
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -214,7 +214,7 @@ function CoordinatorPage() {
                 className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold
                            hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isAssigning ? 'Vinculando...' : 'Vincular Matéria'}
+                {isAssigning ? 'Vinculando...' : 'Vincular Disciplina'}
               </button>
             </form>
 
@@ -238,7 +238,7 @@ function CoordinatorPage() {
                       <span className="flex-1 min-w-0 truncate">{p.display_name || p.username}</span>
                       {p.subject_count === 0 && (
                         <span className="text-sm font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex-shrink-0">
-                          Sem matéria
+                          Sem disciplina
                         </span>
                       )}
                     </div>

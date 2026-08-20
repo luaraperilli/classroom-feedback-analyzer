@@ -218,7 +218,7 @@ function SummaryCard({ feedbacks }) {
         valueClass="text-primary"
         value={feedbacks.length}
         label="Feedbacks enviados"
-        hint="Total de feedbacks que você já enviou (contando todas as matérias exibidas)."
+        hint="Total de feedbacks que você já enviou (contando todas as disciplinas exibidas)."
         icon={
           <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -456,7 +456,11 @@ function StudentHistory() {
       }
 
       try {
-        const lista = await getMyFeedbacks(accessToken);
+        // A assinatura é (subject_id, token). Passar só o token colocava o JWT
+        // no lugar do filtro de disciplina, e o servidor tentava comparar um
+        // inteiro com aquela string, o que derrubava toda consulta. A
+        // recuperação que eu tinha acrescentado nunca chegou a funcionar.
+        const lista = await getMyFeedbacks(null, accessToken);
         if (cancelado) return;
 
         const atual = lista.find((fb) => fb.id === id);
@@ -582,7 +586,7 @@ function StudentHistory() {
               <h3 className="text-base font-semibold text-[#1e293b]">Apagar este feedback?</h3>
             </div>
             <p className="text-sm text-[#475569] leading-relaxed">
-              Essa ação não pode ser desfeita. Depois de apagar, você poderá enviar um novo feedback para essa matéria.
+              Essa ação não pode ser desfeita. Depois de apagar, você poderá enviar um novo feedback para essa disciplina.
             </p>
             <div className="flex gap-3 pt-1">
               <button
@@ -616,7 +620,7 @@ function StudentHistory() {
               <p className="text-white/80 text-sm mt-1.5">Olá, {displayName} — acompanhe as análises dos seus feedbacks.</p>
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="subject-filter" className="text-sm text-white/80">Matéria:</label>
+              <label htmlFor="subject-filter" className="text-sm text-white/80">Disciplina:</label>
               <select
                 id="subject-filter"
                 value={selectedSubject}

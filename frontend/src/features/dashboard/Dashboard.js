@@ -362,7 +362,7 @@ function Dashboard() {
 
                 <FilterSelect
                   id="subject-filter"
-                  label="Matéria"
+                  label="Disciplina"
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                 >
@@ -376,11 +376,11 @@ function Dashboard() {
               <>
                 <FilterSelect
                   id="risk-subject-filter"
-                  label="Matéria"
+                  label="Disciplina"
                   value={riskSubject}
                   onChange={(e) => setRiskSubject(e.target.value)}
                 >
-                  <option value="">Todas as matérias</option>
+                  <option value="">Todas as disciplinas</option>
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>{translateSubject(s.name)}</option>
                   ))}
@@ -400,11 +400,11 @@ function Dashboard() {
             ) : activeTab === 'shap' ? (
               <FilterSelect
                 id="shap-subject-filter"
-                label="Matéria"
+                label="Disciplina"
                 value={shapSubject}
                 onChange={(e) => setShapSubject(e.target.value)}
               >
-                <option value="">Todas as matérias</option>
+                <option value="">Todas as disciplinas</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>{translateSubject(s.name)}</option>
                 ))}

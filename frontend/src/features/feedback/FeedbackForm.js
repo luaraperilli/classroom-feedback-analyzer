@@ -22,7 +22,7 @@ const QUESTIONS = [
 
 const RATING_LABELS = ['', 'Discordo totalmente', 'Discordo', 'Neutro', 'Concordo', 'Concordo totalmente'];
 
-const STEP_LABELS = ['Matéria', 'Avaliação', 'Comentário'];
+const STEP_LABELS = ['Disciplina', 'Avaliação', 'Comentário'];
 
 
 function StepIndicator({ current }) {
@@ -192,11 +192,17 @@ function FeedbackForm() {
       navigate('/historico', { state: { latest: data } });
       return;
     } catch (err) {
-      // 409 significa que já existe feedback desta matéria hoje — e o caso mais
+      // 409 significa que já existe feedback desta disciplina hoje — e o caso mais
       // provável é que o envio anterior tenha sido gravado e a resposta se
       // perdido no caminho. Mostrar o resultado que existe é mais verdadeiro do
       // que acusar erro por algo que deu certo.
-      if (err.status === 409) {
+      //
+      // O mesmo raciocínio vale para o tempo limite e para a queda de conexão,
+      // que chegam como status 0. O servidor grava o feedback antes de
+      // responder, então perder a resposta não significa perder o envio.
+      // Mandar o aluno tentar de novo sem antes conferir é o pior desfecho:
+      // ou ele desiste achando que falhou, ou reenvia algo que já está salvo.
+      if (err.status === 409 || err.status === 0) {
         const recuperado = await buscarEnvioDeHoje(payload.subject_id);
         if (recuperado) {
           navigate('/historico', { state: { latest: recuperado } });
@@ -204,16 +210,21 @@ function FeedbackForm() {
         }
       }
 
-      // A renovação do token e o reenvio ficam na camada de API; aqui só resta
-      // avisar o aluno, sem perder o que ele escreveu.
-      setError(err.message || 'Não foi possível enviar. Tente novamente.');
+      // Chegando aqui, a verificação confirmou que nada foi gravado. Só neste
+      // caso faz sentido pedir que tente de novo, e vale dizer que as respostas
+      // continuam na tela, senão o aluno supõe que perdeu o que escreveu.
+      setError(
+        err.status === 0
+          ? 'O envio não foi concluído e nada foi perdido. Suas respostas continuam preenchidas abaixo, é só tocar em Enviar Feedback de novo.'
+          : err.message || 'Não foi possível enviar.'
+      );
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Procura o feedback desta matéria enviado hoje. Se a busca falhar, devolve
+  // Procura o feedback desta disciplina enviado hoje. Se a busca falhar, devolve
   // null e o fluxo cai no aviso de erro comum.
   const buscarEnvioDeHoje = async (subjectId) => {
     try {
@@ -259,7 +270,7 @@ function FeedbackForm() {
           {/* Step 1 — Subject chips */}
           <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
             <p className="text-sm font-semibold text-[#1e293b] mb-3">
-              Qual matéria você quer avaliar?
+              Qual disciplina você quer avaliar?
             </p>
             {subjectsLoading ? (
               <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
@@ -268,7 +279,7 @@ function FeedbackForm() {
                 ))}
               </div>
             ) : subjects.length === 0 ? (
-              <p className="text-sm text-[#64748b]">Nenhuma matéria disponível.</p>
+              <p className="text-sm text-[#64748b]">Nenhuma disciplina disponível.</p>
             ) : (
               <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
                 {subjects.map((s) => {
