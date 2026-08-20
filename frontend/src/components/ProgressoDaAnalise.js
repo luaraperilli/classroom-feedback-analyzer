@@ -12,8 +12,18 @@ import React, { useState, useEffect } from 'react';
  * modelo, e o custo cresce com o tamanho do texto, enquanto o SHAP trabalha com
  * um número fixo de avaliações e custa quase o mesmo sempre. Daí a forma
  * estimativa = base + taxa x caracteres, com os dois valores medidos em
- * produção: um comentário de 301 caracteres levou 141 segundos de LIME e 32 de
- * SHAP.
+ * produção em 20 de agosto de 2026: 354 caracteres levaram 91,7 segundos de
+ * LIME e 17,8 de SHAP, e 389 caracteres levaram 121,0 e 15,8.
+ *
+ * Os valores anteriores, de 20 segundos mais meio segundo por caractere, vinham
+ * de medições feitas antes das otimizações de inferência e previam 197 segundos
+ * para um caso que levou 109. A barra ficava na metade e o resultado chegava,
+ * o que é tão ruim quanto o contrário: um indicador que erra por muito deixa de
+ * ser informação e vira enfeite.
+ *
+ * A taxa fica um pouco acima do medido de propósito. Instâncias do Cloud Run
+ * variam entre si, e é melhor a barra chegar ao fim um pouco antes do previsto
+ * do que encostar no teto e ficar esperando.
  *
  * A barra para em 95% enquanto o resultado não chega. Chegar a 100% e continuar
  * esperando destrói a confiança no indicador, e o que sobra é pior do que não
@@ -21,7 +31,7 @@ import React, { useState, useEffect } from 'react';
  */
 
 const BASE = 20;          // segundos, custo praticamente fixo do SHAP
-const POR_CARACTERE = 0.5;
+const POR_CARACTERE = 0.30;
 const TETO = 95;
 
 export const estimarSegundos = (caracteres) =>
