@@ -167,20 +167,32 @@ def bloco_primeiro_acesso(url, usuario):
 def bloco_regras_de_envio(url, token, disciplina):
     titulo('2. Regras do envio')
 
-    st, _ = pedir(url, '/analyze', envio(disciplina, 'x' * 401), token=token)
-    checar(st == 400, 'comentário acima de 400 caracteres é recusado', f'recebeu {st}')
+    def recusa(descricao, corpo):
+        """Confere que o envio inválido é recusado, e desfaz se tiver passado.
+
+        Um envio que deveria ser recusado e é aceito ocupa a vaga do dia naquela
+        disciplina, e todo o resto da bateria falha por 409 sem que a causa
+        apareça. Foi o que aconteceu na primeira execução: o comentário de 401
+        caracteres passou e derrubou quatro blocos.
+        """
+        st, resposta = pedir(url, '/analyze', corpo, token=token)
+        checar(st == 400, descricao, f'recebeu {st}')
+        if st == 201 and resposta and resposta.get('id'):
+            pedir(url, f'/my-feedbacks/{resposta["id"]}', token=token, metodo='DELETE')
+            print('         (o envio foi aceito e precisou ser desfeito, '
+                  'para não ocupar a vaga do dia)')
+
+    recusa('comentário acima de 400 caracteres é recusado',
+           envio(disciplina, 'x' * 401))
 
     incompleto = envio(disciplina, POSITIVO)
     del incompleto['task_completion']
-    st, _ = pedir(url, '/analyze', incompleto, token=token)
-    checar(st == 400, 'envio com pergunta sem resposta é recusado', f'recebeu {st}')
+    recusa('envio com pergunta sem resposta é recusado', incompleto)
 
-    st, _ = pedir(url, '/analyze', envio(disciplina, POSITIVO, active_participation=9),
-                  token=token)
-    checar(st == 400, 'nota fora da escala de 1 a 5 é recusada', f'recebeu {st}')
+    recusa('nota fora da escala de 1 a 5 é recusada',
+           envio(disciplina, POSITIVO, active_participation=9))
 
-    st, _ = pedir(url, '/analyze', envio(disciplina, '   '), token=token)
-    checar(st == 400, 'comentário em branco é recusado', f'recebeu {st}')
+    recusa('comentário em branco é recusado', envio(disciplina, '   '))
 
 
 def bloco_coleta(url, token, disciplina):
@@ -190,7 +202,9 @@ def bloco_coleta(url, token, disciplina):
     st, fb = pedir(url, '/analyze', envio(disciplina, POSITIVO), token=token)
     tempo = time.time() - inicio
     if st != 201:
-        checar(False, 'envio aceito', f'recebeu {st}: {fb}')
+        pista = ('. Algum envio do bloco 2 passou quando devia ser recusado e ocupou '
+                 'a vaga do dia' if st == 409 else '')
+        checar(False, 'envio aceito', f'recebeu {st}: {fb}{pista}')
         return None
     checar(True, 'envio aceito', f'{tempo:.1f}s')
     checar(tempo < 30, 'o envio responde rápido, sem esperar o cálculo pesado',

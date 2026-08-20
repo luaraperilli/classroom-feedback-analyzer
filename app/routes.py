@@ -23,6 +23,15 @@ api = Blueprint("api", __name__)
 def _get_user(user_id):
     return db.session.get(User, int(user_id))
 
+# O mesmo limite que a tela aplica. Eram números diferentes, 400 na interface e
+# 500 aqui, e a API aceitava o que a tela recusava. Além da incoerência, o artigo
+# afirma que o comentário é limitado a 400 caracteres justamente para caber na
+# janela de 128 tokens que o modelo lê, de modo que o texto analisado corresponda
+# integralmente ao texto submetido. Com 500 essa afirmação deixava de valer para
+# quem chamasse a API diretamente.
+MAXIMO_DE_CARACTERES = 400
+
+
 def validate_feedback_payload(data):
     required_fields = [
         'subject_id',
@@ -42,8 +51,8 @@ def validate_feedback_payload(data):
     if not data.get("additional_comment") or not data.get("additional_comment").strip():
         return False, "Campo 'additional_comment' é obrigatório e não pode estar vazio."
 
-    if len(data.get("additional_comment").strip()) > 500:
-        return False, "O comentário deve ter no máximo 500 caracteres."
+    if len(data.get("additional_comment").strip()) > MAXIMO_DE_CARACTERES:
+        return False, f"O comentário deve ter no máximo {MAXIMO_DE_CARACTERES} caracteres."
 
     rating_fields = required_fields[1:7]
     for field in rating_fields:
