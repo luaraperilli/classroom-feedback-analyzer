@@ -181,9 +181,12 @@ def explain_sentiment_shap(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
         return {}
 
-    # max_evals padrão ('auto') ajusta dinamicamente o número de avaliações
-    # ao tamanho do texto, conforme tutorial oficial da biblioteca em
-    # sentiment analysis com Transformers (Lundberg & Lee, 2017).
+    # max_evals fica no padrão ('auto'), que na biblioteca resolve para 500
+    # avaliações. É um número fixo, e não uma quantidade ajustada ao tamanho do
+    # texto, como a documentação sugere à primeira leitura. É o que explica o
+    # SHAP ter custado cerca de 30 segundos tanto em um comentário de 288
+    # caracteres quanto em um de 301, enquanto o LIME, esse sim proporcional ao
+    # comprimento, variou de 115 a 200 segundos nas mesmas medições.
     shap_values = shap_explainer([text])
 
     values = shap_values.values[0, :, POS_IDX]
