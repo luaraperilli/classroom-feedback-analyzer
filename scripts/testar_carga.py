@@ -149,15 +149,30 @@ def um_aluno(url, usuario, senha, disciplina, comentario, aguardar_explicacao):
         return resultado
 
     # Dispara e acompanha como a tela faz, sem segurar a requisição aberta.
+    #
+    # O try é o mesmo que a tela tem: perder a resposta deste pedido não
+    # significa que o cálculo falhou, porque o servidor conclui e grava de
+    # qualquer forma. Sem ele, um comentário longo que demore mais que o tempo
+    # limite viraria falha no relatório, quando na verdade o feedback está
+    # salvo e a explicação chega depois. Foi o que aconteceu na primeira
+    # execução, com os dois comentários de 300 caracteres.
     inicio = time.perf_counter()
-    pedir(url, f'/feedbacks/{corpo["id"]}/explicacao', {}, token=token, timeout=120)
+    try:
+        pedir(url, f'/feedbacks/{corpo["id"]}/explicacao', {}, token=token, timeout=120)
+    except Exception as e:
+        falar(f'  {usuario}: pedido da explicação não respondeu ({e}), passando a consultar')
 
     for _ in range(60):
-        st, lista = pedir(url, '/my-feedbacks', token=token)
-        atual = next((f for f in (lista or []) if f['id'] == corpo['id']), None)
-        if atual and (atual.get('token_attributions') or atual.get('shap_attributions')):
-            resultado['explicacao'] = time.perf_counter() - inicio
-            return resultado
+        try:
+            st, lista = pedir(url, '/my-feedbacks', token=token, timeout=60)
+            atual = next((f for f in (lista or []) if f['id'] == corpo['id']), None)
+            if atual and (atual.get('token_attributions') or atual.get('shap_attributions')):
+                resultado['explicacao'] = time.perf_counter() - inicio
+                return resultado
+        except Exception:
+            # Falha de rede numa consulta não encerra o acompanhamento, pelo
+            # mesmo motivo: o cálculo segue do lado do servidor.
+            pass
         time.sleep(10)
 
     resultado['explicacao'] = None
@@ -205,11 +220,13 @@ def main():
             for i, (usuario, senha) in enumerate(contas)
         ]
         resultados = []
-        for f in futuros:
+        for (usuario, _), f in zip(contas, futuros):
             try:
                 resultados.append(f.result())
             except Exception as e:
-                resultados.append({'usuario': '?', 'erro': str(e)})
+                # Guarda o nome de quem falhou. Sem isso, a linha vinha como "?"
+                # e não dava para cruzar com o que já tinha sido gravado.
+                resultados.append({'usuario': usuario, 'erro': str(e)})
     total = time.perf_counter() - inicio
 
     print(f'\n{"aluno":12s} {"chars":>6} {"login":>8} {"envio":>8} {"explicação":>11}   situação')
