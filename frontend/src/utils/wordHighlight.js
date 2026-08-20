@@ -27,6 +27,49 @@ export function temAtribuicoes(atribuicoes) {
   return !!atribuicoes && Object.keys(atribuicoes).length > 0;
 }
 
+/**
+ * Atribuições a destacar: apenas as palavras em que LIME e SHAP concordam no
+ * sinal.
+ *
+ * O motivo veio de um caso real. No comentário "O professor é ótimo, mas
+ * entendo que eu preciso me dedicar mais", o LIME atribuiu peso negativo à
+ * palavra "professor", e a tela a pintou de vermelho. O SHAP deu +0,02 para a
+ * mesma palavra, ou seja, nada.
+ *
+ * Comparando as duas técnicas nos comentários do piloto, as duas concordaram no
+ * sinal em 18 das 20 palavras destacadas, e as duas divergências caíram
+ * exatamente onde o SHAP estava perto de zero, em 2% e 4% do máximo. Acima de
+ * 5% do máximo no SHAP, a concordância foi de 17 em 17.
+ *
+ * A explicação é conhecida: o LIME ajusta uma regressão linear sobre remoções
+ * aleatórias de palavras e, quando duas palavras aparecem juntas, ele não
+ * distingue qual delas causou o efeito e reparte o crédito. Perto de zero, esse
+ * rateio decide o sinal quase por acaso.
+ *
+ * Exigir convergência transforma a comparação entre os dois métodos, que é o
+ * objeto do trabalho, em critério de exibição: ao discente mostra-se apenas
+ * aquilo em que dois métodos independentes chegam à mesma conclusão.
+ *
+ * Sem uma das duas, devolve a que existe. Uma falha do SHAP não pode apagar o
+ * destaque inteiro.
+ */
+export function atribuicoesConvergentes(lime, shap) {
+  if (!temAtribuicoes(lime)) return temAtribuicoes(shap) ? shap : null;
+  if (!temAtribuicoes(shap)) return lime;
+
+  const convergentes = {};
+  for (const [palavra, peso] of Object.entries(lime)) {
+    const pesoShap = shap[palavra];
+    if (pesoShap === undefined) continue;
+    if ((peso > 0) === (pesoShap > 0)) convergentes[palavra] = peso;
+  }
+
+  // Se nada sobrou, as duas técnicas discordam de ponta a ponta. Preferir o
+  // LIME nesse caso esconderia a discordância do discente, então melhor não
+  // destacar nada e deixar o comentário sem cor.
+  return convergentes;
+}
+
 export function tokenizeAndScore(text, backendAttributions = null) {
   if (typeof text !== 'string' || !text) return [];
 

@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { getMyFeedbacks, getSubjects, deleteMyFeedback, gerarExplicacao } from '../../services/api';
 import { getSentimentLabel } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
-import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
+import { tokenizeAndScore, temAtribuicoes, atribuicoesConvergentes } from '../../utils/wordHighlight';
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 import Tooltip from '../../components/Tooltip';
 import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
@@ -297,7 +297,7 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
   const label = getSentimentLabel(fb.compound);
   const meta  = SENTIMENT_META[label];
   const date  = new Date(fb.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  const attributions = fb.token_attributions || fb.shap_attributions;
+  const attributions = atribuicoesConvergentes(fb.token_attributions, fb.shap_attributions);
 
   return (
     <div
@@ -680,7 +680,10 @@ function StudentHistory() {
                   key={temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions)
                     ? 'com-destaque' : 'sem-destaque'}
                   text={latestFeedback.additional_comment}
-                  tokenAttributions={latestFeedback.token_attributions || latestFeedback.shap_attributions}
+                  tokenAttributions={atribuicoesConvergentes(
+                    latestFeedback.token_attributions,
+                    latestFeedback.shap_attributions,
+                  )}
                 />
               </blockquote>
               {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
