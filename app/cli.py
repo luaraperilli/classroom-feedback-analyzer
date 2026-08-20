@@ -343,8 +343,65 @@ def calcular_explicacoes():
     click.echo('\nPronto. Recarregue "Minhas Avaliações".')
 
 
+@click.command('apagar-contas-de-teste')
+@click.option('--prefixo', required=True,
+              help='Apaga os alunos cujo usuário começa assim. Ex.: valid, carga.')
+@click.option('--sim', is_flag=True, help='Executa sem perguntar.')
+@with_appcontext
+def apagar_contas_de_teste(prefixo, sim):
+    """Remove contas de teste e tudo o que elas produziram.
+
+    Existe porque a bateria de aceitação precisa de contas recém-criadas, com
+    senha provisória e consentimento pendente, então repetir a bateria exige
+    apagar e recriar. Fazer isso pelo SQL do Supabase a cada rodada é
+    trabalhoso e arriscado, e um DELETE digitado com pressa não distingue conta
+    de teste de participante real.
+
+    Recusa prefixos curtos e só apaga contas de aluno, para que um engano de
+    digitação não alcance a turma. E mostra o que vai apagar antes de apagar.
+    """
+    from .models import Feedback, StudentRiskAnalysis
+
+    prefixo = (prefixo or '').strip()
+    if len(prefixo) < 4:
+        click.echo('Use um prefixo de pelo menos 4 letras. Prefixo curto alcança '
+                   'conta de participante por acidente.')
+        return
+
+    contas = (User.query
+              .filter(User.role == User.ALUNO)
+              .filter(User.username.like(f'{prefixo}%'))
+              .order_by(User.username)
+              .all())
+
+    if not contas:
+        click.echo(f'Nenhuma conta de aluno começando com "{prefixo}".')
+        return
+
+    ids = [c.id for c in contas]
+    feedbacks = Feedback.query.filter(Feedback.student_id.in_(ids)).count()
+
+    click.echo(f'\n{len(contas)} conta(s) e {feedbacks} feedback(s) serão apagados:')
+    for c in contas:
+        quantos = Feedback.query.filter_by(student_id=c.id).count()
+        click.echo(f'  {c.username:20s} {quantos} feedback(s)')
+
+    if not sim and not click.confirm('\nApagar tudo isso?'):
+        click.echo('Nada foi apagado.')
+        return
+
+    StudentRiskAnalysis.query.filter(StudentRiskAnalysis.student_id.in_(ids)).delete(
+        synchronize_session=False)
+    Feedback.query.filter(Feedback.student_id.in_(ids)).delete(synchronize_session=False)
+    User.query.filter(User.id.in_(ids)).delete(synchronize_session=False)
+    db.session.commit()
+
+    click.echo(f'\nPronto. {len(contas)} conta(s) e {feedbacks} feedback(s) apagados.')
+
+
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
                     criar_aluno, criar_alunos, vincular_professor, listar_usuarios,
-                    redefinir_senha, resetar_consentimento, calcular_explicacoes):
+                    redefinir_senha, resetar_consentimento, calcular_explicacoes,
+                    apagar_contas_de_teste):
         app.cli.add_command(comando)
