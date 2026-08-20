@@ -8,6 +8,7 @@ import { tokenizeAndScore, temAtribuicoes } from '../../utils/wordHighlight';
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 import Tooltip from '../../components/Tooltip';
 import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
+import ProgressoDaAnalise from '../../components/ProgressoDaAnalise';
 import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
@@ -398,6 +399,7 @@ function StudentHistory() {
   // indefinidamente, cada repetição custando minutos de servidor.
   const explicacoesTentadas = useRef(new Set());
   const [erroExplicacao, setErroExplicacao] = useState(null);
+  const [inicioDaAnalise, setInicioDaAnalise] = useState(null);
 
   useEffect(() => {
     if (state?.latest) navigate('/historico', { replace: true, state: null });
@@ -485,6 +487,10 @@ function StudentHistory() {
         // O servidor avisa quando outro pedido já está calculando este mesmo
         // feedback. Nesse caso não há resultado ainda, e só resta acompanhar.
         if (resposta?.explicacao_em_processamento) {
+          // Guardado à parte, e não em recemEnviado, porque alterar recemEnviado
+          // reexecutaria este efeito e a trava por id o encerraria antes de
+          // retomar a consulta, deixando a tela esperando para sempre.
+          setInicioDaAnalise(resposta.explicacao_iniciada_em || null);
           consultar(1);
           return;
         }
@@ -680,16 +686,10 @@ function StudentHistory() {
               {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
                 <ExplainabilityLegend onInfo={() => setShowModal(true)} />
               ) : explicando ? (
-                <div className="mt-3 space-y-1">
-                  <p className="flex items-center gap-2 text-sm text-[#475569]">
-                    <Spinner />
-                    Analisando quais palavras mais pesaram no resultado...
-                  </p>
-                  <p className="text-sm text-[#94a3b8] pl-6">
-                    Comentários mais longos levam alguns minutos. O seu feedback já foi
-                    registrado — é só aguardar nesta tela que o destaque aparece aqui.
-                  </p>
-                </div>
+                <ProgressoDaAnalise
+                  inicio={inicioDaAnalise || latestFeedback.explicacao_iniciada_em}
+                  caracteres={(latestFeedback.additional_comment || '').length}
+                />
               ) : erroExplicacao ? (
                 <div className="mt-3 space-y-2">
                   <p className="text-sm text-[#475569]">

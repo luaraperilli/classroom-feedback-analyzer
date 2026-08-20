@@ -187,6 +187,14 @@ class Feedback(db.Model):
             'token_attributions': self.token_attributions,
             'shap_attributions': self.shap_attributions,
             'created_at': self.created_at.isoformat(),
+            # Quando o cálculo da explicação começou. A tela usa este instante
+            # para mostrar o progresso, e por vir do servidor a contagem
+            # sobrevive a recarregamento da página: quem volta depois de dois
+            # minutos vê a barra onde ela realmente está, e não reiniciada.
+            'explicacao_iniciada_em': (
+                self.explicacao_iniciada_em.isoformat()
+                if self.explicacao_iniciada_em else None
+            ),
         }
 
         if incluir_identificacao:
