@@ -7,14 +7,12 @@ import GlobalShapAnalysis from './GlobalShapAnalysis';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects } from '../../services/api';
-import { getSentimentColor } from '../../utils/sentiment';
+import { corDoFeedback } from '../../utils/sentiment';
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 
-const getFeedbackBorderColor = (compound) => {
-  if (compound >= 0.05) return '#0f766e';
-  if (compound <= -0.05) return '#dc2626';
-  return '#64748b';
-};
+// A borda segue o mesmo rótulo do cartão, para que cor e texto não contem
+// histórias diferentes sobre o mesmo comentário.
+const getFeedbackBorderColor = (fb) => corDoFeedback(fb);
 
 function FilterSelect({ id, label, value, onChange, children }) {
   return (
@@ -132,9 +130,9 @@ function MetricPill({ label, value }) {
 function FeedbackCard({ fb }) {
   const [expanded, setExpanded] = useState(false);
   const compound     = fb.compound ?? null;
-  const borderColor  = getFeedbackBorderColor(compound ?? 0);
+  const borderColor  = getFeedbackBorderColor(fb);
   const overallScore = numeroPtBr(fb.overall_score * 4 + 1, 1);
-  const sentimentColor = compound !== null ? getSentimentColor(compound) : '#64748b';
+  const sentimentColor = compound !== null ? corDoFeedback(fb) : '#64748b';
 
   return (
     <div

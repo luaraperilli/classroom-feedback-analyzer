@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getMyFeedbacks, getSubjects, deleteMyFeedback, gerarExplicacao } from '../../services/api';
-import { getSentimentLabel } from '../../utils/sentiment';
+import { getSentimentLabel, rotuloDoFeedback } from '../../utils/sentiment';
 import { translateSubject } from '../../utils/translations';
 import { tokenizeAndScore, temAtribuicoes, atribuicoesConvergentes } from '../../utils/wordHighlight';
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
@@ -24,6 +24,9 @@ const SENTIMENT_META = {
   positivo: { label: 'Positivo', color: '#0f766e', bg: 'bg-[#e6f2f1]', ring: 'ring-[#c5e0dd]', text: 'text-[#0f766e]', dot: 'bg-[#0f766e]' },
   neutro:   { label: 'Neutro',   color: '#64748b', bg: 'bg-slate-50', ring: 'ring-slate-200', text: 'text-[#64748b]', dot: 'bg-[#64748b]' },
   negativo: { label: 'Negativo', color: '#dc2626', bg: 'bg-red-50',   ring: 'ring-red-200',   text: 'text-[#dc2626]', dot: 'bg-[#dc2626]' },
+  // Âmbar, e não verde nem vermelho: o comentário misto não é um meio-termo
+  // entre os dois, é um texto em que os dois convivem sem que um predomine.
+  misto:    { label: 'Misto',    color: '#b45309', bg: 'bg-amber-50', ring: 'ring-amber-200', text: 'text-[#b45309]', dot: 'bg-[#b45309]' },
 };
 
 
@@ -120,9 +123,9 @@ function ExplainabilityLegend({ onInfo }) {
   );
 }
 
-function SentimentBadge({ compound, showScore }) {
-  const label = getSentimentLabel(compound);
-  const meta = SENTIMENT_META[label];
+function SentimentBadge({ feedback, showScore }) {
+  const meta = SENTIMENT_META[rotuloDoFeedback(feedback)];
+  const compound = feedback?.compound;
   return (
     <div className="flex items-center gap-2">
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ring-1 ${meta.bg} ${meta.ring} ${meta.text}`}>
@@ -161,6 +164,7 @@ function SentimentFace({ label, className }) {
     positivo: 'M8.5 14.5a4.5 4.5 0 0 0 7 0',
     neutro:   'M8.5 14.75h7',
     negativo: 'M15.5 15.5a4.5 4.5 0 0 0-7 0',
+    misto:    'M8.5 14.75c1.2-1.2 2.3 1.2 3.5 0s2.3 1.2 3.5 0',
   }[label] || 'M8.5 14.75h7';
   return (
     <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -294,8 +298,8 @@ function countPointsWithData(feedbacks) {
 
 function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
   const [expanded, setExpanded] = useState(defaultOpen);
-  const label = getSentimentLabel(fb.compound);
-  const meta  = SENTIMENT_META[label];
+  const rotulo = rotuloDoFeedback(fb);
+  const meta  = SENTIMENT_META[rotulo];
   const date  = new Date(fb.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   const attributions = atribuicoesConvergentes(fb.token_attributions, fb.shap_attributions);
 
@@ -310,10 +314,10 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
           onClick={() => setExpanded((v) => !v)}
         >
           <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 ${meta.bg} ${meta.ring}`}>
-            <SentimentFace label={label} className={`w-5 h-5 ${meta.text}`} />
+            <SentimentFace label={rotulo} className={`w-5 h-5 ${meta.text}`} />
           </span>
           <span className="text-sm font-semibold text-[#1e293b]">{translateSubject(fb.subject)}</span>
-          <SentimentBadge compound={fb.compound} />
+          <SentimentBadge feedback={fb} />
         </button>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-sm text-[#64748b] mr-1 hidden sm:inline">{date}</span>
@@ -670,7 +674,7 @@ function StudentHistory() {
                 <span className="w-1 h-5 rounded-full bg-primary" />
                 Resultado do Feedback
               </h2>
-              <SentimentBadge compound={latestFeedback.compound} />
+              <SentimentBadge feedback={latestFeedback} />
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-primary/[0.05] to-transparent border border-primary/10 p-4">
               <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">Como suas palavras foram percebidas</p>

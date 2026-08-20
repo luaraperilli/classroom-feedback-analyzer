@@ -1,4 +1,5 @@
 import React from 'react';
+import { rotuloDoFeedback } from '../utils/sentiment';
 import { numeroPtBr, numeroComSinal } from '../utils/numeroPtBr';
 
 const getPercentage = (count, total) =>
@@ -43,9 +44,14 @@ function StatCard({ label, value, color, percentage, showBar, footer }) {
 
 function SentimentSummary({ feedbacks }) {
   const total         = feedbacks.length;
-  const positiveCount = feedbacks.filter((fb) => fb.compound >= 0.05).length;
-  const neutralCount  = feedbacks.filter((fb) => fb.compound > -0.05 && fb.compound < 0.05).length;
-  const negativeCount = feedbacks.filter((fb) => fb.compound <= -0.05).length;
+  // Contagem pelo mesmo rótulo que o aluno e o docente veem nos cartões. Antes
+  // era por faixa de compound, e o resumo podia divergir do que estava escrito
+  // em cada feedback.
+  const conta = (rotulo) => feedbacks.filter((fb) => rotuloDoFeedback(fb) === rotulo).length;
+  const positiveCount = conta('positivo');
+  const neutralCount  = conta('neutro');
+  const negativeCount = conta('negativo');
+  const mixedCount    = conta('misto');
 
   const avg = getAvgCompound(feedbacks);
   const avgLabel = avg !== null
@@ -53,7 +59,7 @@ function SentimentSummary({ feedbacks }) {
     : null;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <StatCard
         label="Total de feedbacks"
         value={total}
@@ -80,6 +86,16 @@ function SentimentSummary({ feedbacks }) {
         value={negativeCount}
         color="#dc2626"
         percentage={getPercentage(negativeCount, total)}
+        showBar
+      />
+      {/* Comentários em que nenhuma classe alcançou a maioria. Vale contá-los
+          à parte porque são justamente aqueles em que a análise em nível de
+          documento não dá conta, e não uma sobra de arredondamento. */}
+      <StatCard
+        label="Mistos"
+        value={mixedCount}
+        color="#b45309"
+        percentage={getPercentage(mixedCount, total)}
         showBar
       />
     </div>
