@@ -452,7 +452,10 @@ function StudentHistory() {
       if (cancelado) return;
 
       if (tentativa > MAXIMO_DE_CONSULTAS) {
-        setErroExplicacao('A análise demorou mais que o esperado.');
+        // Não é erro, é demora. O feedback está gravado desde o envio, e o
+        // cálculo pode estar em andamento ainda. Chamar isso de falha faria o
+        // aluno achar que precisa refazer algo.
+        setErroExplicacao('O destaque das palavras ainda não ficou pronto.');
         setExplicando(false);
         return;
       }
@@ -696,19 +699,23 @@ function StudentHistory() {
               ) : erroExplicacao ? (
                 <div className="mt-3 space-y-2">
                   <p className="text-sm text-[#475569]">
-                    {erroExplicacao} O seu feedback está salvo — só o destaque das
-                    palavras não pôde ser gerado agora.
+                    {erroExplicacao} O seu feedback já foi registrado e está guardado.
+                    Você pode fechar esta página e voltar mais tarde, que o destaque
+                    aparece aqui quando o cálculo terminar.
                   </p>
+                  {/* "Verificar agora" e não "tentar de novo": não há nada para o
+                      aluno refazer, o envio dele já foi aceito. O botão apenas
+                      consulta o servidor antes da próxima consulta automática. */}
                   <button
                     onClick={tentarExplicarDeNovo}
                     className="text-sm font-semibold text-primary hover:text-primary-dark transition"
                   >
-                    Tentar de novo
+                    Verificar agora
                   </button>
                 </div>
               ) : (
                 <p className="text-sm text-[#64748b] mt-3">
-                  A explicação deste comentário não está disponível.
+                  O destaque por palavra não está disponível para este comentário.
                 </p>
               )}
             </div>

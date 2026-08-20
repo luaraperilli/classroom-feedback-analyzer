@@ -65,7 +65,7 @@ export default function AnalyzingModal() {
 
         <p className="text-sm text-[#94a3b8] mt-4 leading-snug">
           {demorando
-            ? `O servidor está acordando — isso acontece no primeiro acesso do dia (${segundos}s).`
+            ? `Está levando um pouco mais que o normal (${segundos}s). Pode aguardar, o seu envio está a caminho.`
             : 'Leva alguns segundos.'}
         </p>
       </div>

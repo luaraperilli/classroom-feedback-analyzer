@@ -108,14 +108,35 @@ def _predict_proba(texts):
     # comprimento máximo. Ordenados, cada lote paga o próprio tamanho. A conta do
     # modelo não muda: as posições de padding já eram anuladas pela máscara de
     # atenção, e o resultado volta na ordem original em que os textos chegaram.
-    ordem = sorted(range(len(textos)), key=lambda i: len(textos[i]))
+    # Antes disso, descarta texto repetido. O LIME sorteia quantas palavras
+    # remover e depois quais, e num comentário curto o número de combinações
+    # possíveis é bem menor que as 5.000 amostras pedidas, então o mesmo texto
+    # reaparece muitas vezes. Medido por simulação do sorteio: um comentário de
+    # 10 palavras gera 945 textos distintos em 5.000 amostras, ou seja, 81% do
+    # trabalho é repetição pura. Com 5 palavras chega a 99%.
+    #
+    # Texto igual produz saída igual, então calcular uma vez e copiar o
+    # resultado para as posições repetidas é exato, e não aproximação.
+    posicoes_por_texto = {}
+    for i, texto in enumerate(textos):
+        posicoes_por_texto.setdefault(texto, []).append(i)
+    distintos = list(posicoes_por_texto)
+
+    # Agrupa textos de comprimento parecido antes de formar os lotes. O padding
+    # leva todo o lote ao tamanho do maior elemento, e as perturbações do LIME
+    # vão de poucas palavras até o comentário inteiro. Em ordem aleatória quase
+    # todo lote contém uma perturbação longa, então até os textos curtos pagam o
+    # comprimento máximo. Ordenados, cada lote paga o próprio tamanho. A conta do
+    # modelo não muda: as posições de padding já eram anuladas pela máscara de
+    # atenção, e o resultado volta na ordem original em que os textos chegaram.
+    ordem = sorted(range(len(distintos)), key=lambda i: len(distintos[i]))
 
     saida = np.empty((len(textos), len(CLASSES)))
     for inicio in range(0, len(ordem), TAMANHO_DO_LOTE):
         indices = ordem[inicio:inicio + TAMANHO_DO_LOTE]
 
         entrada = _tokenizador(
-            [textos[i] for i in indices],
+            [distintos[i] for i in indices],
             return_tensors='pt',
             padding=True,
             truncation=True,
@@ -123,8 +144,10 @@ def _predict_proba(texts):
         ).to(_dispositivo)
 
         logits = _modelo(**entrada).logits
-        probabilidades = torch.softmax(logits, dim=-1).float().cpu().numpy()
-        saida[indices] = probabilidades[:, _COLUNAS]
+        probabilidades = torch.softmax(logits, dim=-1).float().cpu().numpy()[:, _COLUNAS]
+
+        for linha, i in enumerate(indices):
+            saida[posicoes_por_texto[distintos[i]]] = probabilidades[linha]
 
     return saida
 

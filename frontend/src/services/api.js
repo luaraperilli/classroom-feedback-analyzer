@@ -72,7 +72,12 @@ const request = async (endpoint, options = {}) => {
     response = await enviar(endpoint, { body, token, method, timeoutMs });
   } catch (erro) {
     if (erro.name === 'AbortError') {
-      throw new ApiError('O servidor está demorando mais que o normal. Tente novamente.', 0);
+      // Sem "tente novamente" aqui. Esta mensagem serve a todas as rotas, e em
+      // algumas delas o trabalho continua do lado do servidor depois que a
+      // resposta se perde. Pedir nova tentativa nesses casos leva o aluno a
+      // refazer algo que já deu certo. Cada tela acrescenta a orientação certa
+      // depois de conferir o que de fato aconteceu.
+      throw new ApiError('O servidor está demorando para responder.', 0);
     }
     throw new ApiError('Erro de conexão. Verifique sua rede.', 0);
   }
