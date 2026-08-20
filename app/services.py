@@ -193,12 +193,31 @@ def explain_sentiment_lime(text: str) -> dict:
     if not pesos:
         return {}
 
+    # Soma as ocorrências da mesma palavra escrita em caixas diferentes, antes
+    # de normalizar.
+    #
+    # O LIME trata "Não" e "não" como atributos distintos, porque separa o texto
+    # sem uniformizar a caixa. A versão anterior passava tudo para minúscula
+    # dentro de um dicionário, e a segunda ocorrência sobrescrevia a primeira em
+    # silêncio. No feedback 14 do piloto isso apagou justamente a palavra de
+    # maior peso: sobraram nove palavras em vez de dez e o máximo ficou em
+    # 0,6084, quando a normalização deveria garantir 1,0. Ou seja, a atribuição
+    # mais forte do comentário desaparecia e a escala de cor encolhia junto.
+    #
+    # Somar é o mesmo tratamento que explain_sentiment_shap já dava aos tokens
+    # repetidos, e corresponde à contribuição total daquela palavra no texto,
+    # independentemente de como foi grafada.
+    combinados = {}
+    for palavra, peso in pesos:
+        chave = palavra.lower()
+        combinados[chave] = combinados.get(chave, 0.0) + peso
+
     # Normaliza pelo maior peso absoluto do comentário: os coeficientes da
     # regressão local ficam em [-1, 1] sem mudar ranking nem sinal. É o que
     # permite ao destaque na tela usar toda a faixa de intensidade da cor.
-    maior = max(abs(peso) for _, peso in pesos) or 1.0
+    maior = max(abs(peso) for peso in combinados.values()) or 1.0
 
-    return {palavra.lower(): round(peso / maior, 4) for palavra, peso in pesos}
+    return {palavra: round(peso / maior, 4) for palavra, peso in combinados.items()}
 
 def explain_sentiment_shap(text: str) -> dict:
     if not isinstance(text, str) or not text.strip():
