@@ -15,6 +15,14 @@ vínculo institucional logo na abertura, e remoção do jargão "marco didático
 que é vocabulário do projeto e não do aluno. A descrição da ferramenta foi
 mantida, e encurtada, porque essa explicação não existe em nenhum outro lugar
 que o participante vá ler.
+
+Versão 3.0 — dois tratamentos novos passaram a existir e precisavam ser
+declarados. O e-mail, opcional, para avisar quando a análise fica pronta. E a
+retirada de uma resposta, que deixou de apagar o registro: ela sai da vista do
+aluno e de toda análise, mas fica gravado que houve retirada e quando. A seção
+de direitos foi reescrita porque a promessa anterior, de que apagar apagava,
+passaria a ser falsa. A eliminação completa continua disponível pelo Perfil, e
+agora é ela que o texto aponta para quem quiser exercer esse direito.
 """
 
 VERSAO_DO_TERMO = '3.0'

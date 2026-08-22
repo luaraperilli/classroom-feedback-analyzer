@@ -56,6 +56,10 @@ function ProfilePage() {
         first_name:   data.first_name,
         last_name:    data.last_name,
         display_name: data.display_name,
+        // Sem o e-mail aqui, a tela do resultado continuaria dizendo para
+        // cadastrar um endereço mesmo depois de o aluno ter acabado de
+        // cadastrar, até ele sair e entrar de novo.
+        email:        data.email,
       });
       setCurrentPassword('');
       setNewPassword('');
