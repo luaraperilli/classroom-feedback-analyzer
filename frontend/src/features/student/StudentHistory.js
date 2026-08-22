@@ -162,7 +162,7 @@ function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
       </p>
       <p className="text-sm text-[#334155] leading-relaxed">
         {comEmail
-          ? 'Você recebe um e-mail quando ficar pronta. Aí é só entrar de novo e abrir este feedback no histórico.'
+          ? 'Você recebe um e-mail quando ficar pronta, e ele pode cair no lixo eletrônico — vale olhar lá. De qualquer forma, ela aparece aqui no histórico assim que terminar.'
           : 'Quando ficar pronta, ela aparece no histórico. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
       </p>
       <button

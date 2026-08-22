@@ -54,6 +54,8 @@ def _corpo(nome, disciplina):
         f'A análise do comentário que você enviou em {disciplina} ficou pronta.\n\n'
         f'Você pode ver quais palavras mais pesaram no resultado entrando no sistema, '
         f'em Minhas Avaliações:\n{ENDERECO_DO_SISTEMA}\n\n'
+        f'Se esta mensagem tiver caído no lixo eletrônico, marque como "não é spam" '
+        f'para receber as próximas na caixa de entrada.\n\n'
         f'Este aviso é automático e o seu e-mail não é usado para mais nada. '
         f'Se quiser deixar de recebê-lo, apague o endereço no seu Perfil.\n\n'
         f'Voz Discente\n'
@@ -74,10 +76,24 @@ def avisar_explicacao_pronta(destinatario, nome, disciplina):
         logger.warning('SMTP não configurado, aviso para %s não enviado.', destinatario)
         return False
 
+    conta = os.environ['SMTP_USUARIO']
+
     mensagem = EmailMessage()
     mensagem['Subject'] = 'A análise do seu comentário ficou pronta'
-    mensagem['From'] = os.environ.get('SMTP_REMETENTE') or os.environ['SMTP_USUARIO']
+    mensagem['From'] = os.environ.get('SMTP_REMETENTE') or conta
     mensagem['To'] = destinatario
+
+    # Cabeçalhos que reduzem a chance de o filtro tratar isto como mala direta.
+    # Não são garantia — o primeiro teste caiu no lixo eletrônico do Hotmail —
+    # mas um remetente sem Reply-To e sem forma declarada de descadastro pontua
+    # pior em todos os filtros grandes.
+    #
+    # O List-Unsubscribe aponta para o próprio remetente porque não há endpoint
+    # público de descadastro: o aluno se descadastra apagando o endereço no
+    # Perfil, e o corpo diz isso. O cabeçalho existe para o filtro, e a resposta
+    # chega a uma caixa que é lida.
+    mensagem['Reply-To'] = conta
+    mensagem['List-Unsubscribe'] = f'<mailto:{conta}?subject=Descadastrar>'
     mensagem.set_content(_corpo(nome, disciplina))
 
     try:
