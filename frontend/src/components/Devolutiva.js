@@ -67,7 +67,8 @@ export default function Devolutiva({ feedback }) {
         ))}
         {!d.temExplicacao && (
           <p className="text-sm text-[#94a3b8] leading-relaxed">
-            As palavras que mais pesaram aparecem aqui assim que a análise ficar pronta.
+            As cores que mostram o peso de cada palavra aparecem no seu comentário assim que a
+            análise ficar pronta.
           </p>
         )}
       </section>

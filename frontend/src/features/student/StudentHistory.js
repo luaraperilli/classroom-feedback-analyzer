@@ -120,7 +120,7 @@ function AnaliseEmPreparo({ comEmail }) {
   return (
     <div className="mt-3 rounded-xl border border-[#cfe0da] bg-bg px-4 py-3 space-y-1.5">
       <p className="text-sm font-semibold text-[#1e293b]">
-        A análise do seu comentário está sendo preparada
+        A análise deste comentário ainda está sendo preparada
       </p>
       <p className="text-sm text-[#475569] leading-relaxed">
         Descobrir quais palavras mais pesaram no resultado exige repetir a leitura do
@@ -129,9 +129,46 @@ function AnaliseEmPreparo({ comEmail }) {
       </p>
       <p className="text-sm text-[#475569] leading-relaxed">
         {comEmail
-          ? 'Você vai receber um e-mail quando ficar pronta, e o destaque aparece aqui no seu histórico.'
-          : 'O destaque aparece aqui no seu histórico quando ficar pronto. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
+          ? 'Você vai receber um e-mail quando ficar pronta, e as cores aparecem aqui.'
+          : 'As cores aparecem aqui quando ficar pronta. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Agradecimento do envio recém-feito.
+ *
+ * Substituiu um cartão que repetia o feedback inteiro no topo enquanto ele
+ * também aparecia no histórico logo abaixo. Eram duas versões do mesmo envio na
+ * mesma tela, e a de cima ainda se chamava "Resultado do Feedback" antes de
+ * existir resultado nenhum. Aqui só se confirma o recebimento; o feedback em si
+ * mora num lugar só, o histórico, aberto no primeiro item.
+ */
+function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
+  return (
+    <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-3">
+      <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
+        <span className="w-1 h-5 rounded-full bg-primary" />
+        Obrigada pelo seu feedback
+      </h2>
+      <p className="text-sm text-[#475569] leading-relaxed">
+        <strong className="font-semibold text-[#1e293b]">Ele já está registrado</strong> e
+        aparece logo abaixo, no seu histórico. A análise de quais palavras mais pesaram
+        leva alguns minutos e continua sendo feita mesmo se você fechar esta página.
+      </p>
+      <p className="text-sm text-[#475569] leading-relaxed">
+        {comEmail
+          ? 'Você recebe um e-mail quando ficar pronta. Aí é só entrar de novo e abrir este feedback no histórico.'
+          : 'Quando ficar pronta, ela aparece no histórico. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
+      </p>
+      <button
+        onClick={onAvaliarNovamente}
+        className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#475569]
+                   hover:bg-bg transition font-medium"
+      >
+        Avaliar Novamente
+      </button>
     </div>
   );
 }
@@ -150,24 +187,6 @@ function SentimentBadge({ feedback, showScore }) {
           {numeroComSinal(compound, 2)}
         </span>
       )}
-    </div>
-  );
-}
-
-function ScoreBar({ score }) {
-  const pct = Math.round(score * 100);
-  const color = score >= 0.6 ? '#0f766e' : score >= 0.4 ? '#f59e0b' : '#dc2626';
-  const display = numeroPtBr(score * 4 + 1, 1);
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-      <Tooltip texto="Média das suas respostas às seis perguntas, na mesma escala de 1 a 5 do questionário.">
-        <span className="text-sm font-semibold min-w-[3rem] text-right cursor-help" style={{ color }}>
-          {display}/5
-        </span>
-      </Tooltip>
     </div>
   );
 }
@@ -309,7 +328,7 @@ function countPointsWithData(feedbacks) {
   return feedbacks.filter((fb) => fb.overall_score !== null && fb.overall_score !== undefined).length;
 }
 
-function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
+function FeedbackCard({ fb, defaultOpen, comEmail, onInfo, onRequestDelete }) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const rotulo = rotuloDoFeedback(fb);
   const meta  = SENTIMENT_META[rotulo];
@@ -358,29 +377,43 @@ function FeedbackCard({ fb, defaultOpen, onInfo, onRequestDelete }) {
         </div>
       </div>
 
+      {/* 0fr/1fr anima até a altura real do conteúdo. O maxHeight fixo que havia
+          aqui foi dimensionado para um cartão que só tinha o comentário e uma
+          barra; com a devolutiva inteira dentro, ele cortaria o fim do texto. */}
       <div
-        className="overflow-hidden transition-all duration-300"
-        style={{ maxHeight: expanded ? '900px' : '0px', opacity: expanded ? 1 : 0 }}
+        className="grid transition-all duration-300"
+        style={{ gridTemplateRows: expanded ? '1fr' : '0fr', opacity: expanded ? 1 : 0 }}
       >
-        <div className="px-5 pb-5 space-y-4 border-t border-slate-50 pt-4">
-          {fb.additional_comment && (
-            <div className="rounded-2xl bg-gradient-to-br from-primary/[0.05] to-transparent border border-primary/10 p-4">
-              <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">Como suas palavras foram percebidas</p>
-              <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-white rounded-xl px-4 py-3 border border-[#cfe0da]">
-                <HighlightedText text={fb.additional_comment} tokenAttributions={attributions} />
-              </blockquote>
-              {temAtribuicoes(attributions) ? (
-                <ExplainabilityLegend onInfo={onInfo} />
-              ) : (
-                <p className="text-sm text-[#64748b] mt-3">
-                  A explicação deste comentário não está disponível.
-                </p>
-              )}
-            </div>
-          )}
-          <div>
-            <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide mb-2">Avaliação Geral da Aula</p>
-            <ScoreBar score={fb.overall_score} />
+        <div className="overflow-hidden">
+          <div className="px-5 pb-5 space-y-4 border-t border-slate-50 pt-4">
+            {fb.additional_comment && (
+              <div className="rounded-2xl bg-gradient-to-br from-primary/[0.05] to-transparent border border-primary/10 p-4">
+                <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">Como suas palavras foram percebidas</p>
+                <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-white rounded-xl px-4 py-3 border border-[#cfe0da]">
+                  {/* A chave muda quando o destaque chega, forçando o React a
+                      trocar a subárvore inteira em vez de remendá-la palavra a
+                      palavra. Reduz a chance de conflito com extensões que
+                      reescrevem o texto da página, como tradutores. */}
+                  <HighlightedText
+                    key={temAtribuicoes(attributions) ? 'com-destaque' : 'sem-destaque'}
+                    text={fb.additional_comment}
+                    tokenAttributions={attributions}
+                  />
+                </blockquote>
+                {temAtribuicoes(attributions) ? (
+                  <ExplainabilityLegend onInfo={onInfo} />
+                ) : (
+                  <AnaliseEmPreparo comEmail={comEmail} />
+                )}
+              </div>
+            )}
+
+            {/* A devolutiva vem logo depois do comentário destacado, porque é ela
+                que junta as duas origens que antes apareciam como números soltos
+                e pareciam se contradizer. Substitui a barra de nota que ficava
+                aqui: a nota reaparece dentro dela, agora com a frase que explica
+                de onde vem. */}
+            <Devolutiva feedback={fb} />
           </div>
         </div>
       </div>
@@ -471,15 +504,11 @@ function StudentHistory() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [recemEnviado]);
 
-  const latestFeedback  = recemEnviado ?? (feedbacks.length > 0 ? feedbacks[feedbacks.length - 1] : null);
-
-  // O envio recém-feito já aparece inteiro no cartão de resultado, no topo.
-  // Repeti-lo no histórico logo abaixo mostrava o mesmo comentário duas vezes,
-  // e a segunda ainda dizia "explicação indisponível" enquanto a primeira
-  // estava calculando — duas versões do mesmo feedback se contradizendo.
-  const historico = [...feedbacks]
-    .reverse()
-    .filter((fb) => fb.id !== recemEnviado?.id);
+  // O histórico é a única lista: o envio recém-feito entra nele como qualquer
+  // outro, aberto por ser o primeiro. Antes ele era removido daqui e exibido de
+  // novo num cartão no topo, e o mesmo comentário aparecia duas vezes na tela,
+  // uma delas dizendo "explicação indisponível" enquanto a outra calculava.
+  const historico = [...feedbacks].reverse();
   const pointsWithData  = countPointsWithData(feedbacks);
 
   const displayName = user?.first_name
@@ -590,52 +619,12 @@ function StudentHistory() {
           </div>
         )}
 
-        {/* Resultado do feedback recém-enviado — fica no topo para ser a primeira coisa vista */}
+        {/* Confirmação do envio recém-feito. O feedback em si está no histórico. */}
         {recemEnviado && (
-          <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
-                <span className="w-1 h-5 rounded-full bg-primary" />
-                Resultado do Feedback
-              </h2>
-              <SentimentBadge feedback={latestFeedback} />
-            </div>
-            <div className="rounded-2xl bg-gradient-to-br from-primary/[0.05] to-transparent border border-primary/10 p-4">
-              <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">Como suas palavras foram percebidas</p>
-              <blockquote className="text-sm text-[#1e293b] leading-relaxed bg-white rounded-xl px-4 py-3 border border-[#cfe0da]">
-                {/* A chave muda quando o destaque chega, forçando o React a
-                    trocar a subárvore inteira em vez de remendá-la palavra a
-                    palavra. Reduz a chance de conflito com extensões que
-                    reescrevem o texto da página, como tradutores. */}
-                <HighlightedText
-                  key={temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions)
-                    ? 'com-destaque' : 'sem-destaque'}
-                  text={latestFeedback.additional_comment}
-                  tokenAttributions={atribuicoesConvergentes(
-                    latestFeedback.token_attributions,
-                    latestFeedback.shap_attributions,
-                  )}
-                />
-              </blockquote>
-              {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
-                <ExplainabilityLegend onInfo={() => setShowModal(true)} />
-              ) : (
-                <AnaliseEmPreparo comEmail={!!user?.email} />
-              )}
-            </div>
-
-            {/* A devolutiva em texto vem logo depois do comentário destacado,
-                porque é ela que junta as duas origens que antes apareciam como
-                números soltos e pareciam se contradizer. */}
-            <Devolutiva feedback={latestFeedback} />
-            <button
-              onClick={() => navigate('/')}
-              className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#475569]
-                         hover:bg-bg transition font-medium"
-            >
-              Avaliar Novamente
-            </button>
-          </div>
+          <EnvioConfirmado
+            comEmail={!!user?.email}
+            onAvaliarNovamente={() => navigate('/')}
+          />
         )}
 
         {isLoading && <Skeleton />}
@@ -705,13 +694,15 @@ function StudentHistory() {
               <span className="text-sm text-[#64748b]">{feedbacks.length} registro{feedbacks.length !== 1 ? 's' : ''}</span>
             </div>
             <p className="text-sm text-[#64748b]">
-              Toque em um feedback para ver quais palavras do seu comentário mais pesaram no resultado.
+              Toque em um feedback para ver o resultado dele por inteiro, com as cores que mostram
+              quais palavras do seu comentário mais pesaram.
             </p>
             {historico.map((fb, idx) => (
               <FeedbackCard
                 key={fb.id}
                 fb={fb}
-                defaultOpen={idx === 0 && !recemEnviado}
+                defaultOpen={idx === 0}
+                comEmail={!!user?.email}
                 onInfo={() => setShowModal(true)}
                 onRequestDelete={setConfirmDeleteId}
               />

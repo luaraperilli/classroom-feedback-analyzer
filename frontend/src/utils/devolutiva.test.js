@@ -1,5 +1,5 @@
 import {
-  CORTE, DIMENSOES, avaliarDimensoes, palavrasDeDestaque,
+  CORTE, DIMENSOES, avaliarDimensoes, temDestaque,
   frasesDoComentario, fraseDeLigacao, sugestao, montarDevolutiva,
 } from './devolutiva';
 
@@ -65,17 +65,48 @@ describe('frase sobre o comentário', () => {
     expect(primeira).toContain('neutro');
   });
 
-  it('nomeia as palavras dos dois lados quando existem', () => {
+  it('remete às cores em vez de listar palavras', () => {
     const fb = {
       ...notas(3, 3, 3), ...MISTO,
-      token_attributions: { 'ótimo': 1.0, mas: -0.5, professor: -0.15 },
-      shap_attributions: { 'ótimo': 0.5, mas: -0.2, professor: 0.02 },
+      token_attributions: { 'incrível': 1.0, amei: 0.6, o: 0.4, burra: -0.8, mas: -0.5 },
+      shap_attributions: { 'incrível': 0.5, amei: 0.3, o: 0.2, burra: -0.4, mas: -0.2 },
     };
     const frases = frasesDoComentario(fb);
-    expect(frases[1]).toContain('ótimo');
-    expect(frases[1]).toContain('mas');
-    // "professor" diverge entre as técnicas, então não deve ser citada.
-    expect(frases[1]).not.toContain('professor');
+    expect(frases[1]).toContain('cores');
+    expect(frases[1]).toContain('verde');
+    expect(frases[1]).toContain('vermelho');
+  });
+
+  it('não devolve ao aluno nenhuma palavra do comentário dele', () => {
+    // A lista antiga produzia "pesaram para o lado positivo incrível, amei e o",
+    // exibindo palavra de função como se fosse o motivo do resultado, e
+    // recortando a autocrítica de quem escreveu.
+    const fb = {
+      ...notas(3, 3, 3), ...MISTO,
+      token_attributions: { 'incrível': 1.0, amei: 0.6, o: 0.4, burra: -0.8, mas: -0.5 },
+      shap_attributions: { 'incrível': 0.5, amei: 0.3, o: 0.2, burra: -0.4, mas: -0.2 },
+    };
+    const texto = frasesDoComentario(fb).join(' ');
+    ['incrível', 'amei', 'burra'].forEach((palavra) => {
+      expect(texto).not.toContain(palavra);
+    });
+  });
+
+  it('não fala em cor nenhuma antes de o destaque existir', () => {
+    const texto = frasesDoComentario({ ...notas(3, 3, 3), ...MISTO }).join(' ');
+    expect(texto).not.toContain('cores');
+  });
+
+  it('não promete destaque quando as duas técnicas divergem em tudo', () => {
+    // Sobrando zero palavra convergente, não há o que colorir, e mandar o aluno
+    // olhar para cores que não existem é pior do que não dizer nada.
+    const fb = {
+      ...notas(3, 3, 3), ...MISTO,
+      token_attributions: { professor: -0.9 },
+      shap_attributions: { professor: 0.9 },
+    };
+    expect(temDestaque(fb)).toBe(false);
+    expect(frasesDoComentario(fb).join(' ')).not.toContain('cores');
   });
 
   it('não menciona nenhuma técnica ao aluno', () => {

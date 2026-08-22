@@ -66,19 +66,27 @@ export function avaliarDimensoes(feedback) {
   }).filter(Boolean);
 }
 
-/** As palavras mais fortes de cada lado, entre as que LIME e SHAP confirmam. */
-export function palavrasDeDestaque(feedback, quantas = 3) {
+/**
+ * Existe destaque colorido para o aluno olhar no comentário logo acima?
+ *
+ * Esta função devolvia as palavras em si, e o texto as listava: "pesaram para o
+ * lado positivo incrível, amei e o". Foi retirado por dois motivos.
+ *
+ * O primeiro é de método. O classificador atribui peso a palavras de função
+ * tanto quanto a palavras de conteúdo, e é esperado que atribua: em português o
+ * "não" e o "mas" carregam a polaridade da oração inteira. Só que, listadas
+ * fora da frase, essas palavras aparecem como se fossem o motivo do resultado,
+ * e isso desmente a explicação em vez de sustentá-la. O destaque colorido mostra
+ * exatamente as mesmas atribuições sem esse efeito, porque cada palavra continua
+ * no lugar onde faz sentido.
+ *
+ * O segundo é de cuidado. O comentário é sobre a própria experiência do aluno, e
+ * a lista devolvia a autocrítica dele recortada e em negrito.
+ */
+export function temDestaque(feedback) {
   const pesos = atribuicoesConvergentes(feedback?.token_attributions,
                                         feedback?.shap_attributions);
-  if (!pesos) return { positivas: [], negativas: [] };
-
-  const ordenar = (filtro) => Object.entries(pesos)
-    .filter(([, v]) => filtro(v))
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .slice(0, quantas)
-    .map(([palavra]) => palavra);
-
-  return { positivas: ordenar((v) => v > 0), negativas: ordenar((v) => v < 0) };
+  return !!pesos && Object.keys(pesos).length > 0;
 }
 
 const lista = (itens, conector = 'e') => {
@@ -98,7 +106,6 @@ const pct = (v) => `${Math.round((v || 0) * 100)}%`;
  */
 export function frasesDoComentario(feedback) {
   const rotulo = rotuloDoFeedback(feedback);
-  const { positivas, negativas } = palavrasDeDestaque(feedback);
   const frases = [];
 
   if (rotulo === 'positivo') {
@@ -111,12 +118,8 @@ export function frasesDoComentario(feedback) {
     frases.push(`O que você escreveu não pendeu para nenhum lado, então o resultado ficou **neutro**.`);
   }
 
-  if (positivas.length && negativas.length) {
-    frases.push(`Pesaram para o lado positivo ${lista(positivas.map((p) => `**${p}**`))}, e para o negativo ${lista(negativas.map((p) => `**${p}**`))}.`);
-  } else if (positivas.length) {
-    frases.push(`As palavras que mais pesaram foram ${lista(positivas.map((p) => `**${p}**`))}.`);
-  } else if (negativas.length) {
-    frases.push(`As palavras que mais pesaram foram ${lista(negativas.map((p) => `**${p}**`))}.`);
+  if (temDestaque(feedback)) {
+    frases.push('As cores no seu comentário logo acima mostram como cada palavra foi percebida: **verde** puxou para o positivo, **vermelho** para o negativo, e quanto mais forte a cor, mais aquela palavra pesou.');
   }
 
   return frases;
@@ -183,6 +186,6 @@ export function montarDevolutiva(feedback) {
     ligacao: fraseDeLigacao(feedback),
     dimensoes,
     sugestao: sugestao(dimensoes),
-    temExplicacao: !!(feedback.token_attributions || feedback.shap_attributions),
+    temExplicacao: temDestaque(feedback),
   };
 }
