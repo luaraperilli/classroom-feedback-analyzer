@@ -150,7 +150,7 @@ function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
     <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-3">
       <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
         <span className="w-1 h-5 rounded-full bg-primary" />
-        Obrigada pelo seu feedback
+        Obrigado
       </h2>
       <p className="text-sm text-[#475569] leading-relaxed">
         <strong className="font-semibold text-[#1e293b]">Ele já está registrado</strong> e
