@@ -127,7 +127,7 @@ function AnaliseEmPreparo({ comEmail }) {
   return (
     <div className="mt-3 rounded-xl border border-[#cfe0da] bg-bg px-4 py-3 space-y-1.5">
       <p className="text-sm font-semibold text-[#1e293b]">
-        O destaque das palavras ainda está sendo preparado
+        O destaque das palavras ainda está sendo processado
       </p>
       <p className="text-sm text-[#334155] leading-relaxed">
         {/* O resultado do comentário já está pronto e aparece abaixo. O que falta
@@ -155,7 +155,7 @@ function AnaliseEmPreparo({ comEmail }) {
  * existir resultado nenhum. Aqui só se confirma o recebimento; o feedback em si
  * mora num lugar só, o histórico, aberto no primeiro item.
  */
-function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
+function EnvioConfirmado({ comEmail }) {
   return (
     <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-6 space-y-3">
       <h2 className="flex items-center gap-2.5 text-lg font-bold text-[#0f172a]">
@@ -171,16 +171,13 @@ function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
       </p>
       <p className="text-sm text-[#334155] leading-relaxed">
         {comEmail
-          ? 'Você recebe um e-mail quando ficar pronta, e ele pode cair no lixo eletrônico — vale olhar lá. De qualquer forma, ela aparece aqui no histórico assim que terminar.'
+          ? 'Você recebe um e-mail quando ficar pronta, e ela aparece aqui no histórico assim que terminar.'
           : 'Quando ficar pronta, ela aparece no histórico. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
       </p>
-      <button
-        onClick={onAvaliarNovamente}
-        className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#334155]
-                   hover:bg-bg transition font-medium"
-      >
-        Avaliar Novamente
-      </button>
+      {/* Sem botão de avaliar de novo. Logo depois de enviar, convidar a enviar
+          outra vez sugere uma ação que a disciplina recém-avaliada não aceita no
+          mesmo dia. Quem for avaliar outra disciplina tem o item Feedback no
+          menu lateral, que é o caminho de sempre. */}
     </div>
   );
 }
@@ -632,12 +629,7 @@ function StudentHistory() {
         )}
 
         {/* Confirmação do envio recém-feito. O feedback em si está no histórico. */}
-        {recemEnviado && (
-          <EnvioConfirmado
-            comEmail={!!user?.email}
-            onAvaliarNovamente={() => navigate('/')}
-          />
-        )}
+        {recemEnviado && <EnvioConfirmado comEmail={!!user?.email} />}
 
         {isLoading && <Skeleton />}
         {error && (

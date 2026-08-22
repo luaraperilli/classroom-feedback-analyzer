@@ -54,8 +54,6 @@ def _corpo(nome, disciplina):
         f'A análise do comentário que você enviou em {disciplina} ficou pronta.\n\n'
         f'Você pode ver quais palavras mais pesaram no resultado entrando no sistema, '
         f'em Minhas Avaliações:\n{ENDERECO_DO_SISTEMA}\n\n'
-        f'Se esta mensagem tiver caído no lixo eletrônico, marque como "não é spam" '
-        f'para receber as próximas na caixa de entrada.\n\n'
         f'Este aviso é automático e o seu e-mail não é usado para mais nada. '
         f'Se quiser deixar de recebê-lo, apague o endereço no seu Perfil.\n\n'
         f'Voz Discente\n'
@@ -84,9 +82,9 @@ def avisar_explicacao_pronta(destinatario, nome, disciplina):
     mensagem['To'] = destinatario
 
     # Cabeçalhos que reduzem a chance de o filtro tratar isto como mala direta.
-    # Não são garantia — o primeiro teste caiu no lixo eletrônico do Hotmail —
-    # mas um remetente sem Reply-To e sem forma declarada de descadastro pontua
-    # pior em todos os filtros grandes.
+    # Deixaram de ser críticos quando o remetente passou a ser a conta
+    # institucional, porque aí a entrega é interna ao mesmo domínio, mas ficam:
+    # custam duas linhas e cobrem quem apontar o aviso para fora da UNIFEI.
     #
     # O List-Unsubscribe aponta para o próprio remetente porque não há endpoint
     # público de descadastro: o aluno se descadastra apagando o endereço no
