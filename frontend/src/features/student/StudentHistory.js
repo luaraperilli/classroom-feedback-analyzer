@@ -163,7 +163,9 @@ function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
         Obrigado
       </h2>
       <p className="text-sm text-[#334155] leading-relaxed">
-        <strong className="font-semibold text-[#1e293b]">Ele já está registrado</strong> e
+        {/* "Ele" ficou sem antecedente quando o título encurtou para "Obrigado".
+            O sujeito precisa estar na própria frase. */}
+        <strong className="font-semibold text-[#1e293b]">O seu feedback já está registrado</strong> e
         aparece logo abaixo, no seu histórico. A análise de quais palavras mais pesaram
         leva alguns minutos e continua sendo feita mesmo se você fechar esta página.
       </p>
