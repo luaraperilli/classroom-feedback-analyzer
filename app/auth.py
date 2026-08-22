@@ -105,6 +105,9 @@ def login():
         "first_name": user.first_name or "",
         "last_name": user.last_name or "",
         "display_name": user.display_name,
+        # Sem isto, a tela do resultado não sabe se pode prometer o aviso por
+        # e-mail e mostraria a mensagem errada até o aluno abrir o Perfil.
+        "email": user.email or "",
         "must_change_password": user.must_change_password,
         "consentimento_pendente": user.role == User.ALUNO and not user.consentimento_valido,
         "consentimento_em": user.consentimento_em.isoformat() if user.consentimento_em else None,

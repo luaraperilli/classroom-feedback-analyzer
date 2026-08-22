@@ -428,6 +428,7 @@ def _perfil_json(user):
         "first_name": user.first_name or "",
         "last_name": user.last_name or "",
         "display_name": user.display_name,
+        "email": user.email or "",
         "must_change_password": user.must_change_password,
         "consentimento_pendente": user.role == User.ALUNO and not user.consentimento_valido,
         "consentimento_em": user.consentimento_em.isoformat() if user.consentimento_em else None,
@@ -502,6 +503,15 @@ def update_profile():
     last_name = data.get("last_name", "").strip() or None
     new_password = data.get("new_password", "").strip()
     current_password = data.get("current_password", "").strip()
+
+    # O e-mail é opcional e removível. Campo em branco apaga o endereço, que é
+    # como o aluno deixa de receber os avisos sem precisar falar com ninguém.
+    if "email" in data:
+        from .emails import email_valido
+        endereco = (data.get("email") or "").strip()
+        if endereco and not email_valido(endereco):
+            return jsonify({"error": "Esse endereço de e-mail não parece válido."}), 400
+        user.email = endereco or None
 
     if new_password:
         if not current_password or not check_password_hash(user.password, current_password):

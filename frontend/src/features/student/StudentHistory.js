@@ -8,17 +8,9 @@ import { tokenizeAndScore, temAtribuicoes, atribuicoesConvergentes } from '../..
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 import Tooltip from '../../components/Tooltip';
 import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
-import ProgressoDaAnalise from '../../components/ProgressoDaAnalise';
 import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
-// Acompanhamento do cálculo da explicação. Dez segundos entre consultas é curto
-// o bastante para o destaque aparecer logo depois de pronto e leve o bastante
-// para não pesar: cada consulta é uma leitura, não um cálculo. O teto de sessenta
-// tentativas dá dez minutos, bem acima dos quatro minutos do pior caso medido,
-// para que a desistência só aconteça quando algo realmente deu errado.
-const INTERVALO_DE_CONSULTA = 10000;
-const MAXIMO_DE_CONSULTAS = 60;
 
 const SENTIMENT_META = {
   positivo: { label: 'Positivo', color: '#0f766e', bg: 'bg-[#e6f2f1]', ring: 'ring-[#c5e0dd]', text: 'text-[#0f766e]', dot: 'bg-[#0f766e]' },
@@ -119,6 +111,26 @@ function ExplainabilityLegend({ onInfo }) {
         </svg>
         Como funciona?
       </button>
+    </div>
+  );
+}
+
+function AnaliseEmPreparo({ comEmail }) {
+  return (
+    <div className="mt-3 rounded-xl border border-[#cfe0da] bg-bg px-4 py-3 space-y-1.5">
+      <p className="text-sm font-semibold text-[#1e293b]">
+        A análise do seu comentário está sendo preparada
+      </p>
+      <p className="text-sm text-[#475569] leading-relaxed">
+        Descobrir quais palavras mais pesaram no resultado exige repetir a leitura do
+        seu texto milhares de vezes, então isso acontece fora do ar. <strong>O seu
+        feedback já está registrado</strong> e você não precisa fazer mais nada.
+      </p>
+      <p className="text-sm text-[#475569] leading-relaxed">
+        {comEmail
+          ? 'Você vai receber um e-mail quando ficar pronta, e o destaque aparece aqui no seu histórico.'
+          : 'O destaque aparece aqui no seu histórico quando ficar pronto. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
+      </p>
     </div>
   );
 }
@@ -396,32 +408,28 @@ function StudentHistory() {
   const [recemEnviado, setRecemEnviado] = useState(state?.latest ?? null);
   const [mostrarToast, setMostrarToast] = useState(!!state?.latest);
 
-  const [explicando, setExplicando] = useState(false);
   // Trava local: um feedback é explicado uma vez por sessão, aconteça o que
   // acontecer com o resultado. Sem isso, um cálculo que não rendesse palavra
   // nenhuma deixaria a condição de saída sempre falsa e o efeito se repetiria
   // indefinidamente, cada repetição custando minutos de servidor.
   const explicacoesTentadas = useRef(new Set());
-  const [erroExplicacao, setErroExplicacao] = useState(null);
-  const [inicioDaAnalise, setInicioDaAnalise] = useState(null);
 
   useEffect(() => {
     if (state?.latest) navigate('/historico', { replace: true, state: null });
   }, [state?.latest, navigate]);
 
-  // Nova tentativa a pedido do aluno. Limpa a trava para este feedback, já que
-  // agora quem decide repetir é ele, e não o efeito.
-  const tentarExplicarDeNovo = () => {
-    if (!recemEnviado) return;
-    explicacoesTentadas.current.delete(recemEnviado.id);
-    setErroExplicacao(null);
-    setRecemEnviado({ ...recemEnviado });
-  };
 
-  // Segunda etapa do envio: o feedback já está salvo e o aluno já vê a nota e o
-  // sentimento; aqui buscamos o destaque por palavra, que é a parte cara. Ele
-  // permanece na tela enquanto isso, então a explicação chega a tempo de servir
-  // à reflexão — que é o ponto do trabalho.
+  // Segunda etapa do envio: dispara o cálculo e não espera por ele.
+  //
+  // A tela costumava acompanhar o resultado e mostrar uma barra de progresso.
+  // Isso funcionava, mas prendia o aluno a uma espera de minutos logo depois de
+  // um envio que já estava salvo, e a espera longa é o que mais desengaja.
+  //
+  // Agora o pedido é disparado e abandonado. O servidor conclui e grava de
+  // qualquer forma, mesmo que a aba feche no instante seguinte, porque o
+  // trabalho já está em curso do lado dele quando a conexão cai. A rotina
+  // `flask calcular-explicacoes` varre depois o que porventura não tenha
+  // completado, e é ela que envia o aviso por e-mail.
   useEffect(() => {
     if (!recemEnviado || !accessToken) return;
     if (!(recemEnviado.additional_comment || '').trim()) return;
@@ -430,95 +438,10 @@ function StudentHistory() {
 
     explicacoesTentadas.current.add(recemEnviado.id);
 
-    const id = recemEnviado.id;
-    let cancelado = false;
-    let relogio = null;
-
-    setExplicando(true);
-    setErroExplicacao(null);
-
-    const registrar = (atualizado) => {
-      setRecemEnviado(atualizado);
-      setFeedbacks((anteriores) =>
-        anteriores.map((fb) => (fb.id === atualizado.id ? atualizado : fb))
-      );
-    };
-
-    // Consulta o resultado de tempos em tempos, em vez de manter uma requisição
-    // aberta por minutos à espera da resposta.
-    //
-    // No celular, uma espera longa quase nunca chega ao fim: bloquear a tela ou
-    // trocar de aplicativo suspende a requisição, e o aluno via erro embora o
-    // servidor tivesse concluído. Consultando, o cálculo continua do lado do
-    // servidor e a tela apenas pergunta se já terminou, o que sobrevive a queda
-    // de conexão e a recarregamento da página.
-    const consultar = async (tentativa) => {
-      if (cancelado) return;
-
-      if (tentativa > MAXIMO_DE_CONSULTAS) {
-        // Não é erro, é demora. O feedback está gravado desde o envio, e o
-        // cálculo pode estar em andamento ainda. Chamar isso de falha faria o
-        // aluno achar que precisa refazer algo.
-        setErroExplicacao('O destaque das palavras ainda não ficou pronto.');
-        setExplicando(false);
-        return;
-      }
-
-      try {
-        // A assinatura é (subject_id, token). Passar só o token colocava o JWT
-        // no lugar do filtro de disciplina, e o servidor tentava comparar um
-        // inteiro com aquela string, o que derrubava toda consulta. A
-        // recuperação que eu tinha acrescentado nunca chegou a funcionar.
-        const lista = await getMyFeedbacks(null, accessToken);
-        if (cancelado) return;
-
-        const atual = lista.find((fb) => fb.id === id);
-        if (atual && temAtribuicoes(atual.token_attributions || atual.shap_attributions)) {
-          registrar(atual);
-          setExplicando(false);
-          return;
-        }
-      } catch (erro) {
-        // Falha de rede numa consulta não é motivo para desistir: a próxima
-        // tentativa acontece de qualquer forma, e o cálculo segue no servidor.
-        console.error('[Voz Discente] falha ao consultar a explicação:', erro);
-      }
-
-      relogio = setTimeout(() => consultar(tentativa + 1), INTERVALO_DE_CONSULTA);
-    };
-
-    gerarExplicacao(id, accessToken)
-      .then((resposta) => {
-        if (cancelado) return;
-
-        // O servidor avisa quando outro pedido já está calculando este mesmo
-        // feedback. Nesse caso não há resultado ainda, e só resta acompanhar.
-        if (resposta?.explicacao_em_processamento) {
-          // Guardado à parte, e não em recemEnviado, porque alterar recemEnviado
-          // reexecutaria este efeito e a trava por id o encerraria antes de
-          // retomar a consulta, deixando a tela esperando para sempre.
-          setInicioDaAnalise(resposta.explicacao_iniciada_em || null);
-          consultar(1);
-          return;
-        }
-
-        registrar(resposta);
-        setExplicando(false);
-      })
-      .catch((erro) => {
-        if (cancelado) return;
-        console.error('[Voz Discente] falha ao gerar a explicação:', erro);
-
-        // Perder a resposta não significa que o cálculo falhou. O servidor
-        // costuma concluir e gravar mesmo quando a conexão do celular cai no
-        // meio, então vale acompanhar antes de declarar erro ao aluno.
-        consultar(1);
-      });
-
-    return () => {
-      cancelado = true;
-      if (relogio) clearTimeout(relogio);
-    };
+    // Sem .then e sem .catch de propósito. Não há nada a fazer com a resposta,
+    // e tratar a falha levaria a mostrar erro ao aluno por um cálculo que
+    // provavelmente completou.
+    gerarExplicacao(recemEnviado.id, accessToken).catch(() => {});
   }, [recemEnviado, accessToken]);
 
   useEffect(() => {
@@ -695,33 +618,9 @@ function StudentHistory() {
               </blockquote>
               {temAtribuicoes(latestFeedback.token_attributions || latestFeedback.shap_attributions) ? (
                 <ExplainabilityLegend onInfo={() => setShowModal(true)} />
-              ) : explicando ? (
-                <ProgressoDaAnalise
-                  inicio={inicioDaAnalise || latestFeedback.explicacao_iniciada_em}
-                  caracteres={(latestFeedback.additional_comment || '').length}
-                />
-              ) : erroExplicacao ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm text-[#475569]">
-                    {erroExplicacao} O seu feedback já foi registrado e está guardado.
-                    Você pode fechar esta página e voltar mais tarde, que o destaque
-                    aparece aqui quando o cálculo terminar.
-                  </p>
-                  {/* "Verificar agora" e não "tentar de novo": não há nada para o
-                      aluno refazer, o envio dele já foi aceito. O botão apenas
-                      consulta o servidor antes da próxima consulta automática. */}
-                  <button
-                    onClick={tentarExplicarDeNovo}
-                    className="text-sm font-semibold text-primary hover:text-primary-dark transition"
-                  >
-                    Verificar agora
-                  </button>
-                </div>
               ) : (
-                <p className="text-sm text-[#64748b] mt-3">
-                  O destaque por palavra não está disponível para este comentário.
-                </p>
-              )}
+                <AnaliseEmPreparo comEmail={!!user?.email} />
+                            )}
             </div>
             <div>
               <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide mb-2">Avaliação Geral da Aula</p>

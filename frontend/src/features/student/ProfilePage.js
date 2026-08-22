@@ -11,6 +11,7 @@ function ProfilePage() {
 
   const [firstName, setFirstName]           = useState('');
   const [lastName, setLastName]             = useState('');
+  const [email, setEmail]                   = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword]       = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,6 +25,7 @@ function ProfilePage() {
     getProfile(accessToken).then((data) => {
       setFirstName(data.first_name || '');
       setLastName(data.last_name || '');
+      setEmail(data.email || '');
     }).catch(() => {});
   }, [accessToken]);
 
@@ -44,7 +46,7 @@ function ProfilePage() {
 
     setIsSaving(true);
     try {
-      const payload = { first_name: firstName, last_name: lastName };
+      const payload = { first_name: firstName, last_name: lastName, email };
       if (newPassword) {
         payload.current_password = currentPassword;
         payload.new_password = newPassword;
@@ -139,6 +141,26 @@ function ProfilePage() {
                   placeholder="Seu sobrenome"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#1e293b] mb-1.5">
+                E-mail <span className="text-[#64748b] font-normal">(opcional)</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[#1e293b] text-sm
+                           placeholder:text-[#64748b] focus:outline-none focus:ring-2 focus:ring-primary/30
+                           focus:border-primary transition"
+                placeholder="seu.email@exemplo.com"
+              />
+              <p className="text-sm text-[#64748b] mt-1.5">
+                Serve para avisar quando a análise do seu comentário ficar pronta, e nada
+                além disso. Deixe em branco para não receber nenhum aviso.
+              </p>
             </div>
 
             <div>

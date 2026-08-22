@@ -303,8 +303,10 @@ def resetar_consentimento(username):
 
 
 @click.command('calcular-explicacoes')
+@click.option('--sem-email', is_flag=True,
+              help='Calcula sem avisar ninguém. Útil para testar.')
 @with_appcontext
-def calcular_explicacoes():
+def calcular_explicacoes(sem_email):
     """Calcula LIME e SHAP dos comentários que ficaram sem explicação.
 
     Serve para os feedbacks cuja requisição caiu antes de as atribuições serem
@@ -312,8 +314,13 @@ def calcular_explicacoes():
     """
     import json
 
+    from .emails import avisar_explicacao_pronta, configurado
     from .models import Feedback
     from .services import explain_sentiment_lime, explain_sentiment_shap
+
+    if not sem_email and not configurado():
+        click.echo('Aviso: SMTP não configurado, ninguém será avisado por e-mail.')
+        click.echo('As explicações são calculadas assim mesmo.\n')
 
     pendentes = Feedback.ativos().filter(
         Feedback.additional_comment.isnot(None),
@@ -327,6 +334,8 @@ def calcular_explicacoes():
 
     click.echo(f'{len(pendentes)} comentário(s) sem explicação. Cada um leva alguns minutos.\n')
 
+    avisados = []
+
     for posicao, feedback in enumerate(pendentes, 1):
         trecho = feedback.additional_comment[:50]
         click.echo(f'[{posicao}/{len(pendentes)}] {trecho}...', nl=False)
@@ -335,12 +344,40 @@ def calcular_explicacoes():
             feedback.token_attributions_json = json.dumps(explain_sentiment_lime(feedback.additional_comment))
             feedback.shap_attributions_json = json.dumps(explain_sentiment_shap(feedback.additional_comment))
             db.session.commit()
-            click.echo(' ok')
+            click.echo(' ok', nl=False)
         except Exception as erro:
             db.session.rollback()
             click.echo(f' falhou: {erro}')
+            continue
 
-    click.echo('\nPronto. Recarregue "Minhas Avaliações".')
+        # O aviso vem depois do commit, e o resultado dele não desfaz nada. Um
+        # e-mail que não sai não pode custar um cálculo que levou minutos.
+        if sem_email:
+            click.echo('')
+            continue
+
+        aluno = feedback.student
+        if not (aluno and aluno.email):
+            click.echo(' (sem e-mail cadastrado)')
+            continue
+
+        # O try é a segunda camada. O avisar_explicacao_pronta já trata as falhas
+        # que conhece, mas uma exceção inesperada aqui abortaria o lote inteiro e
+        # deixaria sem explicação todos os alunos seguintes da fila.
+        try:
+            enviou = avisar_explicacao_pronta(aluno.email, aluno.first_name,
+                                              feedback.subject.name)
+        except Exception as erro:
+            click.echo(f' (aviso falhou: {erro})')
+            continue
+
+        if enviou:
+            avisados.append(aluno.email)
+            click.echo(' e avisado')
+        else:
+            click.echo(' (aviso não saiu)')
+
+    click.echo(f'\nPronto. {len(avisados)} aviso(s) enviado(s).')
 
 
 @click.command('apagar-contas-de-teste')
