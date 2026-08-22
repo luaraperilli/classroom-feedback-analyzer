@@ -8,6 +8,7 @@ import { tokenizeAndScore, temAtribuicoes, atribuicoesConvergentes } from '../..
 import { numeroPtBr, numeroComSinal } from '../../utils/numeroPtBr';
 import Tooltip from '../../components/Tooltip';
 import ComparacaoDeMarcos from '../../components/ComparacaoDeMarcos';
+import Devolutiva from '../../components/Devolutiva';
 import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
@@ -620,12 +621,13 @@ function StudentHistory() {
                 <ExplainabilityLegend onInfo={() => setShowModal(true)} />
               ) : (
                 <AnaliseEmPreparo comEmail={!!user?.email} />
-                            )}
+              )}
             </div>
-            <div>
-              <p className="text-sm font-medium text-[#64748b] uppercase tracking-wide mb-2">Avaliação Geral da Aula</p>
-              <ScoreBar score={latestFeedback.overall_score} />
-            </div>
+
+            {/* A devolutiva em texto vem logo depois do comentário destacado,
+                porque é ela que junta as duas origens que antes apareciam como
+                números soltos e pareciam se contradizer. */}
+            <Devolutiva feedback={latestFeedback} />
             <button
               onClick={() => navigate('/')}
               className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#475569]
