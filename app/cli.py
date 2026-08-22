@@ -410,6 +410,59 @@ def definir_email(username, email):
         click.echo(f'\nO e-mail de {usuario.username} foi apagado. Não será mais avisado(a).\n')
 
 
+@click.command('estado-dos-feedbacks')
+@click.option('--username', prompt=True, help='Aluno a inspecionar.')
+@click.option('--quantos', default=10, show_default=True, help='Quantos feedbacks mostrar.')
+@with_appcontext
+def estado_dos_feedbacks(username, quantos):
+    """Mostra em que ponto está cada feedback de um aluno.
+
+    Serve para responder, sem abrir o banco na mão, por que alguém não recebeu o
+    aviso: pode ser que o feedback não exista, que a explicação não tenha sido
+    calculada, que o aluno esteja sem endereço, ou que o aviso já tenha saído e o
+    e-mail tenha caído em outra pasta.
+    """
+    from .models import Feedback
+
+    usuario = _buscar_usuario(username)
+    if not usuario:
+        raise click.ClickException(f'Usuário {username!r} não encontrado.')
+
+    click.echo(f'\n{usuario.username} — {usuario.display_name}')
+    click.echo(f'  e-mail: {usuario.email or "NENHUM, não será avisado"}')
+    click.echo(f'  consentimento: {usuario.consentimento_versao or "não manifestado"}')
+
+    feedbacks = (Feedback.query
+                 .filter(Feedback.student_id == usuario.id)
+                 .order_by(Feedback.id.desc())
+                 .limit(quantos).all())
+
+    if not feedbacks:
+        click.echo('\n  Nenhum feedback. O envio não chegou a ser salvo.\n')
+        return
+
+    click.echo(f'\n  {"id":>5}  {"enviado em":16}  {"situação":34}  comentário')
+    for f in feedbacks:
+        if f.deleted_at:
+            situacao = 'retirado pelo aluno'
+        elif not f.additional_comment:
+            situacao = 'sem comentário, nada a explicar'
+        elif not f.explicacao_calculada:
+            situacao = ('cálculo em curso' if f.explicacao_em_curso
+                        else 'SEM explicação, e sem cálculo em curso')
+        elif f.avisado_em:
+            situacao = f'avisado em {f.avisado_em:%d/%m %H:%M}'
+        elif not usuario.email:
+            situacao = 'explicado, sem endereço para avisar'
+        else:
+            situacao = 'explicado, AVISO PENDENTE'
+
+        trecho = (f.additional_comment or '')[:40]
+        click.echo(f'  {f.id:>5}  {f.created_at:%d/%m %H:%M}     {situacao:34}  {trecho}')
+
+    click.echo('\n  Horários em UTC. "AVISO PENDENTE" se resolve com calcular-explicacoes.\n')
+
+
 @click.command('resetar-consentimento')
 @click.option('--username', prompt=True, help='Usuário que voltará a ver o termo.')
 @with_appcontext
@@ -578,6 +631,6 @@ def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
                     criar_aluno, criar_alunos, vincular_professor, listar_usuarios,
                     redefinir_senha, definir_email, preencher_emails,
-                    resetar_consentimento, calcular_explicacoes,
-                    apagar_contas_de_teste):
+                    estado_dos_feedbacks, resetar_consentimento,
+                    calcular_explicacoes, apagar_contas_de_teste):
         app.cli.add_command(comando)
