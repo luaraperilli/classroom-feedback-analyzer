@@ -95,7 +95,19 @@ const lista = (itens, conector = 'e') => {
   return `${itens.slice(0, -1).join(', ')} ${conector} ${itens[itens.length - 1]}`;
 };
 
-const pct = (v) => `${Math.round((v || 0) * 100)}%`;
+const pct = (v) => `${Math.round(v * 100)}%`;
+
+/**
+ * A regra por extenso, e não só o número.
+ *
+ * "Passou da metade" não dizia metade de quê: o aluno não tem como saber que o
+ * modelo reparte cem por cento entre três lados, então o corte em cinquenta era
+ * um número sem referência. Sem a referência, o percentual vira uma alegação de
+ * autoridade, que é o oposto do que a devolutiva existe para fazer.
+ */
+const REGRA =
+  'Esse número vem de uma repartição de 100% entre três lados, positivo, ' +
+  'negativo e neutro. O resultado é o lado que sozinho passa de 50%.';
 
 /**
  * Frase sobre o comentário: o que o modelo respondeu e por quê.
@@ -108,14 +120,26 @@ export function frasesDoComentario(feedback) {
   const rotulo = rotuloDoFeedback(feedback);
   const frases = [];
 
-  if (rotulo === 'positivo') {
-    frases.push(`O que você escreveu soou **${pct(feedback.pos)} positivo**. Como esse lado passou da metade, o resultado ficou **positivo**.`);
+  // Sem as três probabilidades o rótulo vem do compound, e aí não há repartição
+  // nenhuma para mostrar. Citar um percentual aqui imprimiria "0%", porque o
+  // campo não existe, e o aluno leria um número inventado.
+  const temProbabilidades = [feedback.pos, feedback.neg, feedback.neu]
+    .every((v) => typeof v === 'number');
+
+  if (!temProbabilidades) {
+    frases.push(`O que você escreveu soou **${rotulo}**.`);
+  } else if (rotulo === 'positivo') {
+    frases.push(`O que você escreveu soou **${pct(feedback.pos)} positivo**, e por isso o resultado ficou **positivo**.`);
+    frases.push(REGRA);
   } else if (rotulo === 'negativo') {
-    frases.push(`O que você escreveu soou **${pct(feedback.neg)} negativo**. Como esse lado passou da metade, o resultado ficou **negativo**.`);
+    frases.push(`O que você escreveu soou **${pct(feedback.neg)} negativo**, e por isso o resultado ficou **negativo**.`);
+    frases.push(REGRA);
   } else if (rotulo === 'misto') {
-    frases.push(`O que você escreveu soou **${pct(feedback.pos)} positivo e ${pct(feedback.neg)} negativo**. Como nenhum lado passou da metade, o resultado ficou **misto**: o seu texto tem os dois.`);
+    frases.push(`O que você escreveu soou **${pct(feedback.pos)} positivo e ${pct(feedback.neg)} negativo**, e por isso o resultado ficou **misto**: o seu texto tem os dois.`);
+    frases.push(`${REGRA} Aqui nenhum passou, então não dá para chamar de um só.`);
   } else {
-    frases.push(`O que você escreveu não pendeu para nenhum lado, então o resultado ficou **neutro**.`);
+    frases.push(`O que você escreveu não pendeu nem para o positivo nem para o negativo, então o resultado ficou **neutro**.`);
+    frases.push(REGRA);
   }
 
   if (temDestaque(feedback)) {

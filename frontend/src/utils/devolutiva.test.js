@@ -47,22 +47,43 @@ describe('as três dimensões de Fredricks', () => {
 
 describe('frase sobre o comentário', () => {
   it('dá o número e a regra no caso positivo', () => {
-    const [primeira] = frasesDoComentario({ ...notas(4, 4, 4), ...POSITIVO });
-    expect(primeira).toContain('98% positivo');
-    expect(primeira).toContain('passou da metade');
+    const texto = frasesDoComentario({ ...notas(4, 4, 4), ...POSITIVO }).join(' ');
+    expect(texto).toContain('98% positivo');
+    expect(texto).toContain('repartição de 100%');
+    expect(texto).toContain('passa de 50%');
+  });
+
+  it('diz de que o percentual é metade, e não só "metade"', () => {
+    // "passou da metade" não dizia metade de quê. Sem a referência, o número
+    // vira alegação de autoridade em vez de conta que o aluno possa conferir.
+    [POSITIVO, NEGATIVO, MISTO, NEUTRO].forEach((s) => {
+      const texto = frasesDoComentario({ ...notas(3, 3, 3), ...s }).join(' ');
+      expect(texto).toContain('positivo, negativo e neutro');
+      expect(texto).not.toContain('passou da metade');
+    });
+  });
+
+  it('não imprime percentual quando o modelo não devolveu as três probabilidades', () => {
+    // Aí o rótulo vem do compound, e não há repartição para mostrar. Citar um
+    // número aqui imprimiria "0%" e o aluno leria um valor inventado.
+    const texto = frasesDoComentario({ ...notas(4, 4, 4), compound: 0.9,
+                                       pos: null, neg: null, neu: null }).join(' ');
+    expect(texto).not.toContain('%');
+    expect(texto).toContain('positivo');
   });
 
   it('explica o misto sem chamar de positivo', () => {
-    const [primeira] = frasesDoComentario({ ...notas(3, 3, 3), ...MISTO });
-    expect(primeira).toContain('49% positivo');
-    expect(primeira).toContain('28% negativo');
-    expect(primeira).toContain('nenhum lado passou da metade');
-    expect(primeira).not.toMatch(/resultado ficou \*\*positivo/);
+    const texto = frasesDoComentario({ ...notas(3, 3, 3), ...MISTO }).join(' ');
+    expect(texto).toContain('49% positivo');
+    expect(texto).toContain('28% negativo');
+    expect(texto).toContain('nenhum passou');
+    expect(texto).not.toMatch(/resultado ficou \*\*positivo/);
   });
 
   it('reconhece o neutro sem inventar percentual', () => {
     const [primeira] = frasesDoComentario({ ...notas(3, 3, 3), ...NEUTRO });
     expect(primeira).toContain('neutro');
+    expect(primeira).not.toContain('%');
   });
 
   it('remete às cores em vez de listar palavras', () => {
@@ -71,10 +92,10 @@ describe('frase sobre o comentário', () => {
       token_attributions: { 'incrível': 1.0, amei: 0.6, o: 0.4, burra: -0.8, mas: -0.5 },
       shap_attributions: { 'incrível': 0.5, amei: 0.3, o: 0.2, burra: -0.4, mas: -0.2 },
     };
-    const frases = frasesDoComentario(fb);
-    expect(frases[1]).toContain('cores');
-    expect(frases[1]).toContain('verde');
-    expect(frases[1]).toContain('vermelho');
+    const texto = frasesDoComentario(fb).join(' ');
+    expect(texto).toContain('cores');
+    expect(texto).toContain('verde');
+    expect(texto).toContain('vermelho');
   });
 
   it('não devolve ao aluno nenhuma palavra do comentário dele', () => {
