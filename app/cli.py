@@ -10,6 +10,7 @@ provisória e obrigação de defini-la no primeiro acesso.
     flask criar-alunos --arquivo turma.txt
     flask listar-usuarios
     flask redefinir-senha --username marina
+    flask definir-email --username marina --email marina@unifei.edu.br
 """
 
 import secrets
@@ -280,6 +281,36 @@ def redefinir_senha(username, senha, definitiva):
         click.echo('A troca será exigida no próximo acesso.\n')
 
 
+@click.command('definir-email')
+@click.option('--username', prompt=True, help='Usuário que terá o e-mail alterado.')
+@click.option('--email', default='', help='Endereço. Vazio apaga o que estava lá.')
+@with_appcontext
+def definir_email(username, email):
+    """Define o e-mail de aviso de um usuário pela linha de comando.
+
+    O caminho normal é o próprio titular cadastrar no Perfil. Este comando existe
+    para operação: testar o envio antes de a tela estar publicada, e corrigir um
+    endereço digitado errado sem pedir para a pessoa entrar de novo.
+    """
+    from .emails import email_valido
+
+    usuario = _buscar_usuario(username)
+    if not usuario:
+        raise click.ClickException(f'Usuário {username!r} não encontrado.')
+
+    endereco = (email or '').strip()
+    if endereco and not email_valido(endereco):
+        raise click.ClickException(f'{endereco!r} não parece um endereço de e-mail.')
+
+    usuario.email = endereco or None
+    db.session.commit()
+
+    if endereco:
+        click.echo(f'\n{usuario.username} passa a ser avisado(a) em {endereco}.\n')
+    else:
+        click.echo(f'\nO e-mail de {usuario.username} foi apagado. Não será mais avisado(a).\n')
+
+
 @click.command('resetar-consentimento')
 @click.option('--username', prompt=True, help='Usuário que voltará a ver o termo.')
 @with_appcontext
@@ -439,6 +470,6 @@ def apagar_contas_de_teste(prefixo, sim):
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
                     criar_aluno, criar_alunos, vincular_professor, listar_usuarios,
-                    redefinir_senha, resetar_consentimento, calcular_explicacoes,
-                    apagar_contas_de_teste):
+                    redefinir_senha, definir_email, resetar_consentimento,
+                    calcular_explicacoes, apagar_contas_de_teste):
         app.cli.add_command(comando)
