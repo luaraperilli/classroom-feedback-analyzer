@@ -23,6 +23,16 @@ class User(db.Model):
     # quando True, o aluno pré-cadastrado é obrigado a definir uma nova senha no 1º acesso
     must_change_password = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Endereço para avisar que a análise do comentário ficou pronta, e nada além
+    # disso. É dado pessoal novo em relação à versão 2.0 do termo, então a coleta
+    # está declarada na versão 3.0 e o aceite anterior deixou de valer.
+    #
+    # Opcional de propósito: o aluno que não informar continua participando, só
+    # não recebe o aviso e consulta o resultado quando quiser. Condicionar a
+    # participação ao e-mail transformaria em obrigatório um dado que a pesquisa
+    # não precisa.
+    email = db.Column(db.String(255), nullable=True)
+
     # Consentimento livre e esclarecido (TCLE) e base legal do tratamento (LGPD).
     # A versão é registrada junto da data: consentimento vale para um tratamento
     # específico, então se o termo mudar o aceite anterior deixa de servir e a
@@ -104,6 +114,15 @@ class Feedback(db.Model):
     # comentário processado duas vezes em paralelo.
     explicacao_iniciada_em = db.Column(db.DateTime, nullable=True)
 
+    # Quando o aluno retirou este feedback. Preenchido, a linha deixa de existir
+    # para ele e sai de toda contagem, média e análise, mas o registro permanece
+    # para que a pesquisa saiba que houve retirada e quando.
+    #
+    # Isso só é legítimo porque está declarado na versão 3.0 do termo, e porque o
+    # direito de eliminação continua inteiro: retirar o consentimento pelo Perfil
+    # apaga tudo de verdade, inclusive as linhas retiradas.
+    deleted_at = db.Column(db.DateTime, nullable=True)
+
     overall_score = db.Column(db.Float, nullable=False)
 
     # NULL e {} significam coisas diferentes: nulo é "ainda não foi calculado",
@@ -129,6 +148,17 @@ class Feedback(db.Model):
     @shap_attributions.setter
     def shap_attributions(self, value):
         self.shap_attributions_json = None if value is None else json.dumps(value)
+
+    @classmethod
+    def ativos(cls):
+        """Consulta base que ignora o que o aluno retirou.
+
+        Existe para que ninguém precise lembrar de escrever o filtro. Esquecer
+        em um único lugar faria um feedback retirado voltar a contar na média,
+        no índice de risco ou na análise agregada, e isso não apareceria em tela
+        nenhuma até alguém conferir o banco na mão.
+        """
+        return cls.query.filter(cls.deleted_at.is_(None))
 
     @property
     def explicacao_calculada(self):

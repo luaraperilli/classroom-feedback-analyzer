@@ -83,7 +83,7 @@ def analyze_and_save_feedback():
 
     # Prevent duplicate submissions for the same subject on the same day
     today = datetime.utcnow().date()
-    duplicate = Feedback.query.filter(
+    duplicate = Feedback.ativos().filter(
         Feedback.student_id == int(student_id),
         Feedback.subject_id == subject_id,
         db.func.date(Feedback.created_at) == today
@@ -237,7 +237,7 @@ def get_all_feedbacks():
     user = _get_user(user_id)
     role = claims.get("role")
 
-    query = Feedback.query
+    query = Feedback.ativos()
     subject_filter_id = request.args.get('subject_id')
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
@@ -311,7 +311,7 @@ def get_student_progress(student_id):
     
     analyses = query.all()
     
-    feedback_query = Feedback.query.filter_by(student_id=student_id)
+    feedback_query = Feedback.ativos().filter_by(student_id=student_id)
     
     if subject_filter_id:
         feedback_query = feedback_query.filter_by(subject_id=subject_filter_id)
@@ -338,7 +338,7 @@ def get_global_shap():
 
     subject_filter_id = request.args.get('subject_id')
 
-    query = Feedback.query.filter(Feedback.shap_attributions_json.isnot(None))
+    query = Feedback.ativos().filter(Feedback.shap_attributions_json.isnot(None))
 
     if role == User.PROFESSOR:
         professor_subject_ids = [s.id for s in user.subjects]
@@ -380,7 +380,7 @@ def get_my_feedbacks():
     student_id = get_jwt_identity()
     subject_filter_id = request.args.get('subject_id')
 
-    query = Feedback.query.filter_by(student_id=student_id)
+    query = Feedback.ativos().filter_by(student_id=student_id)
     if subject_filter_id:
         query = query.filter_by(subject_id=subject_filter_id)
 
@@ -403,8 +403,14 @@ def delete_my_feedback(feedback_id):
     if feedback.student_id != int(student_id):
         return jsonify({"error": "Você não tem permissão para apagar este feedback."}), 403
 
+    if feedback.deleted_at is not None:
+        return jsonify({"message": "Este feedback já havia sido retirado."}), 200
+
+    # Retirada lógica, declarada na versão 3.0 do termo. A linha sai da vista do
+    # aluno e de toda análise, e fica registrado que houve retirada e quando. O
+    # direito de eliminação continua inteiro pelo Perfil, que apaga de verdade.
     subject_id = feedback.subject_id
-    db.session.delete(feedback)
+    feedback.deleted_at = datetime.utcnow()
     db.session.commit()
 
     # Sem isto a análise de risco fica congelada com a média e a contagem antigas,

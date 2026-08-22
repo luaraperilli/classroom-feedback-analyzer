@@ -315,7 +315,7 @@ def calcular_explicacoes():
     from .models import Feedback
     from .services import explain_sentiment_lime, explain_sentiment_shap
 
-    pendentes = Feedback.query.filter(
+    pendentes = Feedback.ativos().filter(
         Feedback.additional_comment.isnot(None),
         Feedback.additional_comment != '',
         Feedback.token_attributions_json.is_(None),

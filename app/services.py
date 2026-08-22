@@ -101,14 +101,7 @@ def _predict_proba(texts):
     if not textos:
         return np.empty((0, len(CLASSES)))
 
-    # Agrupa textos de comprimento parecido antes de formar os lotes. O padding
-    # leva todo o lote ao tamanho do maior elemento, e as perturbações do LIME
-    # vão de poucas palavras até o comentário inteiro. Em ordem aleatória quase
-    # todo lote contém uma perturbação longa, então até os textos curtos pagam o
-    # comprimento máximo. Ordenados, cada lote paga o próprio tamanho. A conta do
-    # modelo não muda: as posições de padding já eram anuladas pela máscara de
-    # atenção, e o resultado volta na ordem original em que os textos chegaram.
-    # Antes disso, descarta texto repetido. O LIME sorteia quantas palavras
+    # Descarta texto repetido antes de qualquer coisa. O LIME sorteia quantas palavras
     # remover e depois quais, e num comentário curto o número de combinações
     # possíveis é bem menor que as 5.000 amostras pedidas, então o mesmo texto
     # reaparece muitas vezes. Medido por simulação do sorteio: um comentário de
@@ -279,7 +272,9 @@ def create_feedback(student_id, subject_id, answers, additional_comment=None):
     return new_feedback
 
 def update_student_risk_analysis(student_id, subject_id):
-    feedbacks = Feedback.query.filter_by(
+    # Feedback retirado pelo aluno sai da conta. Sem isso, o índice de risco
+    # continuaria refletindo uma resposta que ele pediu para não usar.
+    feedbacks = Feedback.ativos().filter_by(
         student_id=student_id,
         subject_id=subject_id
     ).all()

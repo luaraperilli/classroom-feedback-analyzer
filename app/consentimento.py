@@ -17,7 +17,7 @@ mantida, e encurtada, porque essa explicação não existe em nenhum outro lugar
 que o participante vá ler.
 """
 
-VERSAO_DO_TERMO = '2.0'
+VERSAO_DO_TERMO = '3.0'
 
 TERMO = {
     'versao': VERSAO_DO_TERMO,
@@ -47,9 +47,12 @@ TERMO = {
             'texto': (
                 'Quando o professor abrir uma nova participação, você responde seis '
                 'afirmações sobre a sua experiência na disciplina, numa escala de 1 a 5, e '
-                'escreve um comentário livre. É só isso: nenhum dado pessoal além do seu '
-                'nome e da sua matrícula, já usados para criar o seu acesso. Não são '
-                'coletados CPF, endereço, localização ou dados de navegação.'
+                'escreve um comentário livre. Além disso, o sistema guarda o seu nome e a '
+                'sua matrícula, já usados para criar o seu acesso, e o seu e-mail, se você '
+                'quiser informar. O e-mail serve para uma única coisa: avisar quando a '
+                'análise do seu comentário ficar pronta. Ele não é usado para mais nada, '
+                'não é compartilhado e informá-lo é opcional, você participa igual sem ele. '
+                'Não são coletados CPF, endereço, localização ou dados de navegação.'
             ),
         },
         {
@@ -85,10 +88,14 @@ TERMO = {
         {
             'titulo': 'Seus direitos',
             'texto': (
-                'Você pode apagar qualquer resposta enviada, a qualquer momento, na tela '
-                'Minhas Avaliações. E pode retirar o seu consentimento e apagar todos os '
-                'seus dados de uma vez, pelo seu Perfil, sem precisar justificar. O '
-                'tratamento segue a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).'
+                'Você pode retirar qualquer resposta enviada, a qualquer momento, na '
+                'tela Minhas Avaliações. Ela deixa de aparecer para você, sai das suas '
+                'médias e não é mais usada na análise. O registro de que houve uma retirada '
+                'e a data ficam guardados até o fim da pesquisa, e é bom que você saiba '
+                'disso. Se quiser apagar tudo de verdade, inclusive o que você retirou, '
+                'use "Retirar meu consentimento e apagar meus dados" no seu Perfil, sem '
+                'precisar justificar. O tratamento segue a Lei Geral de Proteção de Dados '
+                '(Lei nº 13.709/2018).'
             ),
         },
         {

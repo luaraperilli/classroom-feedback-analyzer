@@ -38,9 +38,11 @@ _COLUNAS_NOVAS = {
         ('must_change_password', 'BOOLEAN', True),   # True = só SQLite, pelo NOT NULL DEFAULT
         ('consentimento_em', 'TIMESTAMP', False),
         ('consentimento_versao', 'VARCHAR(20)', False),
+        ('email', 'VARCHAR(255)', False),
     ),
     'feedback': (
         ('explicacao_iniciada_em', 'TIMESTAMP', False),
+        ('deleted_at', 'TIMESTAMP', False),
     ),
 }
 
