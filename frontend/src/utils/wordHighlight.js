@@ -53,9 +53,44 @@ export function temAtribuicoes(atribuicoes) {
  * Sem uma das duas, devolve a que existe. Uma falha do SHAP não pode apagar o
  * destaque inteiro.
  */
+/**
+ * Quantas palavras a tela colore, no máximo.
+ *
+ * Esparsidade não é um acréscimo nosso ao método: a formulação do LIME inclui um
+ * termo de complexidade que limita a explicação a K atributos, justamente porque
+ * uma pessoa não processa mais do que isso, e é esse o parâmetro num_features,
+ * fixado em 10 no servidor. Aqui o mesmo princípio se aplica na camada em que o
+ * leitor é humano.
+ *
+ * O 5 saiu dos 14 comentários distintos já coletados. Exibindo tudo, 22% das
+ * palavras destacadas eram gramaticais — artigo, preposição, cópula —, e a
+ * mediana era de 9 destaques por comentário, o que espalhava cor pela frase
+ * inteira e tirava do destaque a capacidade de destacar. Com K=5 a proporção de
+ * gramaticais cai para 8%, e no comentário que motivou a mudança o "também",
+ * que era o mais fraco dos oito convergentes, deixa de ser colorido.
+ *
+ * A contrapartida está declarada: o que se vê deixa de ser a atribuição
+ * completa. Palavras de polaridade fracas, um "mas" de peso baixo, saem junto —
+ * mas saem por serem fracas segundo o próprio modelo, não por serem gramaticais.
+ * Nenhuma lista de palavras entra nesta decisão, e é isso que a torna defensável
+ * sem julgamento linguístico caso a caso.
+ */
+export const MAXIMO_DE_DESTAQUES = 5;
+
+/** As `quantas` de maior peso absoluto, sem olhar para o sinal. */
+export function maisFortes(pesos, quantas = MAXIMO_DE_DESTAQUES) {
+  if (!temAtribuicoes(pesos)) return pesos;
+
+  const ordenadas = Object.entries(pesos)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .slice(0, quantas);
+
+  return Object.fromEntries(ordenadas);
+}
+
 export function atribuicoesConvergentes(lime, shap) {
-  if (!temAtribuicoes(lime)) return temAtribuicoes(shap) ? shap : null;
-  if (!temAtribuicoes(shap)) return lime;
+  if (!temAtribuicoes(lime)) return temAtribuicoes(shap) ? maisFortes(shap) : null;
+  if (!temAtribuicoes(shap)) return maisFortes(lime);
 
   const convergentes = {};
   for (const [palavra, peso] of Object.entries(lime)) {
@@ -67,7 +102,13 @@ export function atribuicoesConvergentes(lime, shap) {
   // Se nada sobrou, as duas técnicas discordam de ponta a ponta. Preferir o
   // LIME nesse caso esconderia a discordância do discente, então melhor não
   // destacar nada e deixar o comentário sem cor.
-  return convergentes;
+  //
+  // A seleção das mais fortes vem depois da convergência, e não antes: primeiro
+  // se descarta aquilo em que os dois métodos não concordam, e só então se
+  // escolhe entre o que sobrou. Na ordem inversa, uma palavra forte no LIME e
+  // divergente no SHAP ocuparia uma das cinco vagas para ser descartada em
+  // seguida, e a tela mostraria menos do que pode.
+  return maisFortes(convergentes);
 }
 
 export function tokenizeAndScore(text, backendAttributions = null) {

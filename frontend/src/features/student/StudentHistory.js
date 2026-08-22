@@ -71,8 +71,15 @@ function ExplainabilityModal({ onClose }) {
             <span className="text-[#334155]">Quanto <span className="font-medium text-[#1e293b]">mais forte a cor</span>, mais aquela palavra influenciou o resultado.</span>
           </div>
         </div>
+        <p className="text-sm text-[#334155] leading-relaxed">
+          O peso é sempre <span className="font-medium text-[#1e293b]">dentro desta frase</span>, não
+          da palavra em geral. Uma palavra comum pode aparecer puxando para um lado sem ser positiva
+          ou negativa em si, só por causa de onde ela está no seu texto.
+        </p>
         <p className="text-sm text-[#64748b] leading-relaxed">
-          O destaque é gerado automaticamente a partir do seu texto e serve para você enxergar como a sua escrita reflete a sua experiência com a disciplina.
+          São destacadas as cinco palavras de maior peso, e não todas: com a frase inteira colorida,
+          o destaque deixa de destacar. O destaque é gerado automaticamente a partir do seu texto e
+          serve para você enxergar como a sua escrita reflete a sua experiência com a disciplina.
         </p>
         <button
           onClick={onClose}
