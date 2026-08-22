@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { translateSubject } from '../../utils/translations';
 import { getSubjects, analyzeFeedback, getMyFeedbacks } from '../../services/api';
+import { mesmoEnvio } from '../../utils/mesmoEnvio';
 import Spinner from '../../components/Spinner';
 import AnalyzingModal from '../../components/AnalyzingModal';
 
@@ -204,8 +205,26 @@ function FeedbackForm() {
       // ou ele desiste achando que falhou, ou reenvia algo que já está salvo.
       if (err.status === 409 || err.status === 0) {
         const recuperado = await buscarEnvioDeHoje(payload.subject_id);
-        if (recuperado) {
+
+        // Só é o mesmo envio se o conteúdo bater. Batendo, a resposta se perdeu
+        // e o trabalho da pessoa está salvo: mostrar o resultado é o certo.
+        if (mesmoEnvio(recuperado, payload)) {
           navigate('/historico', { state: { latest: recuperado } });
+          return;
+        }
+
+        // Não batendo, existe um feedback de hoje com outro conteúdo, e o texto
+        // que ela acabou de escrever foi recusado. Levá-la para a tela de
+        // confirmação aqui seria agradecer por um texto descartado, e ela sairia
+        // acreditando que enviou. Diz-se a verdade, e diz-se o que fazer.
+        if (recuperado) {
+          setError(
+            'Você já enviou um feedback para esta disciplina hoje, e o texto que você '
+            + 'acabou de escrever não foi salvo. Ele continua aqui embaixo: copie antes '
+            + 'de sair. Se quiser substituir o envio anterior, retire-o em Minhas '
+            + 'Avaliações e envie este de novo.'
+          );
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
       }
