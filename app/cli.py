@@ -11,6 +11,7 @@ provisória e obrigação de defini-la no primeiro acesso.
     flask listar-usuarios
     flask redefinir-senha --username marina
     flask definir-email --username marina --email marina@unifei.edu.br
+    flask preencher-emails
 """
 
 import secrets
@@ -20,6 +21,7 @@ import click
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
+from .emails import email_valido
 from .models import Subject, User, db
 
 SENHA_PROVISORIA_PADRAO = '123'
@@ -181,12 +183,33 @@ def vincular_professor(username, disciplina):
         click.echo('\nNenhum vínculo novo: já estava vinculado a todas.\n')
 
 
+# Padrão do e-mail institucional da UNIFEI: a matrícula 2022004841 corresponde a
+# d2022004841@unifei.edu.br. É o que permite avisar a turma inteira sem pedir
+# nada a ninguém — o endereço já foi atribuído pela universidade e já é conhecido.
+PREFIXO_INSTITUCIONAL = 'd'
+DOMINIO_INSTITUCIONAL = 'unifei.edu.br'
+
+
+def _email_institucional(username, prefixo=PREFIXO_INSTITUCIONAL,
+                         dominio=DOMINIO_INSTITUCIONAL):
+    """Endereço derivado da matrícula, ou None se o usuário não for matrícula.
+
+    Só deriva de usuário inteiramente numérico. Contas nominais como 'rodrigo' ou
+    'demonstracao' não seguem esse padrão, e inventar um endereço para elas
+    produziria e-mail devolvido em silêncio.
+    """
+    username = (username or '').strip()
+    if not username.isdigit():
+        return None
+    return f'{prefixo}{username}@{dominio}'
+
+
 @click.command('criar-alunos')
 @click.option(
     '--arquivo',
     type=click.Path(exists=True, dir_okay=False),
     required=True,
-    help="Arquivo texto, um aluno por linha: usuario;Nome;Sobrenome",
+    help="Arquivo texto, um aluno por linha: matricula;Nome;Sobrenome[;email]",
 )
 @click.option(
     '--senha',
@@ -195,14 +218,23 @@ def vincular_professor(username, disciplina):
     help='Senha provisória de todos os alunos criados.',
 )
 @click.option('--aleatoria', is_flag=True, help='Uma senha aleatória por aluno.')
+@click.option('--dominio', default=DOMINIO_INSTITUCIONAL, show_default=True,
+              help='Domínio do e-mail institucional derivado da matrícula.')
+@click.option('--sem-email', is_flag=True,
+              help='Não deriva e-mail nenhum. Os alunos ficam sem aviso.')
 @with_appcontext
-def criar_alunos(arquivo, senha, aleatoria):
+def criar_alunos(arquivo, senha, aleatoria, dominio, sem_email):
     """Cria contas de aluno em lote a partir de um arquivo.
 
     Alunos que já existem são ignorados, então o comando pode ser repetido sem
     duplicar ninguém.
+
+    Quando o usuário é a matrícula, o e-mail institucional é preenchido junto —
+    é ele que permite avisar o aluno quando a análise do comentário fica pronta.
+    Uma quarta coluna no arquivo sobrepõe o endereço derivado, para quem tiver
+    matrícula fora do padrão.
     """
-    criados, ignorados = [], []
+    criados, ignorados, sem_endereco = [], [], []
 
     with open(arquivo, encoding='utf-8') as entrada:
         for linha in entrada:
@@ -217,6 +249,17 @@ def criar_alunos(arquivo, senha, aleatoria):
                 ignorados.append(username)
                 continue
 
+            if sem_email:
+                email = None
+            else:
+                email = (partes[3] if len(partes) > 3 and partes[3] else
+                         _email_institucional(username, dominio=dominio))
+                if email and not email_valido(email):
+                    raise click.ClickException(
+                        f'{email!r} não parece um endereço de e-mail (linha de {username}).')
+                if not email:
+                    sem_endereco.append(username)
+
             senha_aluno = gerar_senha() if aleatoria else senha
             aluno = User(
                 username=username,
@@ -224,20 +267,76 @@ def criar_alunos(arquivo, senha, aleatoria):
                 role=User.ALUNO,
                 first_name=partes[1] if len(partes) > 1 else None,
                 last_name=partes[2] if len(partes) > 2 else None,
+                email=email,
                 must_change_password=True,
             )
             db.session.add(aluno)
-            criados.append((username, senha_aluno))
+            criados.append((username, senha_aluno, email))
 
     db.session.commit()
 
     click.echo(f'\n{len(criados)} aluno(s) criado(s), {len(ignorados)} já existia(m).')
     if criados:
-        click.echo('\nusuario,senha_provisoria')
-        for username, senha_aluno in criados:
-            click.echo(f'{username},{senha_aluno}')
+        click.echo('\nusuario,senha_provisoria,email')
+        for username, senha_aluno, email in criados:
+            click.echo(f'{username},{senha_aluno},{email or ""}')
     if ignorados:
         click.echo(f"\nJá existiam: {', '.join(ignorados)}")
+    if sem_endereco:
+        click.echo(f"\nSem e-mail, porque o usuário não é uma matrícula: {', '.join(sem_endereco)}")
+        click.echo('Estes não serão avisados. Use definir-email para cada um.')
+
+
+@click.command('preencher-emails')
+@click.option('--dominio', default=DOMINIO_INSTITUCIONAL, show_default=True,
+              help='Domínio do e-mail institucional.')
+@click.option('--sobrescrever', is_flag=True,
+              help='Também troca quem já tem endereço. Sem isto, só preenche quem está sem.')
+@click.option('--sim', is_flag=True, help='Executa sem perguntar.')
+@with_appcontext
+def preencher_emails(dominio, sobrescrever, sim):
+    """Preenche o e-mail institucional dos alunos a partir da matrícula.
+
+    Serve para as turmas cujas contas já foram criadas antes de o aviso por
+    e-mail existir. Mostra o que vai fazer e pede confirmação antes de gravar.
+
+    Deixa de fora quem não tem matrícula como usuário: para esses o endereço
+    seria adivinhado, e um endereço adivinhado é pior do que nenhum, porque
+    promete um aviso que nunca chega.
+    """
+    alunos = User.query.filter_by(role=User.ALUNO).order_by(User.username).all()
+
+    alvos = []
+    for aluno in alunos:
+        if aluno.email and not sobrescrever:
+            continue
+        derivado = _email_institucional(aluno.username, dominio=dominio)
+        if not derivado or derivado == aluno.email:
+            continue
+        alvos.append((aluno, derivado))
+
+    if not alvos:
+        click.echo('Nada a preencher: todo aluno com matrícula já tem o endereço certo.')
+        return
+
+    click.echo(f'\n{len(alvos)} aluno(s) receberão endereço:\n')
+    for aluno, derivado in alvos:
+        antes = f'{aluno.email} -> ' if aluno.email else ''
+        click.echo(f'  {aluno.username:20} {antes}{derivado}')
+
+    nominais = [a.username for a in alunos
+                if not _email_institucional(a.username) and not a.email]
+    if nominais:
+        click.echo(f"\nFicam sem endereço, por não terem matrícula: {', '.join(nominais)}")
+
+    if not sim:
+        click.confirm('\nGravar?', abort=True)
+
+    for aluno, derivado in alvos:
+        aluno.email = derivado
+    db.session.commit()
+
+    click.echo(f'\n{len(alvos)} endereço(s) gravado(s).\n')
 
 
 @click.command('listar-usuarios')
@@ -345,7 +444,7 @@ def calcular_explicacoes(sem_email):
     """
     import json
 
-    from .emails import avisar_explicacao_pronta, configurado
+    from .emails import configurado, notificar
     from .models import Feedback
     from .services import explain_sentiment_lime, explain_sentiment_shap
 
@@ -359,56 +458,64 @@ def calcular_explicacoes(sem_email):
         Feedback.token_attributions_json.is_(None),
     ).order_by(Feedback.id).all()
 
-    if not pendentes:
+    avisados = 0
+
+    if pendentes:
+        click.echo(f'{len(pendentes)} comentário(s) sem explicação. Cada um leva alguns minutos.\n')
+
+        for posicao, feedback in enumerate(pendentes, 1):
+            trecho = feedback.additional_comment[:50]
+            click.echo(f'[{posicao}/{len(pendentes)}] {trecho}...', nl=False)
+
+            try:
+                feedback.token_attributions_json = json.dumps(explain_sentiment_lime(feedback.additional_comment))
+                feedback.shap_attributions_json = json.dumps(explain_sentiment_shap(feedback.additional_comment))
+                db.session.commit()
+                click.echo(' ok')
+            except Exception as erro:
+                db.session.rollback()
+                click.echo(f' falhou: {erro}')
+    else:
         click.echo('Nenhum comentário pendente de explicação.')
+
+    if sem_email:
         return
 
-    click.echo(f'{len(pendentes)} comentário(s) sem explicação. Cada um leva alguns minutos.\n')
+    # Segunda passada, separada da primeira de propósito. O aviso normal parte da
+    # rota, assim que aquele feedback termina de calcular. Aqui varre-se tudo o
+    # que ficou calculado e sem aviso, seja porque o SMTP estava fora, seja
+    # porque o cálculo foi feito acima e não passou pela rota.
+    sem_aviso = Feedback.ativos().filter(
+        Feedback.token_attributions_json.isnot(None),
+        Feedback.avisado_em.is_(None),
+    ).order_by(Feedback.id).all()
 
-    avisados = []
+    sem_endereco = []
 
-    for posicao, feedback in enumerate(pendentes, 1):
-        trecho = feedback.additional_comment[:50]
-        click.echo(f'[{posicao}/{len(pendentes)}] {trecho}...', nl=False)
-
-        try:
-            feedback.token_attributions_json = json.dumps(explain_sentiment_lime(feedback.additional_comment))
-            feedback.shap_attributions_json = json.dumps(explain_sentiment_shap(feedback.additional_comment))
-            db.session.commit()
-            click.echo(' ok', nl=False)
-        except Exception as erro:
-            db.session.rollback()
-            click.echo(f' falhou: {erro}')
-            continue
-
-        # O aviso vem depois do commit, e o resultado dele não desfaz nada. Um
-        # e-mail que não sai não pode custar um cálculo que levou minutos.
-        if sem_email:
-            click.echo('')
-            continue
-
+    for feedback in sem_aviso:
         aluno = feedback.student
         if not (aluno and aluno.email):
-            click.echo(' (sem e-mail cadastrado)')
+            # Reportado, e não só ignorado: é o único sinal de que alguém da
+            # turma não vai ser avisado, e dá para resolver com preencher-emails.
+            sem_endereco.append(aluno.username if aluno else f'feedback {feedback.id}')
             continue
 
-        # O try é a segunda camada. O avisar_explicacao_pronta já trata as falhas
-        # que conhece, mas uma exceção inesperada aqui abortaria o lote inteiro e
-        # deixaria sem explicação todos os alunos seguintes da fila.
+        # O try é a segunda camada. O `notificar` já trata as falhas que conhece,
+        # mas uma exceção inesperada aqui abortaria a varredura e deixaria sem
+        # aviso todos os alunos seguintes da fila.
         try:
-            enviou = avisar_explicacao_pronta(aluno.email, aluno.first_name,
-                                              feedback.subject.name)
+            if notificar(feedback):
+                avisados += 1
+                click.echo(f'avisado: {aluno.email}')
+            else:
+                click.echo(f'aviso não saiu para {aluno.email}')
         except Exception as erro:
-            click.echo(f' (aviso falhou: {erro})')
-            continue
+            click.echo(f'aviso do feedback {feedback.id} falhou: {erro}')
 
-        if enviou:
-            avisados.append(aluno.email)
-            click.echo(' e avisado')
-        else:
-            click.echo(' (aviso não saiu)')
-
-    click.echo(f'\nPronto. {len(avisados)} aviso(s) enviado(s).')
+    click.echo(f'\nPronto. {avisados} aviso(s) enviado(s).')
+    if sem_endereco:
+        click.echo(f"Sem e-mail cadastrado, não avisados: {', '.join(sorted(set(sem_endereco)))}")
+        click.echo('Rode preencher-emails para os que têm matrícula como usuário.')
 
 
 @click.command('apagar-contas-de-teste')
@@ -470,6 +577,7 @@ def apagar_contas_de_teste(prefixo, sim):
 def register_commands(app):
     for comando in (criar_coordenador, criar_professor, criar_disciplina,
                     criar_aluno, criar_alunos, vincular_professor, listar_usuarios,
-                    redefinir_senha, definir_email, resetar_consentimento,
-                    calcular_explicacoes, apagar_contas_de_teste):
+                    redefinir_senha, definir_email, preencher_emails,
+                    resetar_consentimento, calcular_explicacoes,
+                    apagar_contas_de_teste):
         app.cli.add_command(comando)

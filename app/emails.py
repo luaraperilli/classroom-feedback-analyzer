@@ -1,11 +1,11 @@
 """Envio do aviso de que a análise do comentário ficou pronta.
 
-Mora aqui e não nas rotas de propósito: quem envia é a rotina em lote, que roda
-na máquina da pesquisadora. Assim as credenciais de e-mail não precisam existir
-no Cloud Run, e um serviço público deixa de ter permissão para disparar mensagem
-em nome de ninguém.
+Quem avisa é a própria rota, assim que termina de calcular aquele feedback: o
+aluno recebe o e-mail sobre o texto dele, no momento em que a análise dele fica
+pronta, sem depender de ninguém rodar comando nenhum. A rotina em lote continua
+existindo e avisa o que a rota não conseguiu.
 
-Configuração, no .env local:
+Configuração, no .env local e também no cloudrun.env.yaml:
 
     SMTP_SERVIDOR=smtp.gmail.com
     SMTP_PORTA=587
@@ -13,10 +13,15 @@ Configuração, no .env local:
     SMTP_SENHA=senha-de-app-de-16-letras
     SMTP_REMETENTE=Voz Discente <voz.discente@exemplo.com>
 
-Sem essas variáveis o envio não acontece e o sistema avisa, em vez de falhar. O
-cálculo da explicação não pode depender de e-mail funcionar.
+Como as credenciais passam a existir no serviço público, use uma conta de e-mail
+criada só para o sistema. Quem tiver acesso ao console do Cloud Run consegue ler
+a senha de app, e o estrago de uma conta dedicada acaba nela.
+
+Sem essas variáveis o envio não acontece e o sistema registra o aviso, em vez de
+falhar. O cálculo da explicação não pode depender de e-mail funcionar.
 """
 
+import datetime
 import logging
 import os
 import re
@@ -85,3 +90,42 @@ def avisar_explicacao_pronta(destinatario, nome, disciplina):
     except Exception:
         logger.exception('Falha ao enviar o aviso para %s', destinatario)
         return False
+
+
+def notificar(feedback):
+    """Avisa o autor de que a análise do feedback dele ficou pronta.
+
+    Ponto único de envio, usado pela rota e pela rotina em lote. Marca
+    `avisado_em` antes de devolver, e quem já está marcado não é avisado de novo:
+    é isso que impede o aluno de receber o mesmo e-mail duas vezes quando os dois
+    caminhos passam pelo mesmo feedback.
+
+    Devolve True só quando um e-mail saiu agora. Nunca levanta exceção, e nunca
+    marca `avisado_em` sem envio — um erro de SMTP hoje deixa o feedback
+    pendente para a próxima varredura, em vez de silenciar o aviso para sempre.
+    """
+    from .models import db
+
+    if feedback is None or feedback.avisado_em is not None:
+        return False
+    if not feedback.explicacao_calculada:
+        return False
+
+    aluno = feedback.student
+    if not (aluno and email_valido(aluno.email)):
+        return False
+
+    if not avisar_explicacao_pronta(aluno.email, aluno.first_name, feedback.subject.name):
+        return False
+
+    try:
+        feedback.avisado_em = datetime.datetime.utcnow()
+        db.session.commit()
+    except Exception:
+        # O e-mail já saiu; só a marca falhou. Desfazer aqui é o menos pior:
+        # a próxima varredura pode reenviar, e um aviso repetido incomoda menos
+        # do que uma sessão suja derrubando a requisição inteira.
+        db.session.rollback()
+        logger.exception('Aviso enviado, mas avisado_em não gravou (feedback=%s)', feedback.id)
+
+    return True

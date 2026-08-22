@@ -123,6 +123,13 @@ class Feedback(db.Model):
     # apaga tudo de verdade, inclusive as linhas retiradas.
     deleted_at = db.Column(db.DateTime, nullable=True)
 
+    # Quando o aviso de "sua análise ficou pronta" foi enviado para este
+    # feedback. Existe porque o aviso pode partir de dois lugares: a rota, assim
+    # que termina de calcular, e a rotina em lote, que varre o que ficou para
+    # trás. Sem esta marca os dois caminhos se sobrepõem e o aluno recebe o mesmo
+    # e-mail duas vezes.
+    avisado_em = db.Column(db.DateTime, nullable=True)
+
     overall_score = db.Column(db.Float, nullable=False)
 
     # NULL e {} significam coisas diferentes: nulo é "ainda não foi calculado",

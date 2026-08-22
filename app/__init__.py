@@ -43,6 +43,7 @@ _COLUNAS_NOVAS = {
     'feedback': (
         ('explicacao_iniciada_em', 'TIMESTAMP', False),
         ('deleted_at', 'TIMESTAMP', False),
+        ('avisado_em', 'TIMESTAMP', False),
     ),
 }
 

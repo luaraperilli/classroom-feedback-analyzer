@@ -23,9 +23,17 @@ aluno e de toda análise, mas fica gravado que houve retirada e quando. A seçã
 de direitos foi reescrita porque a promessa anterior, de que apagar apagava,
 passaria a ser falsa. A eliminação completa continua disponível pelo Perfil, e
 agora é ela que o texto aponta para quem quiser exercer esse direito.
+
+Versão 4.0 — o e-mail deixou de ser informado pelo participante e passou a ser o
+institucional, derivado da matrícula e cadastrado junto com a conta. Deixou
+também de ser opcional na prática: todo aluno com matrícula é avisado. Declarar
+isso é obrigatório, porque a versão 3.0 dizia o contrário em duas frases, que o
+endereço era fornecido por quem quisesse e que se participava igual sem ele. A
+recusa continua possível, agora pela remoção do endereço no Perfil, e o texto
+diz onde.
 """
 
-VERSAO_DO_TERMO = '3.0'
+VERSAO_DO_TERMO = '4.0'
 
 TERMO = {
     'versao': VERSAO_DO_TERMO,
@@ -56,11 +64,15 @@ TERMO = {
                 'Quando o professor abrir uma nova participação, você responde seis '
                 'afirmações sobre a sua experiência na disciplina, numa escala de 1 a 5, e '
                 'escreve um comentário livre. Além disso, o sistema guarda o seu nome e a '
-                'sua matrícula, já usados para criar o seu acesso, e o seu e-mail, se você '
-                'quiser informar. O e-mail serve para uma única coisa: avisar quando a '
-                'análise do seu comentário ficar pronta. Ele não é usado para mais nada, '
-                'não é compartilhado e informá-lo é opcional, você participa igual sem ele. '
-                'Não são coletados CPF, endereço, localização ou dados de navegação.'
+                'sua matrícula, já usados para criar o seu acesso, e o seu e-mail '
+                'institucional, que foi cadastrado a partir da sua matrícula. O e-mail '
+                'serve para uma única coisa: avisar quando a análise do seu comentário '
+                'ficar pronta, já que ela leva alguns minutos e você não precisa esperar '
+                'na tela. Ele não é usado para mais nada e não é compartilhado. Se preferir '
+                'não receber esse aviso, apague o endereço no seu Perfil, a qualquer '
+                'momento: você continua participando igual, e vê a análise entrando no '
+                'sistema. Não são coletados CPF, endereço, localização ou dados de '
+                'navegação.'
             ),
         },
         {

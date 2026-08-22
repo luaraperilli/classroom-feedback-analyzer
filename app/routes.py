@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
+from .emails import notificar
 from .models import db, Feedback, User, Subject, StudentRiskAnalysis
 from .services import (
     create_feedback,
@@ -216,6 +217,12 @@ def gerar_explicacao(feedback_id):
 
     if houve_falha and not feedback.explicacao_calculada:
         return jsonify({"error": "Não foi possível gerar a explicação deste comentário."}), 500
+
+    # O aviso sai aqui, depois do commit, porque é aqui que a análise daquele
+    # aluno acabou de ficar pronta. Depende do commit de propósito: avisar antes
+    # arriscaria mandar o aluno olhar um resultado que a gravação ainda pode
+    # perder. `notificar` não levanta exceção e não é avisado duas vezes.
+    notificar(feedback)
 
     return jsonify(feedback.to_dict(incluir_identificacao=True)), 200
 
