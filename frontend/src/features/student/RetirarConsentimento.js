@@ -40,7 +40,7 @@ function RetirarConsentimento() {
         <span className="w-1 h-5 rounded-full bg-[#dc2626]" />
         Retirar participação
       </h2>
-      <p className="text-sm text-[#475569] leading-relaxed">
+      <p className="text-sm text-[#334155] leading-relaxed">
         Você pode sair da pesquisa quando quiser, sem justificar e sem qualquer efeito sobre
         a sua avaliação na disciplina. Isso apaga todos os feedbacks que você enviou e as
         análises geradas a partir deles.
@@ -86,7 +86,7 @@ function RetirarConsentimento() {
             <button
               onClick={() => { setAberto(false); setTexto(''); setErro(null); }}
               disabled={apagando}
-              className="flex-1 py-2.5 rounded-xl border border-[#cfe0da] bg-white text-[#475569]
+              className="flex-1 py-2.5 rounded-xl border border-[#cfe0da] bg-white text-[#334155]
                          text-sm font-semibold hover:bg-[#f1f5f9] transition"
             >
               Cancelar

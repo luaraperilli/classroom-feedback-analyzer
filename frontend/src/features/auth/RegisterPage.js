@@ -65,7 +65,7 @@ function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-[#1e293b]">Criar conta</h1>
-            <p className="text-[#475569] text-sm mt-1">Preencha os dados para começar</p>
+            <p className="text-[#334155] text-sm mt-1">Preencha os dados para começar</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-[0_14px_30px_rgba(13,98,92,0.12)] border border-[#cfe0da] p-8">

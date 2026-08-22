@@ -46,7 +46,7 @@ function Comparativo({ marcos }) {
   const modulo = Math.abs(diferenca);
 
   return (
-    <p className={`text-sm mt-5 ${subiu ? 'text-[#0f766e]' : 'text-[#475569]'}`}>
+    <p className={`text-sm mt-5 ${subiu ? 'text-[#0f766e]' : 'text-[#334155]'}`}>
       Sua última avaliação foi {numeroPtBr(modulo, 1)} ponto{modulo >= 2 ? 's' : ''}{' '}
       {subiu ? 'maior' : 'menor'} que a anterior.
     </p>
@@ -73,7 +73,7 @@ function ComparacaoDeMarcos({ feedbacks }) {
             <li key={marco.id} className="flex items-center gap-3">
               <span
                 className={`text-sm w-16 flex-shrink-0 tabular-nums ${
-                  atual ? 'text-[#1e293b] font-medium' : 'text-[#94a3b8]'
+                  atual ? 'text-[#1e293b] font-medium' : 'text-[#64748b]'
                 }`}
               >
                 {marco.data}
@@ -92,7 +92,7 @@ function ComparacaoDeMarcos({ feedbacks }) {
 
               <span
                 className={`text-sm min-w-[3rem] text-right tabular-nums ${
-                  atual ? 'font-semibold text-[#0f766e]' : 'text-[#94a3b8]'
+                  atual ? 'font-semibold text-[#0f766e]' : 'text-[#64748b]'
                 }`}
               >
                 {numeroPtBr(marco.nota, 1)}/5

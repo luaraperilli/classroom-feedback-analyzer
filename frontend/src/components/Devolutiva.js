@@ -61,14 +61,14 @@ export default function Devolutiva({ feedback }) {
       <section className="rounded-xl border border-[#cfe0da] bg-bg px-4 py-3 space-y-2">
         <h4 className="text-sm font-semibold text-[#1e293b]">O que você escreveu</h4>
         {d.comentario.map((frase, i) => (
-          <p key={i} className="text-sm text-[#475569] leading-relaxed">
+          <p key={i} className="text-sm text-[#334155] leading-relaxed">
             <ComNegrito texto={frase} />
           </p>
         ))}
         {!d.temExplicacao && (
-          <p className="text-sm text-[#94a3b8] leading-relaxed">
-            As cores que mostram o peso de cada palavra aparecem no seu comentário assim que a
-            análise ficar pronta.
+          <p className="text-sm text-[#64748b] leading-relaxed">
+            As cores que mostram o peso de cada palavra aparecem no seu comentário assim que
+            esse cálculo terminar.
           </p>
         )}
       </section>
@@ -78,14 +78,14 @@ export default function Devolutiva({ feedback }) {
         <div className="space-y-2.5">
           {d.dimensoes.map((dim) => <Dimensao key={dim.chave} dimensao={dim} />)}
         </div>
-        <p className="text-sm text-[#475569] leading-relaxed pt-1">
+        <p className="text-sm text-[#334155] leading-relaxed pt-1">
           <ComNegrito texto={d.ligacao} />
         </p>
       </section>
 
       <section className="rounded-xl border border-[#cfe0da] bg-white px-4 py-3">
         <h4 className="text-sm font-semibold text-[#1e293b] mb-1">Uma sugestão</h4>
-        <p className="text-sm text-[#475569] leading-relaxed">{d.sugestao}</p>
+        <p className="text-sm text-[#334155] leading-relaxed">{d.sugestao}</p>
       </section>
     </div>
   );

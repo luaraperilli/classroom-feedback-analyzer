@@ -55,20 +55,20 @@ function ExplainabilityModal({ onClose }) {
           </div>
           <h3 className="text-base font-semibold text-[#1e293b]">Como lemos o seu comentário</h3>
         </div>
-        <p className="text-sm text-[#475569] leading-relaxed">
+        <p className="text-sm text-[#334155] leading-relaxed">
           Para te ajudar a refletir, destacamos as palavras do seu comentário que mais pesaram na forma como ele foi percebido.
         </p>
         <div className="bg-bg rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(15,118,110,0.35)' }} />
-            <span className="text-[#475569]"><span className="font-medium text-[#0f766e]">Verde</span> — puxou o resultado para o lado positivo</span>
+            <span className="text-[#334155]"><span className="font-medium text-[#0f766e]">Verde</span> — puxou o resultado para o lado positivo</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(220,38,38,0.35)' }} />
-            <span className="text-[#475569]"><span className="font-medium text-[#dc2626]">Vermelho</span> — puxou para o lado negativo</span>
+            <span className="text-[#334155]"><span className="font-medium text-[#dc2626]">Vermelho</span> — puxou para o lado negativo</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-[#475569]">Quanto <span className="font-medium text-[#1e293b]">mais forte a cor</span>, mais aquela palavra influenciou o resultado.</span>
+            <span className="text-[#334155]">Quanto <span className="font-medium text-[#1e293b]">mais forte a cor</span>, mais aquela palavra influenciou o resultado.</span>
           </div>
         </div>
         <p className="text-sm text-[#64748b] leading-relaxed">
@@ -88,15 +88,15 @@ function ExplainabilityModal({ onClose }) {
 function ExplainabilityLegend({ onInfo }) {
   return (
     <div className="flex items-center gap-6 flex-wrap mt-2">
-      <span className="text-sm font-medium text-[#475569]">O que mais pesou no resultado:</span>
+      <span className="text-sm font-medium text-[#334155]">O que mais pesou no resultado:</span>
       <div className="flex items-center gap-4">
-        <span className="flex items-center gap-1.5 text-sm text-[#475569]">
+        <span className="flex items-center gap-1.5 text-sm text-[#334155]">
           <span className="w-14 h-3 rounded-sm inline-block" style={{
             background: 'linear-gradient(to right, rgba(15,118,110,0.08), rgba(15,118,110,0.5))'
           }} />
           Positivo
         </span>
-        <span className="flex items-center gap-1.5 text-sm text-[#475569]">
+        <span className="flex items-center gap-1.5 text-sm text-[#334155]">
           <span className="w-14 h-3 rounded-sm inline-block" style={{
             background: 'linear-gradient(to right, rgba(220,38,38,0.08), rgba(220,38,38,0.5))'
           }} />
@@ -120,17 +120,20 @@ function AnaliseEmPreparo({ comEmail }) {
   return (
     <div className="mt-3 rounded-xl border border-[#cfe0da] bg-bg px-4 py-3 space-y-1.5">
       <p className="text-sm font-semibold text-[#1e293b]">
-        A análise deste comentário ainda está sendo preparada
+        O destaque das palavras ainda está sendo preparado
       </p>
-      <p className="text-sm text-[#475569] leading-relaxed">
-        Descobrir quais palavras mais pesaram no resultado exige repetir a leitura do
-        seu texto milhares de vezes, então isso acontece fora do ar. <strong>O seu
-        feedback já está registrado</strong> e você não precisa fazer mais nada.
+      <p className="text-sm text-[#334155] leading-relaxed">
+        {/* O resultado do comentário já está pronto e aparece abaixo. O que falta
+            é só o peso de cada palavra, e dizer "a análise" sem qualificar fazia
+            parecer que o resultado exibido tinha sido inventado antes da hora. */}
+        <strong>O resultado do seu comentário já está calculado</strong> e aparece
+        logo abaixo. O que ainda falta é descobrir quais palavras mais pesaram nele,
+        e isso exige repetir a leitura do seu texto milhares de vezes.
       </p>
-      <p className="text-sm text-[#475569] leading-relaxed">
+      <p className="text-sm text-[#334155] leading-relaxed">
         {comEmail
-          ? 'Você vai receber um e-mail quando ficar pronta, e as cores aparecem aqui.'
-          : 'As cores aparecem aqui quando ficar pronta. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
+          ? 'Você vai receber um e-mail quando esse cálculo terminar, e as cores aparecem aqui.'
+          : 'As cores aparecem aqui quando esse cálculo terminar. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
       </p>
     </div>
   );
@@ -152,19 +155,19 @@ function EnvioConfirmado({ comEmail, onAvaliarNovamente }) {
         <span className="w-1 h-5 rounded-full bg-primary" />
         Obrigado
       </h2>
-      <p className="text-sm text-[#475569] leading-relaxed">
+      <p className="text-sm text-[#334155] leading-relaxed">
         <strong className="font-semibold text-[#1e293b]">Ele já está registrado</strong> e
         aparece logo abaixo, no seu histórico. A análise de quais palavras mais pesaram
         leva alguns minutos e continua sendo feita mesmo se você fechar esta página.
       </p>
-      <p className="text-sm text-[#475569] leading-relaxed">
+      <p className="text-sm text-[#334155] leading-relaxed">
         {comEmail
           ? 'Você recebe um e-mail quando ficar pronta. Aí é só entrar de novo e abrir este feedback no histórico.'
           : 'Quando ficar pronta, ela aparece no histórico. Se quiser ser avisado por e-mail, cadastre um endereço no seu Perfil.'}
       </p>
       <button
         onClick={onAvaliarNovamente}
-        className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#475569]
+        className="w-full py-2.5 rounded-xl border border-slate-200 text-sm text-[#334155]
                    hover:bg-bg transition font-medium"
       >
         Avaliar Novamente
@@ -217,7 +220,7 @@ function StatCard({ icon, tint, value, valueClass, label, hint }) {
           <Tooltip texto={hint} posicao="left">
             <span
               aria-label={hint}
-              className="text-[#94a3b8] hover:text-primary cursor-help transition-colors"
+              className="text-[#64748b] hover:text-primary cursor-help transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
@@ -231,7 +234,7 @@ function StatCard({ icon, tint, value, valueClass, label, hint }) {
       </div>
       <div className="min-w-0">
         <p className={`text-2xl font-bold leading-none ${valueClass || 'text-[#0f172a]'}`}>{value}</p>
-        <p className="text-sm text-[#475569] mt-1.5">{label}</p>
+        <p className="text-sm text-[#334155] mt-1.5">{label}</p>
       </div>
     </div>
   );
@@ -356,7 +359,7 @@ function FeedbackCard({ fb, defaultOpen, comEmail, onInfo, onRequestDelete }) {
           <button
             onClick={() => onRequestDelete(fb.id)}
             aria-label="Apagar este feedback"
-            className="p-1.5 rounded-lg text-[#94a3b8] hover:text-[#dc2626] hover:bg-red-50 transition"
+            className="p-1.5 rounded-lg text-[#64748b] hover:text-[#dc2626] hover:bg-red-50 transition"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -551,14 +554,14 @@ function StudentHistory() {
               </div>
               <h3 className="text-base font-semibold text-[#1e293b]">Apagar este feedback?</h3>
             </div>
-            <p className="text-sm text-[#475569] leading-relaxed">
+            <p className="text-sm text-[#334155] leading-relaxed">
               Essa ação não pode ser desfeita. Depois de apagar, você poderá enviar um novo feedback para essa disciplina.
             </p>
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setConfirmDeleteId(null)}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-[#475569] hover:bg-bg transition disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-[#334155] hover:bg-bg transition disabled:opacity-60"
               >
                 Cancelar
               </button>
@@ -641,7 +644,7 @@ function StudentHistory() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
               </svg>
             </div>
-            <p className="text-[#475569] mb-4 font-medium">Você ainda não enviou nenhum feedback.</p>
+            <p className="text-[#334155] mb-4 font-medium">Você ainda não enviou nenhum feedback.</p>
             <button
               onClick={() => navigate('/')}
               className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition"
@@ -667,7 +670,7 @@ function StudentHistory() {
                 texto="Cada barra é um feedback que você enviou: a média das suas seis respostas daquele dia, na escala de 1 a 5."
                 posicao="left"
               >
-                <span aria-label="Como ler esta comparação" className="text-[#94a3b8] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5">
+                <span aria-label="Como ler esta comparação" className="text-[#64748b] hover:text-primary cursor-help transition-colors flex-shrink-0 mt-0.5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
                   </svg>

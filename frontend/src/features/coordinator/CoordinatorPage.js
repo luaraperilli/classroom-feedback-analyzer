@@ -121,7 +121,7 @@ function CoordinatorPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-[#1e293b]">Gestão</h1>
-          <p className="text-sm text-[#475569] mt-0.5">Área do Coordenador</p>
+          <p className="text-sm text-[#334155] mt-0.5">Área do Coordenador</p>
         </div>
 
         {/* Global status */}

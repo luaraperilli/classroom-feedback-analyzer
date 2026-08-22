@@ -70,7 +70,7 @@ function ChangeInitialPassword() {
               <span className="text-sm font-semibold uppercase tracking-wide">Primeiro acesso</span>
             </div>
             <h1 className="text-2xl font-bold text-[#1e293b]">Crie a sua senha</h1>
-            <p className="text-[#475569] text-sm mt-1">
+            <p className="text-[#334155] text-sm mt-1">
               Olá, {firstName}! Por segurança, defina uma senha só sua antes de continuar.
             </p>
           </div>

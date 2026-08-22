@@ -121,7 +121,7 @@ function SkeletonFeedbackCards() {
 
 function MetricPill({ label, value }) {
   return (
-    <span className="px-2 py-1 rounded-lg bg-[#f8fafc] text-sm text-[#475569]">
+    <span className="px-2 py-1 rounded-lg bg-[#f8fafc] text-sm text-[#334155]">
       {label}: {value}/5
     </span>
   );
@@ -322,7 +322,7 @@ function Dashboard() {
                 className={
                   activeTab === tab.id
                     ? 'bg-[#0f766e] text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors'
-                    : 'text-[#475569] px-4 py-2 text-sm hover:text-[#0f766e] transition-colors rounded-xl'
+                    : 'text-[#334155] px-4 py-2 text-sm hover:text-[#0f766e] transition-colors rounded-xl'
                 }
               >
                 {tab.label}

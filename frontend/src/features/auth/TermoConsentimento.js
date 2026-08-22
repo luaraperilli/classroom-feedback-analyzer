@@ -48,7 +48,7 @@ function TermoConsentimento() {
       <div className="min-h-screen bg-[#cde0d9] flex items-center justify-center px-4">
         <div className="bg-surface rounded-2xl border border-[#cfe0da] shadow-[0_14px_30px_rgba(13,98,92,0.12)] p-8 max-w-md w-full space-y-4">
           <h1 className="text-xl font-bold text-[#0f172a]">Tudo bem</h1>
-          <p className="text-sm text-[#475569] leading-relaxed">
+          <p className="text-sm text-[#334155] leading-relaxed">
             Sua participação é voluntária e essa escolha não tem nenhum efeito sobre a sua
             avaliação na disciplina. Se mudar de ideia, é só entrar de novo — o termo aparece
             outra vez.
@@ -80,13 +80,13 @@ function TermoConsentimento() {
           {termo.titulo}
         </h1>
 
-        <p className="text-sm text-[#475569] leading-relaxed mb-6">{termo.resumo}</p>
+        <p className="text-sm text-[#334155] leading-relaxed mb-6">{termo.resumo}</p>
 
         <div className="space-y-5">
           {termo.secoes.map((secao) => (
             <section key={secao.titulo}>
               <h2 className="text-base font-semibold text-[#1e293b] mb-1">{secao.titulo}</h2>
-              <p className="text-sm text-[#475569] leading-relaxed">{secao.texto}</p>
+              <p className="text-sm text-[#334155] leading-relaxed">{secao.texto}</p>
             </section>
           ))}
         </div>
@@ -115,14 +115,14 @@ function TermoConsentimento() {
           <button
             onClick={() => setRecusou(true)}
             disabled={enviando}
-            className="flex-1 py-2.5 rounded-xl border border-[#cfe0da] text-[#475569] text-sm font-semibold
+            className="flex-1 py-2.5 rounded-xl border border-[#cfe0da] text-[#334155] text-sm font-semibold
                        hover:bg-[#f1f5f9] transition"
           >
             Não quero participar
           </button>
         </div>
 
-        <p className="text-sm text-[#94a3b8] mt-4 text-center">Versão {termo.versao} do termo</p>
+        <p className="text-sm text-[#64748b] mt-4 text-center">Versão {termo.versao} do termo</p>
       </div>
     </div>
   );

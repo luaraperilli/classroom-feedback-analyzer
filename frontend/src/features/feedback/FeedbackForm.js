@@ -37,7 +37,7 @@ function StepIndicator({ current }) {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all
                 ${done   ? 'bg-[#0f766e] text-white' :
                   active ? 'bg-primary text-white ring-4 ring-primary/20' :
-                           'bg-slate-100 text-[#475569]'}`}>
+                           'bg-slate-100 text-[#334155]'}`}>
                 {done ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -73,13 +73,13 @@ function LikertQuestion({ question, value, onChange }) {
             className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all
               ${value === n
                 ? 'bg-primary border-primary text-white shadow-[0_4px_8px_-2px_rgba(15,118,110,0.30)] scale-105'
-                : 'border-slate-200 text-[#475569] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/60 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
+                : 'border-slate-200 text-[#334155] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/60 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
           >
             {n}
           </button>
         ))}
       </div>
-      <p className={`text-sm text-center mt-2 transition-opacity ${value ? 'text-[#475569] opacity-100' : 'opacity-0'}`}>
+      <p className={`text-sm text-center mt-2 transition-opacity ${value ? 'text-[#334155] opacity-100' : 'opacity-0'}`}>
         {RATING_LABELS[value] || '—'}
       </p>
     </div>
@@ -293,7 +293,7 @@ function FeedbackForm() {
                       className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all
                         ${selected
                           ? 'bg-primary border-primary text-white shadow-[0_4px_8px_-2px_rgba(15,118,110,0.30)]'
-                          : 'border-slate-200 text-[#475569] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/50 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
+                          : 'border-slate-200 text-[#334155] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.10),0_1px_2px_rgba(16,24,40,0.06)] hover:border-primary/50 hover:text-primary hover:shadow-[0_4px_8px_-2px_rgba(16,24,40,0.12),0_2px_4px_-2px_rgba(16,24,40,0.06)]'}`}
                     >
                       {translateSubject(s.name)}
                     </button>
@@ -308,7 +308,7 @@ function FeedbackForm() {
               {/* Step 2 — Likert (card único com todas as perguntas) */}
               <div className="bg-surface rounded-2xl border border-[#bcd5cd] shadow-[0_12px_16px_-4px_rgba(16,24,40,0.10),0_4px_6px_-2px_rgba(16,24,40,0.05)] p-6">
                 <h2 className="text-base font-semibold text-[#1e293b] mb-1">Como você se sentiu nesta aula?</h2>
-                <p className="text-sm text-[#475569] mb-4">1 = discordo totalmente &nbsp;·&nbsp; 5 = concordo totalmente</p>
+                <p className="text-sm text-[#334155] mb-4">1 = discordo totalmente &nbsp;·&nbsp; 5 = concordo totalmente</p>
                 <RatingProgress answered={answeredCount} total={QUESTIONS.length} />
                 <div className="divide-y divide-slate-100">
                   {QUESTIONS.map((q) => (

@@ -28,9 +28,9 @@ class ErrorBoundary extends React.Component {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-[#1e293b]">Algo deu errado</h1>
-            <p className="text-sm text-[#475569]">Um erro inesperado ocorreu. Tente recarregar a página.</p>
+            <p className="text-sm text-[#334155]">Um erro inesperado ocorreu. Tente recarregar a página.</p>
             {this.state.mensagem && (
-              <p className="text-sm text-[#94a3b8] font-mono break-words max-w-md mx-auto">
+              <p className="text-sm text-[#64748b] font-mono break-words max-w-md mx-auto">
                 {this.state.mensagem}
               </p>
             )}

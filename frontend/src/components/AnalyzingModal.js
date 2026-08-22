@@ -55,7 +55,7 @@ export default function AnalyzingModal() {
 
         <h3 className="text-base font-semibold text-[#1e293b]">Enviando o seu feedback</h3>
 
-        <p key={etapa} className="animate-step text-sm text-[#475569] mt-2 min-h-[20px]">
+        <p key={etapa} className="animate-step text-sm text-[#334155] mt-2 min-h-[20px]">
           {ETAPAS[etapa]}
         </p>
 
@@ -63,7 +63,7 @@ export default function AnalyzingModal() {
           <div className="h-full w-1/3 bg-primary rounded-full animate-indeterminate" />
         </div>
 
-        <p className="text-sm text-[#94a3b8] mt-4 leading-snug">
+        <p className="text-sm text-[#64748b] mt-4 leading-snug">
           {demorando
             ? `Está levando um pouco mais que o normal (${segundos}s). Pode aguardar, o seu envio está a caminho.`
             : 'Leva alguns segundos.'}
