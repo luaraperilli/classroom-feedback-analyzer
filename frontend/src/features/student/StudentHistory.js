@@ -13,6 +13,11 @@ import Spinner from '../../components/Spinner';
 import Toast from '../../components/Toast';
 
 
+// De quanto em quanto tempo a tela reconsulta enquanto houver explicação
+// pendente. Vinte segundos porque o cálculo leva minutos: consultar mais rápido
+// não adianta a chegada e só acorda instância do servidor à toa.
+const INTERVALO_DE_CONSULTA = 20000;
+
 const SENTIMENT_META = {
   positivo: { label: 'Positivo', color: '#0f766e', bg: 'bg-[#e6f2f1]', ring: 'ring-[#c5e0dd]', text: 'text-[#0f766e]', dot: 'bg-[#0f766e]' },
   neutro:   { label: 'Neutro',   color: '#64748b', bg: 'bg-slate-50', ring: 'ring-slate-200', text: 'text-[#64748b]', dot: 'bg-[#64748b]' },
@@ -512,6 +517,51 @@ function StudentHistory() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [recemEnviado]);
+
+  const haExplicacaoPendente = feedbacks.some(
+    (fb) => (fb.additional_comment || '').trim()
+      && !temAtribuicoes(fb.token_attributions || fb.shap_attributions),
+  );
+
+  // Se o aluno continuar na página, as cores entram sozinhas quando ficam
+  // prontas. Sem isto, o cálculo terminava, o e-mail saía, e quem estava com a
+  // aba aberta continuava olhando um comentário sem destaque — precisava
+  // recarregar para ver algo que já existia havia minutos.
+  //
+  // É uma consulta simples e silenciosa, deliberadamente diferente da barra de
+  // progresso que existia antes: ela não mostra espera, não estima tempo e não
+  // fala em erro. Quem fechar a aba não perde nada, porque o servidor conclui de
+  // qualquer forma e o aviso vai por e-mail.
+  //
+  // A dependência é o booleano, e não a lista: dependendo da lista, cada
+  // consulta trocaria a referência do estado, o efeito se remontaria e o
+  // temporizador reiniciaria a cada volta.
+  useEffect(() => {
+    if (!accessToken || !haExplicacaoPendente) return undefined;
+
+    let cancelado = false;
+
+    const consultar = () => {
+      // Aba em segundo plano não precisa de atualização: o navegador já
+      // estrangula temporizadores aí, e a consulta acorda uma instância do
+      // servidor à toa. Ao voltar para a aba, o próprio evento dispara.
+      if (document.hidden) return;
+      getMyFeedbacks(selectedSubject || null, accessToken)
+        .then((data) => {
+          if (!cancelado && Array.isArray(data)) setFeedbacks(data);
+        })
+        .catch(() => {});
+    };
+
+    const intervalo = setInterval(consultar, INTERVALO_DE_CONSULTA);
+    document.addEventListener('visibilitychange', consultar);
+
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', consultar);
+    };
+  }, [haExplicacaoPendente, accessToken, selectedSubject]);
 
   // O histórico é a única lista: o envio recém-feito entra nele como qualquer
   // outro, aberto por ser o primeiro. Antes ele era removido daqui e exibido de

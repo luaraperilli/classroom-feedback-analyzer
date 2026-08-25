@@ -101,13 +101,18 @@ const pct = (v) => `${Math.round(v * 100)}%`;
  * A regra por extenso, e não só o número.
  *
  * "Passou da metade" não dizia metade de quê: o aluno não tem como saber que o
- * modelo reparte cem por cento entre três lados, então o corte em cinquenta era
- * um número sem referência. Sem a referência, o percentual vira uma alegação de
- * autoridade, que é o oposto do que a devolutiva existe para fazer.
+ * modelo reparte cem por cento entre três classificações, então o corte em
+ * cinquenta era um número sem referência. Sem a referência, o percentual vira
+ * uma alegação de autoridade, que é o oposto do que a devolutiva existe para
+ * fazer.
+ *
+ * "Classificação" e não "lado", a pedido do docente na revisão de 24 de agosto:
+ * "lado" sugere uma disputa entre partes, e o que existe são três rótulos
+ * possíveis para o mesmo texto.
  */
 const REGRA =
-  'Esse número vem de uma repartição de 100% entre três lados, positivo, ' +
-  'negativo e neutro. O resultado é o lado que sozinho passa de 50%.';
+  'Esse número vem de uma repartição de 100% entre três classificações, ' +
+  'positiva, negativa e neutra. Vale a classificação que sozinha passa de 50%.';
 
 /**
  * Frase sobre o comentário: o que o modelo respondeu e por quê.
@@ -136,7 +141,7 @@ export function frasesDoComentario(feedback) {
     frases.push(REGRA);
   } else if (rotulo === 'misto') {
     frases.push(`O que você escreveu soou **${pct(feedback.pos)} positivo e ${pct(feedback.neg)} negativo**, e por isso o resultado ficou **misto**: o seu texto tem os dois.`);
-    frases.push(`${REGRA} Aqui nenhum passou, então não dá para chamar de um só.`);
+    frases.push(`${REGRA} Aqui nenhuma passou, então não dá para escolher uma só.`);
   } else {
     frases.push(`O que você escreveu não pendeu nem para o positivo nem para o negativo, então o resultado ficou **neutro**.`);
     frases.push(REGRA);
@@ -169,7 +174,7 @@ export function fraseDeLigacao(feedback) {
   const base = `Nas seis perguntas você se avaliou em **${notaTexto} de 5**.`;
 
   if ((notaAlta && textoNegativo) || (notaBaixa && textoPositivo)) {
-    return `${base} Isso e o comentário apontam para lados diferentes, e tudo bem: as perguntas são sobre como você se vê na disciplina, o comentário é sobre como você descreveu a aula. Vale reparar nessa diferença.`;
+    return `${base} Isso e o comentário apontam em direções diferentes, e tudo bem: as perguntas são sobre como você se vê na disciplina, o comentário é sobre como você descreveu a aula. Vale reparar nessa diferença.`;
   }
   return `${base} Esse número vem das perguntas objetivas, e o resultado acima vem do que você escreveu.`;
 }

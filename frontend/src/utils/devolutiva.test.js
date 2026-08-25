@@ -51,6 +51,9 @@ describe('frase sobre o comentário', () => {
     expect(texto).toContain('98% positivo');
     expect(texto).toContain('repartição de 100%');
     expect(texto).toContain('passa de 50%');
+    // "classificação", e não "lado": revisão do docente em 24/08.
+    expect(texto).toContain('classificação');
+    expect(texto).not.toContain('lado');
   });
 
   it('diz de que o percentual é metade, e não só "metade"', () => {
@@ -58,7 +61,7 @@ describe('frase sobre o comentário', () => {
     // vira alegação de autoridade em vez de conta que o aluno possa conferir.
     [POSITIVO, NEGATIVO, MISTO, NEUTRO].forEach((s) => {
       const texto = frasesDoComentario({ ...notas(3, 3, 3), ...s }).join(' ');
-      expect(texto).toContain('positivo, negativo e neutro');
+      expect(texto).toContain('positiva, negativa e neutra');
       expect(texto).not.toContain('passou da metade');
     });
   });
@@ -76,7 +79,7 @@ describe('frase sobre o comentário', () => {
     const texto = frasesDoComentario({ ...notas(3, 3, 3), ...MISTO }).join(' ');
     expect(texto).toContain('49% positivo');
     expect(texto).toContain('28% negativo');
-    expect(texto).toContain('nenhum passou');
+    expect(texto).toContain('nenhuma passou');
     expect(texto).not.toMatch(/resultado ficou \*\*positivo/);
   });
 
@@ -143,14 +146,14 @@ describe('frase sobre o comentário', () => {
 describe('frase que liga a nota ao comentário', () => {
   it('avisa quando os dois apontam para lados diferentes', () => {
     const alta = fraseDeLigacao({ ...notas(5, 5, 5), ...NEGATIVO });
-    expect(alta).toContain('lados diferentes');
+    expect(alta).toContain('direções diferentes');
     const baixa = fraseDeLigacao({ ...notas(1, 1, 1), ...POSITIVO });
-    expect(baixa).toContain('lados diferentes');
+    expect(baixa).toContain('direções diferentes');
   });
 
   it('quando concordam, apenas separa as origens', () => {
     const f = fraseDeLigacao({ ...notas(5, 5, 5), ...POSITIVO });
-    expect(f).not.toContain('lados diferentes');
+    expect(f).not.toContain('direções diferentes');
     expect(f).toContain('perguntas objetivas');
     expect(f).toContain('que você escreveu');
   });
