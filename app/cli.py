@@ -353,8 +353,26 @@ def listar_usuarios():
         click.echo(f'{usuario.role:12} {usuario.username:20} {usuario.display_name}{pendente}')
 
 
+def _usuarios_do_arquivo(arquivo):
+    """Lê o mesmo formato do criar-alunos e devolve só os nomes de usuário."""
+    nomes = []
+    with open(arquivo, encoding='utf-8') as entrada:
+        for linha in entrada:
+            linha = linha.strip()
+            if not linha or linha.startswith('#'):
+                continue
+            nomes.append(linha.split(';')[0].strip())
+    return nomes
+
+
 @click.command('redefinir-senha')
-@click.option('--username', prompt=True, help='Usuário que terá a senha redefinida.')
+@click.option('--username', default=None, help='Usuário que terá a senha redefinida.')
+@click.option(
+    '--arquivo',
+    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    help='Redefine a turma inteira, no mesmo formato do criar-alunos.',
+)
 @click.option('--senha', default=SENHA_PROVISORIA_PADRAO, show_default=True)
 @click.option(
     '--definitiva',
@@ -363,21 +381,45 @@ def listar_usuarios():
          'pela tela de definição de senha e for preciso desbloqueá-la.',
 )
 @with_appcontext
-def redefinir_senha(username, senha, definitiva):
-    """Redefine a senha de um usuário — substitui o 'esqueci minha senha'."""
-    usuario = _buscar_usuario(username)
-    if not usuario:
-        raise click.ClickException(f'Usuário {username!r} não encontrado.')
+def redefinir_senha(username, arquivo, senha, definitiva):
+    """Redefine a senha de um usuário — substitui o 'esqueci minha senha'.
 
-    usuario.password = _hash(senha)
-    usuario.must_change_password = not definitiva
+    Com --arquivo, redefine a turma inteira numa passada só. Carregar a
+    aplicação custa alguns segundos por causa do modelo, e repetir isso trinta e
+    oito vezes num laço de shell levaria minutos.
+    """
+    if bool(username) == bool(arquivo):
+        raise click.ClickException('Use --username para uma pessoa ou --arquivo para a turma.')
+
+    nomes = [username] if username else _usuarios_do_arquivo(arquivo)
+    if not nomes:
+        raise click.ClickException('O arquivo não tem nenhum usuário.')
+
+    alterados, ausentes = [], []
+    for nome in nomes:
+        usuario = _buscar_usuario(nome)
+        if not usuario:
+            ausentes.append(nome)
+            continue
+        usuario.password = _hash(senha)
+        usuario.must_change_password = not definitiva
+        alterados.append(usuario.username)
+
+    # Um commit só: se algo falhar no meio, metade da turma não fica com uma
+    # senha e metade com outra.
     db.session.commit()
 
-    click.echo(f'\nSenha de {usuario.username} redefinida para: {senha}')
+    if username and ausentes:
+        raise click.ClickException(f'Usuário {username!r} não encontrado.')
+
+    click.echo(f'\n{len(alterados)} senha(s) redefinida(s) para: {senha}')
     if definitiva:
-        click.echo('A troca NÃO será exigida — a pessoa entra direto com esta senha.\n')
+        click.echo('A troca NÃO será exigida — as pessoas entram direto com esta senha.')
     else:
-        click.echo('A troca será exigida no próximo acesso.\n')
+        click.echo('A troca será exigida no próximo acesso.')
+    if ausentes:
+        click.echo(f"\nNão encontrados, e por isso inalterados: {', '.join(ausentes)}")
+    click.echo('')
 
 
 @click.command('definir-email')
