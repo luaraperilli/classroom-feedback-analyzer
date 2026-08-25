@@ -88,11 +88,12 @@ const request = async (endpoint, options = {}) => {
       // refazer algo que já deu certo. Cada tela acrescenta a orientação certa
       // depois de conferir o que de fato aconteceu.
       //
-      // A redação evita atribuir defeito ao sistema. Chegando aqui, o mais
-      // provável é a instância ainda estar subindo, e nesse caso não houve falha
-      // nenhuma — houve espera. Dizer "o servidor está demorando" fazia o aluno
-      // concluir que estava quebrado e desistir.
-      throw new ApiError('A conexão está lenta neste momento. Nada foi perdido.', 0);
+      // A frase descreve o que aconteceu e não arrisca uma causa. "O servidor
+      // está demorando" acusava defeito onde havia espera, e "a conexão está
+      // lenta" culpava a rede do aluno, que pode estar ótima. Diagnóstico errado
+      // é pior do que diagnóstico nenhum: manda a pessoa consertar o que não
+      // está quebrado.
+      throw new ApiError('A resposta não chegou a tempo. Nada foi perdido.', 0);
     }
     throw new ApiError('Erro de conexão. Verifique sua rede.', 0);
   }

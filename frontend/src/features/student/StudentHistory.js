@@ -137,10 +137,12 @@ function AnaliseEmPreparo({ comEmail }) {
       <p className="text-sm text-[#334155] leading-relaxed">
         {/* O resultado do comentário já está pronto e aparece abaixo. O que falta
             é só o peso de cada palavra, e dizer "a análise" sem qualificar fazia
-            parecer que o resultado exibido tinha sido inventado antes da hora. */}
+            parecer que o resultado exibido tinha sido inventado antes da hora.
+            A estimativa de tempo é o que impede a espera de ser lida como
+            travamento: quem sabe quanto vai esperar não fica conferindo. */}
         <strong>O resultado do seu comentário já está calculado</strong> e aparece
-        logo abaixo. O que ainda falta é descobrir quais palavras mais pesaram nele,
-        e isso exige repetir a leitura do seu texto milhares de vezes.
+        logo abaixo. Falta descobrir quais palavras mais pesaram nele, o que costuma
+        levar de um a três minutos.
       </p>
       <p className="text-sm text-[#334155] leading-relaxed">
         {comEmail
