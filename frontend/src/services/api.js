@@ -1,6 +1,16 @@
 import API_BASE_URL from '../config';
 
-const TIMEOUT_PADRAO = 30000;
+// O Cloud Run desliga as instâncias ociosas, e a primeira requisição depois
+// disso espera o contêiner subir e o modelo de sentimento carregar. Medido em
+// produção, isso passa de trinta segundos com folga, e era esse o limite antigo:
+// a requisição era abortada no meio de uma partida que ia terminar bem, e o
+// aluno lia "o servidor está demorando" como se algo estivesse quebrado.
+//
+// Noventa segundos cobrem a partida sem depender de sorte. A requisição não fica
+// pendurada à toa: o Cloud Run enfileira o pedido enquanto a instância sobe e o
+// atende assim que ela responde, então esperar aqui é esperar por algo que está
+// de fato acontecendo.
+const TIMEOUT_PADRAO = 90000;
 // Cobre o cold start do Cloud Run no primeiro envio do dia.
 const TIMEOUT_ENVIO = 120000;
 // Primeira tentativa de obter a explicação. Não precisa cobrir o cálculo
@@ -77,7 +87,12 @@ const request = async (endpoint, options = {}) => {
       // resposta se perde. Pedir nova tentativa nesses casos leva o aluno a
       // refazer algo que já deu certo. Cada tela acrescenta a orientação certa
       // depois de conferir o que de fato aconteceu.
-      throw new ApiError('O servidor está demorando para responder.', 0);
+      //
+      // A redação evita atribuir defeito ao sistema. Chegando aqui, o mais
+      // provável é a instância ainda estar subindo, e nesse caso não houve falha
+      // nenhuma — houve espera. Dizer "o servidor está demorando" fazia o aluno
+      // concluir que estava quebrado e desistir.
+      throw new ApiError('A conexão está lenta neste momento. Nada foi perdido.', 0);
     }
     throw new ApiError('Erro de conexão. Verifique sua rede.', 0);
   }

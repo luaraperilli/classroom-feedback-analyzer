@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { login as apiLogin } from '../../services/api';
@@ -10,8 +10,20 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [demorando, setDemorando] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // O primeiro acesso depois de um período sem uso espera a instância do
+  // servidor subir, e isso passa de trinta segundos. Sem explicação na tela, a
+  // pessoa vê um botão girando sem fim e conclui que travou. A frase aparece
+  // depois de oito segundos porque, no caso normal, o login responde em menos
+  // de um e ninguém precisa ler nada.
+  useEffect(() => {
+    if (!isLoading) { setDemorando(false); return undefined; }
+    const t = setTimeout(() => setDemorando(true), 8000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,6 +120,13 @@ function LoginPage() {
                   <span className="inline-flex items-center justify-center gap-2"><Spinner /> Entrando...</span>
                 ) : 'Entrar'}
               </button>
+
+              {demorando && (
+                <p role="status" className="text-sm text-[#334155] leading-relaxed text-center">
+                  O sistema fica em repouso quando ninguém está usando, e está sendo ligado
+                  agora. O primeiro acesso do dia leva alguns segundos a mais — pode aguardar.
+                </p>
+              )}
             </form>
           </div>
 
