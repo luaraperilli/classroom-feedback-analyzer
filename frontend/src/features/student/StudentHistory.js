@@ -58,33 +58,35 @@ function ExplainabilityModal({ onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <h3 className="text-base font-semibold text-[#1e293b]">Como lemos o seu comentário</h3>
+          <h3 className="text-base font-semibold text-[#1e293b]">Como o seu comentário foi analisado</h3>
         </div>
+        {/* Registro impessoal e sem termo técnico. A versão anterior falava em
+            "puxar para um lado" e se dirigia ao aluno em segunda pessoa, o que
+            destoava do restante do sistema. O conteúdo é o mínimo que a cor não
+            comunica sozinha: o que cada cor significa, que a influência é local
+            a este comentário, e que o destaque é parcial. */}
         <p className="text-sm text-[#334155] leading-relaxed">
-          Para te ajudar a refletir, destacamos as palavras do seu comentário que mais pesaram na forma como ele foi percebido.
+          As palavras destacadas são as que mais influenciaram a classificação atribuída ao comentário.
         </p>
         <div className="bg-bg rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(15,118,110,0.35)' }} />
-            <span className="text-[#334155]"><span className="font-medium text-[#0f766e]">Verde</span> — puxou o resultado para o lado positivo</span>
+            <span className="text-[#334155]"><span className="font-medium text-[#0f766e]">Verde</span> — contribuiu para a classificação positiva</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: 'rgba(220,38,38,0.35)' }} />
-            <span className="text-[#334155]"><span className="font-medium text-[#dc2626]">Vermelho</span> — puxou para o lado negativo</span>
+            <span className="text-[#334155]"><span className="font-medium text-[#dc2626]">Vermelho</span> — contribuiu para a classificação negativa</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-[#334155]">Quanto <span className="font-medium text-[#1e293b]">mais forte a cor</span>, mais aquela palavra influenciou o resultado.</span>
+            <span className="text-[#334155]">A <span className="font-medium text-[#1e293b]">intensidade da cor</span> indica o grau de influência.</span>
           </div>
         </div>
         <p className="text-sm text-[#334155] leading-relaxed">
-          O peso é sempre <span className="font-medium text-[#1e293b]">dentro desta frase</span>, não
-          da palavra em geral. Uma palavra comum pode aparecer puxando para um lado sem ser positiva
-          ou negativa em si, só por causa de onde ela está no seu texto.
+          A influência é medida <span className="font-medium text-[#1e293b]">dentro deste comentário</span>,
+          e não da palavra isoladamente: a mesma palavra pode ter efeito diferente em outro texto.
         </p>
         <p className="text-sm text-[#64748b] leading-relaxed">
-          São destacadas as cinco palavras de maior peso, e não todas: com a frase inteira colorida,
-          o destaque deixa de destacar. O destaque é gerado automaticamente a partir do seu texto e
-          serve para você enxergar como a sua escrita reflete a sua experiência com a disciplina.
+          São destacadas as cinco palavras de maior influência.
         </p>
         <button
           onClick={onClose}
